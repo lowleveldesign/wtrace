@@ -39,6 +39,10 @@
       <HintPath>..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\lib\net40\Microsoft.Diagnostics.Tracing.TraceEvent.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -52,13 +56,31 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TraceCollector.cs" />
+    <Compile Include="Win32\ComPtr.cs" />
+    <Compile Include="Win32\Constants.cs" />
+    <Compile Include="Win32\Handles\NativeMethods.cs" />
+    <Compile Include="Win32\HResults.cs" />
+    <Compile Include="Win32\Interop\SecurityAttributes.cs" />
+    <Compile Include="Win32\LastWin32ErrorException.cs" />
+    <Compile Include="Win32\NtStatus.cs" />
+    <Compile Include="Win32\Processes\NativeEnums.cs" />
+    <Compile Include="Win32\Processes\NativeMethods.cs" />
+    <Compile Include="Win32\Processes\NativeStructs.cs" />
+    <Compile Include="Win32\Processes\ProcessCreationFlags.cs" />
+    <Compile Include="Win32\Processes\PROCESS_INFORMATION.cs" />
+    <Compile Include="Win32\Processes\SafeProcessHandle.cs" />
+    <Compile Include="Win32\Processes\SafeThreadHandle.cs" />
+    <Compile Include="Win32\Processes\Startupinfo.cs" />
+    <Compile Include="Win32\UnicodeString.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Win32\vschromium-LICENSE" />
     <None Include="_TraceEventProgrammersGuide.docx" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="FodyWeavers.xml" />
     <Content Include="TraceEvent.ReadMe.txt" />
     <Content Include="TraceEvent.ReleaseNotes.txt" />
   </ItemGroup>
@@ -69,7 +91,9 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets'))" />
+    <Error Condition="!Exists('..\packages\Fody.1.28.3\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.28.3\build\Fody.targets'))" />
   </Target>
+  <Import Project="..\packages\Fody.1.28.3\build\Fody.targets" Condition="Exists('..\packages\Fody.1.28.3\build\Fody.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -12,15 +12,17 @@ namespace wtrace
         private readonly TraceEventSession session;
         private readonly TextWriter output;
         private readonly StringBuilder buffer = new StringBuilder(2000, 2000);
+        private readonly int pid;
 
         private bool disposed = false;
 
-        public TraceCollector(string sessionName, TextWriter output)
+        public TraceCollector(string sessionName, int pid, TextWriter output)
         {
             session = new TraceEventSession(sessionName);
             session.EnableKernelProvider(KernelTraceEventParser.Keywords.FileIOInit);
             session.Source.Kernel.All += ProcessTraceEvent;
 
+            this.pid = pid;
             this.output = output;
         }
 
@@ -30,15 +32,18 @@ namespace wtrace
             if (data.Opcode == TraceEventOpcode.DataCollectionStart || data.Opcode == TraceEventOpcode.DataCollectionStop)
                 return;
 
-            //if (data is FileIOOpEndTraceData) {
-            //    // we don't care about operation result
-            //    return;
-            //}
+            if (data.ProcessID == pid) {
 
-            buffer.AppendFormat("Event '{0}', process: {1}\n", data.EventName, data.ProcessID);
-            if (buffer.MaxCapacity - buffer.Length < 100) {
-                output.WriteLine(buffer.ToString());
-                buffer.Clear();
+                //if (data is FileIOOpEndTraceData) {
+                //    // we don't care about operation result
+                //    return;
+                //}
+
+                buffer.AppendFormat("Event '{0}', process: {1}\n", data.EventName, data.ProcessID);
+                //if (buffer.MaxCapacity - buffer.Length < 100) {
+                    output.WriteLine(buffer.ToString());
+                    buffer.Clear();
+                //}
             }
         }
 
