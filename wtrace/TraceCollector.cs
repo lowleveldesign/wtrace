@@ -1,9 +1,11 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace wtrace
 {
@@ -19,7 +21,10 @@ namespace wtrace
         public TraceCollector(string sessionName, int pid, TextWriter output)
         {
             session = new TraceEventSession(sessionName);
-            session.EnableKernelProvider(KernelTraceEventParser.Keywords.FileIOInit);
+            session.EnableKernelProvider(
+                KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread
+                | KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
+            );
             session.Source.Kernel.All += ProcessTraceEvent;
 
             this.pid = pid;
@@ -34,12 +39,26 @@ namespace wtrace
 
             if (data.ProcessID == pid) {
 
+                if (data is FileIOInfoTraceData) { // FileIO/QueryInfo, FileIO/Rename
+
+                } else if (data is FileIOCreateTraceData) { // FileIO/Create
+
+                } else if (data is FileIODirEnumTraceData) { // ??
+
+                } else if (data is FileIONameTraceData) { // ??
+
+                } else if (data is FileIOOpEndTraceData) { // FileIO/OperationEnd
+
+                } else if (data is FileIOReadWriteTraceData) { // ??
+
+                } else if (data is FileIOSimpleOpTraceData) { // FileIO/Cleanup
+                }
                 //if (data is FileIOOpEndTraceData) {
                 //    // we don't care about operation result
                 //    return;
                 //}
 
-                buffer.AppendFormat("Event '{0}', process: {1}\n", data.EventName, data.ProcessID);
+                buffer.AppendFormat("Event '{0}' (type: {1}), process: {2}\n", data.EventName, data.GetType(), data.ProcessID);
                 //if (buffer.MaxCapacity - buffer.Length < 100) {
                     output.WriteLine(buffer.ToString());
                     buffer.Clear();
@@ -65,6 +84,9 @@ namespace wtrace
         {
             if (session.IsActive) {
                 session.Stop();
+                // This 1s timeout is needed to handle all the DCStop events 
+                // (in case we ever are going to do anything about them)
+                Thread.Sleep(1000);
             }
             if (disposing) {
                 session.Dispose();
