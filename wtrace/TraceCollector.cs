@@ -1,13 +1,13 @@
-﻿using Microsoft.Diagnostics.Tracing;
+﻿using LowLevelDesign.WinTrace.Handlers;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading;
 
-namespace wtrace
+namespace LowLevelDesign.WinTrace
 {
     class TraceCollector : IDisposable
     {
@@ -15,6 +15,7 @@ namespace wtrace
         private readonly TextWriter output;
         private readonly StringBuilder buffer = new StringBuilder(2000, 2000);
         private readonly int pid;
+        private readonly ITraceEventHandler[] handlers;
 
         private bool disposed = false;
 
@@ -24,11 +25,18 @@ namespace wtrace
             session.EnableKernelProvider(
                 KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread
                 | KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
+                | KernelTraceEventParser.Keywords.NetworkTCPIP
+                //| KernelTraceEventParser.Keywords.Registry
             );
             session.Source.Kernel.All += ProcessTraceEvent;
 
             this.pid = pid;
             this.output = output;
+            handlers = new ITraceEventHandler[] {
+                new FileIOTraceEventHandler(),
+                new RegistryTraceEventHandler(),
+                new NetworkTraceEventHandler()
+            };
         }
 
         void ProcessTraceEvent(TraceEvent data)
@@ -38,30 +46,19 @@ namespace wtrace
                 return;
 
             if (data.ProcessID == pid) {
-
-                if (data is FileIOInfoTraceData) { // FileIO/QueryInfo, FileIO/Rename
-
-                } else if (data is FileIOCreateTraceData) { // FileIO/Create
-
-                } else if (data is FileIODirEnumTraceData) { // ??
-
-                } else if (data is FileIONameTraceData) { // ??
-
-                } else if (data is FileIOOpEndTraceData) { // FileIO/OperationEnd
-
-                } else if (data is FileIOReadWriteTraceData) { // ??
-
-                } else if (data is FileIOSimpleOpTraceData) { // FileIO/Cleanup
+                foreach (var handler in handlers) {
+                    if (handler.ShouldHandle(data)) {
+                        handler.Handle(data, buffer);
+                        break;
+                    }
                 }
-                //if (data is FileIOOpEndTraceData) {
-                //    // we don't care about operation result
-                //    return;
-                //}
 
-                buffer.AppendFormat("Event '{0}' (type: {1}), process: {2}\n", data.EventName, data.GetType(), data.ProcessID);
-                //if (buffer.MaxCapacity - buffer.Length < 100) {
-                    output.WriteLine(buffer.ToString());
+                // FIXME
+                if (buffer.Length > 0) {
+                    output.Write(buffer.ToString());
                     buffer.Clear();
+                }
+                //if (buffer.MaxCapacity - buffer.Length < 100) {
                 //}
             }
         }

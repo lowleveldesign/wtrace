@@ -9,7 +9,7 @@ using System.Threading;
 using WinHandles = VsChromium.Core.Win32.Handles;
 using WinProcesses = VsChromium.Core.Win32.Processes;
 
-namespace wtrace
+namespace LowLevelDesign.WinTrace
 {
     class Program
     {

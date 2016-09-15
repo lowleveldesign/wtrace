@@ -7,7 +7,7 @@
     <ProjectGuid>{8F08EFD6-1DCA-454D-B8CD-7BCC0735F655}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>wtrace</RootNamespace>
+    <RootNamespace>LowLevelDesign.WinTrace</RootNamespace>
     <AssemblyName>wtrace</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -53,6 +53,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Handlers\FileIOTraceEventHandler.cs" />
+    <Compile Include="Handlers\ITraceEventHandler.cs" />
+    <Compile Include="Handlers\NetworkTraceEventHandler.cs" />
+    <Compile Include="Handlers\RegistryTraceEventHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TraceCollector.cs" />
