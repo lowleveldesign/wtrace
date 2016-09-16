@@ -48,18 +48,18 @@ namespace LowLevelDesign.WinTrace
             if (data.ProcessID == pid) {
                 foreach (var handler in handlers) {
                     if (handler.ShouldHandle(data)) {
-                        handler.Handle(data, buffer);
-                        break;
+                        var result = handler.Handle(data);
+
+                        if (result.Length > 0) {
+                            if (buffer.MaxCapacity - buffer.Length < result.Length) {
+                                output.Write(buffer.ToString());
+                                buffer.Clear();
+                            }
+                            buffer.Append(result).AppendLine();
+                        }
+                        return;
                     }
                 }
-
-                // FIXME
-                if (buffer.Length > 0) {
-                    output.Write(buffer.ToString());
-                    buffer.Clear();
-                }
-                //if (buffer.MaxCapacity - buffer.Length < 100) {
-                //}
             }
         }
 

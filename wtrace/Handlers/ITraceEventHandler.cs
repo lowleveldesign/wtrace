@@ -7,6 +7,6 @@ namespace LowLevelDesign.WinTrace.Handlers
     {
         bool ShouldHandle(TraceEvent data);
 
-        void Handle(TraceEvent data, StringBuilder output);
+        string Handle(TraceEvent data);
     }
 }

@@ -9,7 +9,7 @@ namespace LowLevelDesign.WinTrace.Handlers
 {
     class RegistryTraceEventHandler : ITraceEventHandler
     {
-        public void Handle(TraceEvent data, StringBuilder output)
+        public string Handle(TraceEvent data)
         {
             throw new NotImplementedException();
         }

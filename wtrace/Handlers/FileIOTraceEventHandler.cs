@@ -40,7 +40,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             public double StartTimeRelativeInMS;
         }
 
-        private FileIoEvent[] startedIoEvents = new FileIoEvent[5];
+        private readonly FileIoEvent[] startedIoEvents = new FileIoEvent[5];
 
         private static bool IsThisKnownOpCode(OpCodes id, TraceEvent data)
         {
@@ -59,12 +59,12 @@ namespace LowLevelDesign.WinTrace.Handlers
             startedIoEvents[0] = ev;
         }
 
-        private FileIoEvent GenerateFileIoEvent(TraceEvent data, ulong irp, string fileName)
+        private FileIoEvent GenerateFileIoEvent(TraceEvent data, ulong irp, ulong fileKey, string fileName)
         {
             return new FileIoEvent {
                 Irp = irp,
-                EventMessage = string.Format("{0:hh:mm:ss.ffff} ({2}) {1}, file: '{3}'",
-                                data.TimeStamp, data.EventName, data.ThreadID, fileName),
+                EventMessage = string.Format("{0:hh:mm:ss.ffff} ({2}) {1}, file: '{3}' ({4})",
+                                data.TimeStamp, data.EventName, data.ThreadID, fileName, fileKey),
                 StartTimeRelativeInMS = data.TimeStampRelativeMSec
             };
         }
@@ -86,47 +86,45 @@ namespace LowLevelDesign.WinTrace.Handlers
             return "none";
         }
 
-        public void Handle(TraceEvent data, StringBuilder output)
+        public string Handle(TraceEvent data)
         {
             if (IsThisKnownOpCode(OpCodes.OperationEnd, data)) {
                 var s = (FileIOOpEndTraceData)data;
                 for (int i = 0; i < startedIoEvents.Length; i++) {
                     if (startedIoEvents[i].Irp == s.IrpPtr) {
                         var startedEvent = startedIoEvents[i];
-                        output.Append(startedEvent.EventMessage);
-                        output.AppendFormat(", elapsed: {0:0.0000}ms",
-                            s.TimeStampRelativeMSec - startedEvent.StartTimeRelativeInMS).AppendLine();
+                        var result = string.Format("{0}, elapsed: {1:0.0000}ms", startedEvent.EventMessage,
+                            s.TimeStampRelativeMSec - startedEvent.StartTimeRelativeInMS);
                         startedIoEvents[i].Irp = 0;
-                        return;
+                        return result;
                     }
                 }
                 // event not found - we will just print info
-                output.AppendFormat("## ERROR: Failed to find an event for IRP: 0x{0:X}", s.IrpPtr).AppendLine();
-                return;
+                return string.Format("## ERROR: Failed to find an event for IRP: 0x{0:X}", s.IrpPtr);
+            }
+            if (IsThisKnownOpCode(OpCodes.Name, data) || IsThisKnownOpCode(OpCodes.FileCreate, data)
+                || IsThisKnownOpCode(OpCodes.FileDelete, data) || IsThisKnownOpCode(OpCodes.FileRundown, data)) {
+                var s = (FileIONameTraceData)data;
+                return GenerateFileIoEvent(data, 0, s.FileKey, s.FileName).EventMessage;
             }
 
             if (IsThisKnownOpCode(OpCodes.Create, data)) {
                 var s = (FileIOCreateTraceData)data;
-                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileName);
+                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName);
                 ev.EventMessage += ": " + GenerateFileShareMask(s.ShareAccess);
                 StoreTraceEvent(ev);
             } else if (IsThisKnownOpCode(OpCodes.Cleanup, data) || IsThisKnownOpCode(OpCodes.Close, data) 
                 || IsThisKnownOpCode(OpCodes.Flush, data)) {
                 var s = (FileIOSimpleOpTraceData)data;
-                StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileName));
-                return;
+                StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName));
             } else if (IsThisKnownOpCode(OpCodes.Read, data) || IsThisKnownOpCode(OpCodes.Write, data)) {
                 var s = (FileIOReadWriteTraceData)data;
-                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileName);
+                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName);
                 ev.EventMessage += string.Format(", offset: 0x{0:X}", s.Offset);
                 StoreTraceEvent(ev);
-            } else if (IsThisKnownOpCode(OpCodes.Name, data) || IsThisKnownOpCode(OpCodes.FileCreate, data)
-                || IsThisKnownOpCode(OpCodes.FileDelete, data) || IsThisKnownOpCode(OpCodes.FileRundown, data)) {
-                var s = (FileIONameTraceData)data;
-                output.Append(GenerateFileIoEvent(data, 0, s.FileName).EventMessage).AppendLine();
             } else if (IsThisKnownOpCode(OpCodes.DirEnum, data) || IsThisKnownOpCode(OpCodes.DirNotify, data)) {
                 var s = (FileIODirEnumTraceData)data;
-                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileName);
+                var ev = GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName);
                 ev.EventMessage += string.Format(", directory: '{0}'", s.DirectoryName);
                 StoreTraceEvent(ev);
             } else {
@@ -134,8 +132,9 @@ namespace LowLevelDesign.WinTrace.Handlers
                     || IsThisKnownOpCode(OpCodes.Rename, data) || IsThisKnownOpCode(OpCodes.QueryInfo, data)
                     || IsThisKnownOpCode(OpCodes.FSControl, data));
                 var s = (FileIOInfoTraceData)data;
-                StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileName));
+                StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName));
             }
+            return string.Empty;
         }
 
         public bool ShouldHandle(TraceEvent data)
