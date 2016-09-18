@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -40,7 +38,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             public double StartTimeRelativeInMS;
         }
 
-        private readonly FileIoEvent[] startedIoEvents = new FileIoEvent[5];
+        private readonly Dictionary<ulong, FileIoEvent> startedIoEvents = new Dictionary<ulong, FileIoEvent>();
 
         private static bool IsThisKnownOpCode(OpCodes id, TraceEvent data)
         {
@@ -49,22 +47,18 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         private void StoreTraceEvent(FileIoEvent ev)
         {
-            for (int i = 0; i < startedIoEvents.Length; i++) {
-                if (startedIoEvents[i].Irp == 0) {
-                    startedIoEvents[i] = ev;
-                    return;
-                }
+            if (startedIoEvents.ContainsKey(ev.Irp)) {
+                Console.WriteLine("## ERROR: IRP (0x{0:X}) reused.", ev.Irp);
+                startedIoEvents.Remove(ev.Irp);
             }
-            // we just replace the first one
-            startedIoEvents[0] = ev;
+            startedIoEvents.Add(ev.Irp, ev);
         }
 
         private FileIoEvent GenerateFileIoEvent(TraceEvent data, ulong irp, ulong fileKey, string fileName)
         {
             return new FileIoEvent {
                 Irp = irp,
-                EventMessage = string.Format("{0:hh:mm:ss.ffff} ({2}) {1}, file: '{3}' ({4})",
-                                data.TimeStamp, data.EventName, data.ThreadID, fileName, fileKey),
+                EventMessage = $"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName}, file: '{fileName}' (0x{fileKey:X})",
                 StartTimeRelativeInMS = data.TimeStampRelativeMSec
             };
         }
@@ -90,17 +84,16 @@ namespace LowLevelDesign.WinTrace.Handlers
         {
             if (IsThisKnownOpCode(OpCodes.OperationEnd, data)) {
                 var s = (FileIOOpEndTraceData)data;
-                for (int i = 0; i < startedIoEvents.Length; i++) {
-                    if (startedIoEvents[i].Irp == s.IrpPtr) {
-                        var startedEvent = startedIoEvents[i];
-                        var result = string.Format("{0}, elapsed: {1:0.0000}ms", startedEvent.EventMessage,
-                            s.TimeStampRelativeMSec - startedEvent.StartTimeRelativeInMS);
-                        startedIoEvents[i].Irp = 0;
-                        return result;
-                    }
+                FileIoEvent startedEvent;
+                if (startedIoEvents.TryGetValue(s.IrpPtr, out startedEvent)) {
+                    var elapsed = s.TimeStampRelativeMSec - startedEvent.StartTimeRelativeInMS;
+                    var result = $"{startedEvent.EventMessage}, elapsed: {elapsed:0.0000}ms";
+                    startedIoEvents.Remove(s.IrpPtr);
+                    return result;
                 }
+
                 // event not found - we will just print info
-                return string.Format("## ERROR: Failed to find an event for IRP: 0x{0:X}", s.IrpPtr);
+                return $"## ERROR: Failed to find an event for IRP: 0x{s.IrpPtr:X}";
             }
             if (IsThisKnownOpCode(OpCodes.Name, data) || IsThisKnownOpCode(OpCodes.FileCreate, data)
                 || IsThisKnownOpCode(OpCodes.FileDelete, data) || IsThisKnownOpCode(OpCodes.FileRundown, data)) {
@@ -134,7 +127,8 @@ namespace LowLevelDesign.WinTrace.Handlers
                 var s = (FileIOInfoTraceData)data;
                 StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName));
             }
-            return string.Empty;
+            // FIXME return string.Empty;
+            return "## INFO: " + data.ToString();
         }
 
         public bool ShouldHandle(TraceEvent data)

@@ -103,7 +103,7 @@ namespace LowLevelDesign.WinTrace
 
         static void ShowHelp(OptionSet p)
         {
-            Console.WriteLine("wtrace v{0} - allows you to set limits on your processes",
+            Console.WriteLine("wtrace v{0} - collects traces of Windows processes",
                 Assembly.GetExecutingAssembly().GetName().Version.ToString());
             Console.WriteLine("Copyright (C) 2016 Sebastian Solnica (@lowleveldesign)");
             Console.WriteLine();

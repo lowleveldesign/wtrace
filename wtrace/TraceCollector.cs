@@ -51,11 +51,12 @@ namespace LowLevelDesign.WinTrace
                         var result = handler.Handle(data);
 
                         if (result.Length > 0) {
+                            result += Environment.NewLine;
                             if (buffer.MaxCapacity - buffer.Length < result.Length) {
                                 output.Write(buffer.ToString());
                                 buffer.Clear();
                             }
-                            buffer.Append(result).AppendLine();
+                            buffer.Append(result);
                         }
                         return;
                     }
