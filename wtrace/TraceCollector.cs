@@ -1,6 +1,7 @@
 ﻿using LowLevelDesign.WinTrace.Handlers;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.IO;
@@ -19,9 +20,9 @@ namespace LowLevelDesign.WinTrace
 
         private bool disposed = false;
 
-        public TraceCollector(string sessionName, int pid, TextWriter output)
+        public TraceCollector(int pid, TextWriter output)
         {
-            session = new TraceEventSession(sessionName);
+            session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
             session.EnableKernelProvider(
                 KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread
                 | KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
@@ -37,6 +38,11 @@ namespace LowLevelDesign.WinTrace
                 new RegistryTraceEventHandler(),
                 new NetworkTraceEventHandler()
             };
+        }
+
+        void ProcessFileTraceEvent(FileIOSimpleOpTraceData data)
+        {
+            Console.WriteLine($"$$$$ TEST TEST: {data.FileName}");
         }
 
         void ProcessTraceEvent(TraceEvent data)

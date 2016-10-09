@@ -127,8 +127,7 @@ namespace LowLevelDesign.WinTrace.Handlers
                 var s = (FileIOInfoTraceData)data;
                 StoreTraceEvent(GenerateFileIoEvent(data, s.IrpPtr, s.FileObject, s.FileName));
             }
-            // FIXME return string.Empty;
-            return "## INFO: " + data.ToString();
+            return string.Empty;
         }
 
         public bool ShouldHandle(TraceEvent data)

@@ -64,7 +64,7 @@ namespace LowLevelDesign.WinTrace
             using (var process= new ProcessCreator(procargs)) {
                 process.StartSuspended();
 
-                using (var collector = new TraceCollector("wtrace-session", process.ProcessId, Console.Out)) {
+                using (var collector = new TraceCollector(process.ProcessId, Console.Out)) {
                     SetConsoleCtrlCHook(collector);
 
                     ManualResetEvent ev = new ManualResetEvent(false);
@@ -86,7 +86,7 @@ namespace LowLevelDesign.WinTrace
 
         static void TraceRunningProcess(int pid)
         {
-            using (var collector = new TraceCollector("wtrace-session", pid, Console.Out)) {
+            using (var collector = new TraceCollector(pid, Console.Out)) {
                 SetConsoleCtrlCHook(collector);
                 collector.Start();
             }
