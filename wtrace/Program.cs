@@ -2,6 +2,7 @@
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 
@@ -9,7 +10,7 @@ namespace LowLevelDesign.WinTrace
 {
     static class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             if (TraceEventSession.IsElevated() != true) {
                 Console.WriteLine("Must be elevated (Admin) to run this program.");
@@ -41,6 +42,7 @@ namespace LowLevelDesign.WinTrace
                 showhelp = true;
             }
 
+            Debug.Assert(procargs != null);
             if (!showhelp && (procargs.Count == 0 && pid == 0) || (pid > 0 && procargs.Count > 0)) {
                 Console.WriteLine("ERROR: please provide either process name or PID of the already running process");
                 Console.WriteLine();

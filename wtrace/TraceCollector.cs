@@ -40,11 +40,6 @@ namespace LowLevelDesign.WinTrace
             };
         }
 
-        void ProcessFileTraceEvent(FileIOSimpleOpTraceData data)
-        {
-            Console.WriteLine($"$$$$ TEST TEST: {data.FileName}");
-        }
-
         void ProcessTraceEvent(TraceEvent data)
         {
             // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
