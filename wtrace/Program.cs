@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+using WinProcesses = VsChromium.Core.Win32.Processes;
+using WinHandles = VsChromium.Core.Win32.Handles;
 
 namespace LowLevelDesign.WinTrace
 {
@@ -13,7 +15,7 @@ namespace LowLevelDesign.WinTrace
         public static void Main(string[] args)
         {
             if (TraceEventSession.IsElevated() != true) {
-                Console.WriteLine("Must be elevated (Admin) to run this program.");
+                Console.Error.WriteLine("Must be elevated (Admin) to run this program.");
                 return;
             }
 
@@ -32,20 +34,20 @@ namespace LowLevelDesign.WinTrace
             try {
                 procargs = p.Parse(args);
             } catch (OptionException ex) {
-                Console.Write("ERROR: invalid argument");
-                Console.WriteLine(ex.Message);
-                Console.WriteLine();
+                Console.Error.Write("ERROR: invalid argument");
+                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine();
                 showhelp = true;
             } catch (FormatException) {
-                Console.WriteLine("ERROR: invalid number in one of the constraints");
-                Console.WriteLine();
+                Console.Error.WriteLine("ERROR: invalid number in one of the constraints");
+                Console.Error.WriteLine();
                 showhelp = true;
             }
 
             Debug.Assert(procargs != null);
             if (!showhelp && (procargs.Count == 0 && pid == 0) || (pid > 0 && procargs.Count > 0)) {
-                Console.WriteLine("ERROR: please provide either process name or PID of the already running process");
-                Console.WriteLine();
+                Console.Error.WriteLine("ERROR: please provide either process name or PID of the already running process");
+                Console.Error.WriteLine();
                 showhelp = true;
             }
 
@@ -55,15 +57,15 @@ namespace LowLevelDesign.WinTrace
             }
 
             if (pid == 0) {
-                TraceNewProcess(procargs);
+                TraceNewProcess(procargs, spawnNewConsoleWindow);
             } else {
                 TraceRunningProcess(pid);
             }
         }
 
-        static void TraceNewProcess(IEnumerable<string> procargs)
+        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow)
         {
-            using (var process= new ProcessCreator(procargs)) {
+            using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
 
                 using (var collector = new TraceCollector(process.ProcessId, Console.Out)) {
@@ -74,6 +76,10 @@ namespace LowLevelDesign.WinTrace
                         collector.Start();
 
                         ev.Set();
+                    });
+                    ThreadPool.QueueUserWorkItem((o) => {
+                        process.Join();
+                        collector.Dispose();
                     });
 
                     Thread.Sleep(1000);
@@ -90,6 +96,13 @@ namespace LowLevelDesign.WinTrace
         {
             using (var collector = new TraceCollector(pid, Console.Out)) {
                 SetConsoleCtrlCHook(collector);
+                ThreadPool.QueueUserWorkItem((o) => {
+                    var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
+                    WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
+
+                    collector.Dispose();
+                });
+
                 collector.Start();
             }
         }

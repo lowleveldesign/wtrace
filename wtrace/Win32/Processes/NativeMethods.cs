@@ -78,6 +78,6 @@ namespace VsChromium.Core.Win32.Processes
             out long lpSystemAffinityMask);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern int ResumeThread(IntPtr hThread);
+        public static extern int ResumeThread(SafeThreadHandle hThread);
     }
 }

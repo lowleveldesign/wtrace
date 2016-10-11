@@ -10,8 +10,8 @@ namespace LowLevelDesign.WinTrace
     class ProcessCreator : IDisposable
     {
         private readonly IEnumerable<string> args;
-        private IntPtr hProcess;
-        private IntPtr hThread;
+        private WinProcesses.SafeProcessHandle hProcess;
+        private WinProcesses.SafeThreadHandle hThread;
         private int pid;
 
         public ProcessCreator(IEnumerable<string> args)
@@ -33,9 +33,9 @@ namespace LowLevelDesign.WinTrace
                 throw new Win32Exception("Error while creating a new process.");
             }
 
-            hProcess = pi.hProcess;
+            hProcess = new WinProcesses.SafeProcessHandle(pi.hProcess);
             pid = pi.dwProcessId;
-            hThread = pi.hThread;
+            hThread = new WinProcesses.SafeThreadHandle(pi.hThread);
         }
 
         public void Resume()
@@ -52,25 +52,18 @@ namespace LowLevelDesign.WinTrace
 
         public bool SpawnNewConsoleWindow { get; set; }
 
+        public void Join()
+        {
+            if (hProcess.IsInvalid || hProcess.IsClosed) {
+                throw new InvalidOperationException();
+            }
+            WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
+        }
+
         public void Dispose()
         {
-            Close();
-            GC.SuppressFinalize(this);
-        }
-
-        private void Close()
-        {
-            if (hThread != IntPtr.Zero) {
-                WinHandles.NativeMethods.CloseHandle(hThread);
-            }
-            if (hProcess != IntPtr.Zero) {
-                WinHandles.NativeMethods.CloseHandle(hProcess);
-            }
-        }
-
-        ~ProcessCreator()
-        {
-            Close();
+            hThread.Dispose();
+            hProcess.Dispose();
         }
     }
 }

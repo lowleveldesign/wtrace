@@ -31,7 +31,8 @@ namespace VsChromium.Core.Win32.Processes {
     VmOperation = 0x00000008,
     VmRead = 0x00000010,
     QueryInformation = 0x00000400,
-    QueryLimitedInformation = 0x00001000
+    QueryLimitedInformation = 0x00001000,
+    Synchronize = 0x00100000
   }
 
   // Determines the amount of information requested (and hence the type of structure returned)
