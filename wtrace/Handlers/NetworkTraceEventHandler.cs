@@ -1,18 +1,14 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using System;
+using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class NetworkTraceEventHandler : ITraceEventHandler
     {
-        public string Handle(TraceEvent data)
+        public void SubscribeToEvents(KernelTraceEventParser kernel)
         {
             throw new NotImplementedException();
-        }
-
-        public bool ShouldHandle(TraceEvent data)
-        {
-            return false;
         }
     }
 }

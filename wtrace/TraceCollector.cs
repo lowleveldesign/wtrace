@@ -13,9 +13,7 @@ namespace LowLevelDesign.WinTrace
     class TraceCollector : IDisposable
     {
         private readonly TraceEventSession session;
-        private readonly TextWriter output;
         private readonly StringBuilder buffer = new StringBuilder(2000, 2000);
-        private readonly int pid;
         private readonly ITraceEventHandler[] handlers;
 
         private bool disposed = false;
@@ -27,42 +25,12 @@ namespace LowLevelDesign.WinTrace
                 KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread
                 | KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
                 | KernelTraceEventParser.Keywords.NetworkTCPIP
-                //| KernelTraceEventParser.Keywords.Registry
+                | KernelTraceEventParser.Keywords.Registry
             );
-            session.Source.Kernel.All += ProcessTraceEvent;
 
-            this.pid = pid;
-            this.output = output;
-            handlers = new ITraceEventHandler[] {
-                new FileIOTraceEventHandler(),
-                new RegistryTraceEventHandler(),
-                new NetworkTraceEventHandler()
-            };
-        }
-
-        void ProcessTraceEvent(TraceEvent data)
-        {
-            // There are a lot of data collection start on entry that I don't want to see (but often they are quite handy
-            if (data.Opcode == TraceEventOpcode.DataCollectionStart || data.Opcode == TraceEventOpcode.DataCollectionStop)
-                return;
-
-            if (data.ProcessID == pid) {
-                foreach (var handler in handlers) {
-                    if (handler.ShouldHandle(data)) {
-                        var result = handler.Handle(data);
-
-                        if (result.Length > 0) {
-                            result += Environment.NewLine;
-                            if (buffer.MaxCapacity - buffer.Length < result.Length) {
-                                output.Write(buffer.ToString());
-                                buffer.Clear();
-                            }
-                            buffer.Append(result);
-                        }
-                        return;
-                    }
-                }
-            }
+            new FileIOTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
+                //new RegistryTraceEventHandler(),
+                //new NetworkTraceEventHandler()
         }
 
         public void Start()

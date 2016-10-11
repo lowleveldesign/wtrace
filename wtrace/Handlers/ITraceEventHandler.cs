@@ -1,11 +1,10 @@
 ﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     public interface ITraceEventHandler
     {
-        bool ShouldHandle(TraceEvent data);
-
-        string Handle(TraceEvent data);
+        void SubscribeToEvents(KernelTraceEventParser kernel);
     }
 }
