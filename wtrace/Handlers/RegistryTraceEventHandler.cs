@@ -1,18 +1,60 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
+using System.IO;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class RegistryTraceEventHandler : ITraceEventHandler
     {
+        private readonly TextWriter output;
+        private readonly int pid;
+        private readonly Dictionary<ulong, string> registryHandleToKeyNameMap = new Dictionary<ulong, string>();
+
+        public RegistryTraceEventHandler(int pid, TextWriter output)
+        {
+            this.output = output;
+            this.pid = pid;
+
+        }
+
         public void SubscribeToEvents(KernelTraceEventParser kernel)
         {
-            throw new NotImplementedException();
+            kernel.RegistryClose += HandleRegistryTraceData;
+            kernel.RegistryCreate += HandleRegistryTraceData;
+            kernel.RegistryDelete += HandleRegistryTraceData;
+            kernel.RegistryDeleteValue += HandleRegistryTraceData;
+            kernel.RegistryEnumerateKey += HandleRegistryTraceData;
+            kernel.RegistryEnumerateValueKey += HandleRegistryTraceData;
+            kernel.RegistryFlush += HandleRegistryTraceData;
+            kernel.RegistryKCBCreate += HandleRegistryTraceData;
+            kernel.RegistryKCBDelete += HandleRegistryTraceData;
+            kernel.RegistryKCBRundownBegin += HandleRegistryTraceData;
+            kernel.RegistryKCBRundownEnd += HandleRegistryTraceData;
+            kernel.RegistryOpen += HandleRegistryTraceData;
+            kernel.RegistryQuery += HandleRegistryTraceData;
+            kernel.RegistryQueryMultipleValue += HandleRegistryTraceData;
+            kernel.RegistryQueryValue += HandleRegistryTraceData;
+            kernel.RegistrySetInformation += HandleRegistryTraceData;
+            kernel.RegistrySetValue += HandleRegistryTraceData;
+            kernel.RegistryVirtualize += HandleRegistryTraceData;
+        }
+
+        private void HandleRegistryTraceData(RegistryTraceData data)
+        {
+            if (data.ProcessID == pid) {
+                ulong keyHandle = data.KeyHandle;
+                string keyName;
+                if (!registryHandleToKeyNameMap.TryGetValue(keyHandle, out keyName)) {
+                    keyName = data.KeyName;
+                    if (keyName != null) {
+                        registryHandleToKeyNameMap.Add(keyHandle, keyName);
+                    }
+                } 
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} " + 
+                    $"'{keyName}' '{data.ValueName}' (0x{keyHandle:X})");
+            }
         }
     }
 }

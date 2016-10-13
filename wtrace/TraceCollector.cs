@@ -1,7 +1,5 @@
 ﻿using LowLevelDesign.WinTrace.Handlers;
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.IO;
@@ -14,7 +12,6 @@ namespace LowLevelDesign.WinTrace
     {
         private readonly TraceEventSession session;
         private readonly StringBuilder buffer = new StringBuilder(2000, 2000);
-        private readonly ITraceEventHandler[] handlers;
 
         private bool disposed = false;
 
@@ -29,7 +26,7 @@ namespace LowLevelDesign.WinTrace
             );
 
             new FileIOTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
-                //new RegistryTraceEventHandler(),
+            new RegistryTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
                 //new NetworkTraceEventHandler()
         }
 
