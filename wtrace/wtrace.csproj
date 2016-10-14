@@ -80,6 +80,7 @@
     <Compile Include="Handlers\ITraceEventHandler.cs" />
     <Compile Include="Handlers\NetworkTraceEventHandler.cs" />
     <Compile Include="Handlers\RegistryTraceEventHandler.cs" />
+    <Compile Include="Handlers\SystemConfigTraceEventHandler.cs" />
     <Compile Include="ProcessCreator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

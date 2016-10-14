@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 
 namespace LowLevelDesign.WinTrace
@@ -11,23 +10,23 @@ namespace LowLevelDesign.WinTrace
     class TraceCollector : IDisposable
     {
         private readonly TraceEventSession session;
-        private readonly StringBuilder buffer = new StringBuilder(2000, 2000);
 
+        private bool disposing = false;
         private bool disposed = false;
 
         public TraceCollector(int pid, TextWriter output)
         {
             session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
             session.EnableKernelProvider(
-                KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread
-                | KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
+                 KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
                 | KernelTraceEventParser.Keywords.NetworkTCPIP
                 | KernelTraceEventParser.Keywords.Registry
             );
 
+            new SystemConfigTraceEventHandler(output).SubscribeToEvents(session.Source.Kernel);
             new FileIOTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
             new RegistryTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
-                //new NetworkTraceEventHandler()
+            new NetworkTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
         }
 
         public void Start()
@@ -37,9 +36,10 @@ namespace LowLevelDesign.WinTrace
 
         public void Dispose()
         {
-            if (disposed) {
+            if (disposed || disposing) {
                 return;
             }
+            disposing = true;
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -48,14 +48,16 @@ namespace LowLevelDesign.WinTrace
         {
             if (session.IsActive) {
                 session.Stop();
-                // This 1s timeout is needed to handle all the DCStop events 
+
+                // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
+
+                if (disposing) {
+                    session.Dispose();
+                }
+                disposed = true;
             }
-            if (disposing) {
-                session.Dispose();
-            }
-            disposed = true;
         }
 
         ~TraceCollector()

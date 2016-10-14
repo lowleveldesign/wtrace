@@ -31,8 +31,8 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.TcpIpPartACK += HandleTcpIp;
             kernel.TcpIpReconnect += HandleTcpIp;
             kernel.TcpIpReconnectIPV6 += HandleTcpIpV6;
-            kernel.TcpIpRecv += HandleTcpIp;
-            kernel.TcpIpRecvIPV6 += HandleTcpIpV6;
+            kernel.TcpIpRecv += HandleTcpIpRev;
+            kernel.TcpIpRecvIPV6 += HandleTcpIpV6Rev;
             kernel.TcpIpRetransmit += HandleTcpIp;
             kernel.TcpIpRetransmitIPV6 += HandleTcpIpV6;
             kernel.TcpIpSend += HandleTcpIpSend;
@@ -43,30 +43,74 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
         }
 
         private void HandleTcpIpV6Connect(TcpIpV6ConnectTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
         }
 
         private void HandleTcpIp(TcpIpTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
         }
 
         private void HandleTcpIpV6(TcpIpV6TraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
+        }
+
+        private void HandleTcpIpRev(TcpIpTraceData data)
+        {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
+            }
+        }
+
+        private void HandleTcpIpV6Rev(TcpIpV6TraceData data)
+        {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
+            }
         }
 
         private void HandleTcpIpFail(TcpIpFailTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"0x{data.FailureCode:X}");
+            }
         }
 
         private void HandleTcpIpSend(TcpIpSendTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
         }
 
         private void HandleTcpIpV6Send(TcpIpV6SendTraceData data)
         {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                    $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+            }
         }
     }
 }
