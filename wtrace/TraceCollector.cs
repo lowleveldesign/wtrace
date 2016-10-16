@@ -22,16 +22,10 @@ namespace LowLevelDesign.WinTrace
             session.EnableKernelProvider(
                  KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
                 | KernelTraceEventParser.Keywords.NetworkTCPIP
-#if REGISTRY
-                | KernelTraceEventParser.Keywords.Registry
-#endif
             );
             session.StopOnDispose = true;
 
             handlers = new ITraceEventHandler[] {
-#if REGISTRY
-                new RegistryTraceEventHandler(pid, output),
-#endif
                 new SystemConfigTraceEventHandler(output),
                 new FileIOTraceEventHandler(pid, output, summaryOnly),
                 new NetworkTraceEventHandler(pid, output, summaryOnly)
