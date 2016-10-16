@@ -1,15 +1,13 @@
-﻿using System;
-using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
-    class FileIOTraceEventHandler : ITraceEventHandler
+    sealed class FileIOTraceEventHandler : ITraceEventHandler
     {
         class FileIoSummary
         {
@@ -34,22 +32,24 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void SubscribeToEvents(KernelTraceEventParser kernel)
         {
+#if ALLEVENTS
             kernel.FileIOCleanup += HandleFileIOSimpleOp;
+            kernel.FileIOFSControl += HandleFileIOInfo;
+            kernel.FileIOQueryInfo += HandleFileIOInfo;
+            kernel.FileIOSetInfo += HandleFileIOInfo;
+            kernel.FileIODirEnum += HandleFileIODirEnum;
+            kernel.FileIODirNotify += HandleFileIODirEnum;
+            kernel.FileIOOperationEnd += HandleFileIOOpEnd;
+#endif
             kernel.FileIOClose += HandleFileIOSimpleOp;
             kernel.FileIOFlush += HandleFileIOSimpleOp;
             kernel.FileIOCreate += HandleFileIOCreate;
             kernel.FileIODelete += HandleFileIOInfo;
-            kernel.FileIOFSControl += HandleFileIOInfo;
-            kernel.FileIOQueryInfo += HandleFileIOInfo;
             kernel.FileIORename += HandleFileIOInfo;
-            kernel.FileIOSetInfo += HandleFileIOInfo;
-            kernel.FileIODirEnum += HandleFileIODirEnum;
-            kernel.FileIODirNotify += HandleFileIODirEnum;
             kernel.FileIOFileCreate += HandleFileIOName;
             kernel.FileIOFileDelete += HandleFileIOName;
             kernel.FileIOFileRundown += HandleFileIOName;
             kernel.FileIOName += HandleFileIOName;
-            kernel.FileIOOperationEnd += HandleFileIOOpEnd;
             kernel.FileIORead += HandleFileIOReadWrite;
             kernel.FileIOWrite += HandleFileIOReadWrite;
             kernel.FileIOMapFile += HandleFileIOMapFile;
@@ -57,10 +57,13 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void PrintStatistics()
         {
+            if (fileIoSummary.Count == 0) {
+                return;
+            }
             output.WriteLine("======= File I/O =======");
-            output.WriteLine("File name - Writes / Reads");
+            output.WriteLine("File name  Writes / Reads (bytes)");
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                output.WriteLine($"{summary.Key} - {summary.Value.Write} / {summary.Value.Read}");
+                output.WriteLine($"{summary.Key} {summary.Value.Write:#,0} / {summary.Value.Read:#,0}");
             }
         }
 
@@ -101,13 +104,6 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
         }
 
-        private void HandleFileIODirEnum(FileIODirEnumTraceData data)
-        {
-            if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileObject:X})");
-            }
-        }
-
         private void HandleFileIOName(FileIONameTraceData data)
         {
             if (data.ProcessID == pid) {
@@ -122,10 +118,6 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
         }
 
-        private void HandleFileIOOpEnd(FileIOOpEndTraceData data)
-        {
-        }
-
         private void HandleFileIOReadWrite(FileIOReadWriteTraceData data)
         {
             if (data.ProcessID == pid) {
@@ -138,16 +130,29 @@ namespace LowLevelDesign.WinTrace.Handlers
                         summary = new FileIoSummary();
                         fileIoSummary.Add(data.FileName, summary);
                     }
-                    if ((uint) data.EventIndex == 67) { // read
+                    if ((byte)data.Opcode == 67) { // read
                         summary.Read += data.IoSize;
                         summary.Total += data.IoSize;
-                    } else if ((uint) data.EventIndex == 68) { // write
+                    } else if ((byte)data.Opcode == 68) { // write
                         summary.Write += data.IoSize;
                         summary.Total += data.IoSize;
                     }
                 }
             }
         }
+
+#if ALLEVENTS
+        private void HandleFileIODirEnum(FileIODirEnumTraceData data)
+        {
+            if (data.ProcessID == pid) {
+                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileObject:X})");
+            }
+        }
+
+        private void HandleFileIOOpEnd(FileIOOpEndTraceData data)
+        {
+        }
+#endif
 
         private string GenerateFileShareMask(FileShare share)
         {

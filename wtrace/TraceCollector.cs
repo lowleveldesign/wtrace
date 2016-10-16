@@ -11,9 +11,8 @@ namespace LowLevelDesign.WinTrace
     {
         private readonly TraceEventSession session;
 
-        private bool disposing = false;
         private bool disposed = false;
-        private ITraceEventHandler[] handlers;
+        private readonly ITraceEventHandler[] handlers;
 
         public TraceCollector(int pid, TextWriter output)
         {
@@ -21,10 +20,16 @@ namespace LowLevelDesign.WinTrace
             session.EnableKernelProvider(
                  KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
                 | KernelTraceEventParser.Keywords.NetworkTCPIP
+#if REGISTRY
                 | KernelTraceEventParser.Keywords.Registry
+#endif
             );
+            session.StopOnDispose = true;
 
             handlers = new ITraceEventHandler[] {
+#if REGISTRY
+                new RegistryTraceEventHandler(pid, output),
+#endif
                 new SystemConfigTraceEventHandler(output),
                 new FileIOTraceEventHandler(pid, output),
                 new NetworkTraceEventHandler(pid, output)
@@ -39,34 +44,36 @@ namespace LowLevelDesign.WinTrace
             session.Source.Process();
         }
 
-        public void Dispose()
-        {
-            if (disposed || disposing) {
-                return;
-            }
-            disposing = true;
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
+        public void Stop()
         {
             if (session.IsActive) {
                 session.Stop();
 
                 // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
-                Thread.Sleep(3000);
+                Thread.Sleep(1500);
 
                 foreach (var handler in handlers) {
                     handler.PrintStatistics();
                 }
-
-                if (disposing) {
-                    session.Dispose();
-                }
-                disposed = true;
             }
+        }
+
+        public void Dispose()
+        {
+            if (disposed) {
+                return;
+            }
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing) {
+                session.Dispose();
+            }
+            disposed = true;
         }
 
         ~TraceCollector()

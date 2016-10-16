@@ -1,13 +1,26 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using System.Collections.Generic;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.IO;
+using System.Linq;
+using System.Net;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class NetworkTraceEventHandler : ITraceEventHandler
     {
+        class NetworkIoSummary
+        {
+            public long Recv;
+
+            public long Send;
+
+            public long Total;
+        }
+
         private readonly TextWriter output;
         private readonly int pid;
+        private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
         public NetworkTraceEventHandler(int pid, TextWriter output)
         {
@@ -43,7 +56,14 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void PrintStatistics()
         {
-            // FIXME
+            if (networkIoSummary.Count == 0) {
+                return;
+            }
+            output.WriteLine("======= TCP/IP =======");
+            output.WriteLine("Source -> Destination  Send / Receive (bytes)");
+            foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
+                output.WriteLine($"{summary.Key} {summary.Value.Send:#,0} / {summary.Value.Recv:#,0}");
+            }
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)
@@ -83,6 +103,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (data.ProcessID == pid) {
                 output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
+                UpdateStats(data.saddr, data.daddr, true, data.size);
             }
         }
 
@@ -91,6 +112,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (data.ProcessID == pid) {
                 output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
+                UpdateStats(data.saddr, data.daddr, true, data.size);
             }
         }
 
@@ -107,6 +129,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (data.ProcessID == pid) {
                 output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+                UpdateStats(data.saddr, data.daddr, false, data.size);
             }
         }
 
@@ -115,6 +138,24 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (data.ProcessID == pid) {
                 output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
+                UpdateStats(data.saddr, data.daddr, false, data.size);
+            }
+        }
+
+        private void UpdateStats(IPAddress saddr, IPAddress daddr, bool isReceive, int size)
+        {
+            string key = $"{saddr} -> {daddr}";
+            NetworkIoSummary summary;
+            if (!networkIoSummary.TryGetValue(key, out summary)) {
+                summary = new NetworkIoSummary();
+                networkIoSummary.Add(key, summary);
+            }
+            if (isReceive) {
+                summary.Recv += size;
+                summary.Total += size;
+            } else { 
+                summary.Send += size;
+                summary.Total += size;
             }
         }
     }

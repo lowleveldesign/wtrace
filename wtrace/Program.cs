@@ -12,6 +12,8 @@ namespace LowLevelDesign.WinTrace
 {
     static class Program
     {
+        static ManualResetEvent stopEvent = new ManualResetEvent(false);
+
         public static void Main(string[] args)
         {
             if (TraceEventSession.IsElevated() != true) {
@@ -71,15 +73,14 @@ namespace LowLevelDesign.WinTrace
                 using (var collector = new TraceCollector(process.ProcessId, Console.Out)) {
                     SetConsoleCtrlCHook(collector);
 
-                    ManualResetEvent ev = new ManualResetEvent(false);
                     ThreadPool.QueueUserWorkItem((o) => {
                         collector.Start();
-
-                        ev.Set();
                     });
                     ThreadPool.QueueUserWorkItem((o) => {
                         process.Join();
-                        collector.Dispose();
+                        collector.Stop();
+
+                        stopEvent.Set();
                     });
 
                     Thread.Sleep(1000);
@@ -87,7 +88,7 @@ namespace LowLevelDesign.WinTrace
                     // resume thread
                     process.Resume();
 
-                    ev.WaitOne();
+                    stopEvent.WaitOne();
                 }
             }
         }
@@ -99,11 +100,13 @@ namespace LowLevelDesign.WinTrace
                 ThreadPool.QueueUserWorkItem((o) => {
                     var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
                     WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
+                    collector.Stop();
 
-                    collector.Dispose();
+                    stopEvent.Set();
                 });
-
                 collector.Start();
+
+                stopEvent.WaitOne();
             }
         }
 
@@ -111,8 +114,10 @@ namespace LowLevelDesign.WinTrace
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {
-                collector.Dispose();
                 cancelArgs.Cancel = true;
+                collector.Stop();
+
+                stopEvent.Set();
             };
         }
 

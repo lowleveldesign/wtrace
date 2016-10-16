@@ -1,8 +1,8 @@
 ﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using System;
 using System.Collections.Generic;
 using System.IO;
+using System;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -17,6 +17,12 @@ namespace LowLevelDesign.WinTrace.Handlers
             this.output = output;
             this.pid = pid;
 
+        }
+
+        public void PrintStatistics()
+        {
+            output.WriteLine("======= Registry =======");
+            output.WriteLine("TBD");
         }
 
         public void SubscribeToEvents(KernelTraceEventParser kernel)
