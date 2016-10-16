@@ -22,16 +22,17 @@ namespace LowLevelDesign.WinTrace
             }
 
             List<string> procargs = null;
-            bool showhelp = false, spawnNewConsoleWindow = false;
+            bool showhelp = false, spawnNewConsoleWindow = false, 
+                summaryOnly = false;
             int pid = 0;
 
-            var p = new OptionSet()
+            var p = new OptionSet
             {
-                    { "p|pid=", "Attach to an already running process", (int v) => pid = v },
-                    { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
-                    { "h|help", "Show this message and exit", v => showhelp = v != null },
-                    { "?", "Show this message and exit", v => showhelp = v != null }
-                };
+                { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
+                { "summary", "Prints only a summary of the collected trace.", v => summaryOnly = v != null },
+                { "h|help", "Show this message and exit", v => showhelp = v != null },
+                { "?", "Show this message and exit", v => showhelp = v != null }
+            };
 
             try {
                 procargs = p.Parse(args);
@@ -47,7 +48,7 @@ namespace LowLevelDesign.WinTrace
             }
 
             Debug.Assert(procargs != null);
-            if (!showhelp && (procargs.Count == 0 && pid == 0) || (pid > 0 && procargs.Count > 0)) {
+            if (!showhelp && procargs.Count == 0) {
                 Console.Error.WriteLine("ERROR: please provide either process name or PID of the already running process");
                 Console.Error.WriteLine();
                 showhelp = true;
@@ -58,7 +59,7 @@ namespace LowLevelDesign.WinTrace
                 return;
             }
 
-            if (pid == 0) {
+            if (!int.TryParse(procargs[0], out pid)) {
                 TraceNewProcess(procargs, spawnNewConsoleWindow);
             } else {
                 TraceRunningProcess(pid);
@@ -95,10 +96,14 @@ namespace LowLevelDesign.WinTrace
 
         static void TraceRunningProcess(int pid)
         {
+            var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
+            if (hProcess.IsInvalid) {
+                Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
+                return;
+            }
             using (var collector = new TraceCollector(pid, Console.Out)) {
                 SetConsoleCtrlCHook(collector);
                 ThreadPool.QueueUserWorkItem((o) => {
-                    var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
                     WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
                     collector.Stop();
 
