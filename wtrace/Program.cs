@@ -60,18 +60,18 @@ namespace LowLevelDesign.WinTrace
             }
 
             if (!int.TryParse(procargs[0], out pid)) {
-                TraceNewProcess(procargs, spawnNewConsoleWindow);
+                TraceNewProcess(procargs, spawnNewConsoleWindow, summaryOnly);
             } else {
-                TraceRunningProcess(pid);
+                TraceRunningProcess(pid, summaryOnly);
             }
         }
 
-        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow)
+        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, bool summaryOnly)
         {
             using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
 
-                using (var collector = new TraceCollector(process.ProcessId, Console.Out)) {
+                using (var collector = new TraceCollector(process.ProcessId, Console.Out, summaryOnly)) {
                     SetConsoleCtrlCHook(collector);
 
                     ThreadPool.QueueUserWorkItem((o) => {
@@ -94,14 +94,14 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        static void TraceRunningProcess(int pid)
+        static void TraceRunningProcess(int pid, bool summaryOnly)
         {
             var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
             if (hProcess.IsInvalid) {
                 Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
                 return;
             }
-            using (var collector = new TraceCollector(pid, Console.Out)) {
+            using (var collector = new TraceCollector(pid, Console.Out, summaryOnly)) {
                 SetConsoleCtrlCHook(collector);
                 ThreadPool.QueueUserWorkItem((o) => {
                     WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);

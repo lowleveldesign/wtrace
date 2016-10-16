@@ -18,13 +18,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             public long Total;
         }
 
-        private readonly TextWriter output;
+        private readonly TextWriter summaryOutput;
+        private readonly TextWriter traceOutput;
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
-        public NetworkTraceEventHandler(int pid, TextWriter output)
+        public NetworkTraceEventHandler(int pid, TextWriter output, bool summaryOnly)
         {
-            this.output = output;
+            summaryOutput = output;
+            traceOutput = summaryOnly ? TextWriter.Null : output;
             this.pid = pid;
 
         }
@@ -59,17 +61,17 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (networkIoSummary.Count == 0) {
                 return;
             }
-            output.WriteLine("======= TCP/IP =======");
-            output.WriteLine("Source -> Destination  Send / Receive (bytes)");
+            summaryOutput.WriteLine("======= TCP/IP =======");
+            summaryOutput.WriteLine("Source -> Destination  Send / Receive (bytes)");
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                output.WriteLine($"{summary.Key} {summary.Value.Send:#,0} / {summary.Value.Recv:#,0}");
+                summaryOutput.WriteLine($"{summary.Key} {summary.Value.Send:#,0} / {summary.Value.Recv:#,0}");
             }
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -77,7 +79,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Connect(TcpIpV6ConnectTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -85,7 +87,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIp(TcpIpTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -93,7 +95,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6(TcpIpV6TraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -101,7 +103,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpRev(TcpIpTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, true, data.size);
             }
@@ -110,7 +112,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Rev(TcpIpV6TraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, true, data.size);
             }
@@ -119,7 +121,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpFail(TcpIpFailTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"0x{data.FailureCode:X}");
             }
         }
@@ -127,7 +129,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpSend(TcpIpSendTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, false, data.size);
             }
@@ -136,7 +138,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Send(TcpIpV6SendTraceData data)
         {
             if (data.ProcessID == pid) {
-                output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} {data.EventName} " + 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, false, data.size);
             }

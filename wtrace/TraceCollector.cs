@@ -15,7 +15,7 @@ namespace LowLevelDesign.WinTrace
         private bool disposed = false;
         private readonly ITraceEventHandler[] handlers;
 
-        public TraceCollector(int pid, TextWriter output)
+        public TraceCollector(int pid, TextWriter output, bool summaryOnly)
         {
             this.output = output;
             session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
@@ -33,8 +33,8 @@ namespace LowLevelDesign.WinTrace
                 new RegistryTraceEventHandler(pid, output),
 #endif
                 new SystemConfigTraceEventHandler(output),
-                new FileIOTraceEventHandler(pid, output),
-                new NetworkTraceEventHandler(pid, output)
+                new FileIOTraceEventHandler(pid, output, summaryOnly),
+                new NetworkTraceEventHandler(pid, output, summaryOnly)
             };
             foreach (var handler in handlers) {
                 handler.SubscribeToEvents(session.Source.Kernel);
