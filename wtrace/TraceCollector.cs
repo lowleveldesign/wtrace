@@ -13,6 +13,7 @@ namespace LowLevelDesign.WinTrace
 
         private bool disposing = false;
         private bool disposed = false;
+        private ITraceEventHandler[] handlers;
 
         public TraceCollector(int pid, TextWriter output)
         {
@@ -23,10 +24,14 @@ namespace LowLevelDesign.WinTrace
                 | KernelTraceEventParser.Keywords.Registry
             );
 
-            new SystemConfigTraceEventHandler(output).SubscribeToEvents(session.Source.Kernel);
-            new FileIOTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
-            new RegistryTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
-            new NetworkTraceEventHandler(pid, output).SubscribeToEvents(session.Source.Kernel);
+            handlers = new ITraceEventHandler[] {
+                new SystemConfigTraceEventHandler(output),
+                new FileIOTraceEventHandler(pid, output),
+                new NetworkTraceEventHandler(pid, output)
+            };
+            foreach (var handler in handlers) {
+                handler.SubscribeToEvents(session.Source.Kernel);
+            }
         }
 
         public void Start()
@@ -52,6 +57,10 @@ namespace LowLevelDesign.WinTrace
                 // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
                 Thread.Sleep(3000);
+
+                foreach (var handler in handlers) {
+                    handler.PrintStatistics();
+                }
 
                 if (disposing) {
                     session.Dispose();

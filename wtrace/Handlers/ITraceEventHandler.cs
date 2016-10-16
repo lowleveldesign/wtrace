@@ -5,5 +5,7 @@ namespace LowLevelDesign.WinTrace.Handlers
     public interface ITraceEventHandler
     {
         void SubscribeToEvents(KernelTraceEventParser kernel);
+
+        void PrintStatistics();
     }
 }

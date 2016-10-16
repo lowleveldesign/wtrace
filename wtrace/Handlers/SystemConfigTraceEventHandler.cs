@@ -1,12 +1,14 @@
 ﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.IO;
+using System.Text;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class SystemConfigTraceEventHandler : ITraceEventHandler
     {
         private readonly TextWriter output;
+        private readonly StringBuilder buffer = new StringBuilder();
 
         public SystemConfigTraceEventHandler(TextWriter output)
         {
@@ -20,21 +22,27 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;
         }
 
+        public void PrintStatistics()
+        {
+            output.WriteLine("======= System Configuration =======");
+            output.WriteLine(buffer);
+        }
+
         private void Kernel_SystemConfigCPU(SystemConfigCPUTraceData data)
         {
-            output.WriteLine($"### CONFIG CPU: {data.ComputerName} {data.DomainName} {data.MHz}MHz " +
-                $"{data.NumberOfProcessors}cores {data.MemSize}MB");
+            buffer.AppendLine($"Host: {data.ComputerName} ({data.DomainName})");
+            buffer.AppendLine($"CPU: {data.MHz}MHz {data.NumberOfProcessors}cores {data.MemSize}MB");
         }
 
         private void HandleConfigNIC(SystemConfigNICTraceData data)
         {
-            output.WriteLine($"### CONFIG NIC: {data.NICDescription} {data.IpAddresses}");
+            buffer.AppendLine($"NIC: {data.NICDescription} {data.IpAddresses}");
         }
 
         private void Kernel_SystemConfigLogDisk(SystemConfigLogDiskTraceData data)
         {
             long size = (data.BytesPerSector*data.SectorsPerCluster*data.TotalNumberOfClusters) >> 30;
-            output.WriteLine($"CONFIG LOGICAL DISK: {data.DiskNumber} {data.DriveLetterString} {data.FileSystem} " +
+            buffer.AppendLine($"LOGICAL DISK: {data.DiskNumber} {data.DriveLetterString} {data.FileSystem} " +
                 $"{size}GB");
         }
     }

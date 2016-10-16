@@ -1,16 +1,29 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using System;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using Microsoft.Diagnostics.Tracing;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class FileIOTraceEventHandler : ITraceEventHandler
     {
+        class FileIoSummary
+        {
+            public long Read;
+
+            public long Write;
+
+            public long Total;
+        }
+
         private readonly TextWriter output;
         private readonly int pid;
         private readonly Dictionary<ulong, string> fileObjectToFileNameMap = new Dictionary<ulong, string>();
+        private readonly Dictionary<string, FileIoSummary> fileIoSummary = new Dictionary<string, FileIoSummary>();
 
         public FileIOTraceEventHandler(int pid, TextWriter output)
         {
@@ -40,6 +53,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.FileIORead += HandleFileIOReadWrite;
             kernel.FileIOWrite += HandleFileIOReadWrite;
             kernel.FileIOMapFile += HandleFileIOMapFile;
+        }
+
+        public void PrintStatistics()
+        {
+            output.WriteLine("======= File I/O =======");
+            output.WriteLine("File name - Writes / Reads");
+            foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
+                output.WriteLine($"{summary.Key} - {summary.Value.Write} / {summary.Value.Read}");
+            }
         }
 
         private void HandleFileIOSimpleOp(FileIOSimpleOpTraceData data)
@@ -109,6 +131,21 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (data.ProcessID == pid) {
                 output.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileObject:X})" +
                     $" 0x{data.Offset:X} {data.IoSize}b");
+
+                if (data.FileName != null) {
+                    FileIoSummary summary;
+                    if (!fileIoSummary.TryGetValue(data.FileName, out summary)) {
+                        summary = new FileIoSummary();
+                        fileIoSummary.Add(data.FileName, summary);
+                    }
+                    if ((uint) data.EventIndex == 67) { // read
+                        summary.Read += data.IoSize;
+                        summary.Total += data.IoSize;
+                    } else if ((uint) data.EventIndex == 68) { // write
+                        summary.Write += data.IoSize;
+                        summary.Total += data.IoSize;
+                    }
+                }
             }
         }
 

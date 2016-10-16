@@ -41,6 +41,11 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.TcpIpTCPCopyIPV6 += HandleTcpIpV6;
         }
 
+        public void PrintStatistics()
+        {
+            // FIXME
+        }
+
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)
         {
             if (data.ProcessID == pid) {
