@@ -23,10 +23,10 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
-        public NetworkTraceEventHandler(int pid, TextWriter output, bool summaryOnly)
+        public NetworkTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
         {
-            summaryOutput = output;
-            traceOutput = summaryOnly ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
             this.pid = pid;
 
         }

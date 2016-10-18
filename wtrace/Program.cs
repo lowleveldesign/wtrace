@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using WinProcesses = VsChromium.Core.Win32.Processes;
 using WinHandles = VsChromium.Core.Win32.Handles;
@@ -22,14 +23,25 @@ namespace LowLevelDesign.WinTrace
             }
 
             List<string> procargs = null;
-            bool showhelp = false, spawnNewConsoleWindow = false, 
-                summaryOnly = false;
+            bool showhelp = false, spawnNewConsoleWindow = false;
+            TraceOutputOptions options = TraceOutputOptions.TracesAndSummary;
+
             int pid = 0;
 
             var p = new OptionSet
             {
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
-                { "summary", "Prints only a summary of the collected trace.", v => summaryOnly = v != null },
+                { "summary", "Prints only a summary of the collected trace.", v => {
+                    if (v != null) {
+                        options = TraceOutputOptions.OnlySummary;
+                    }
+                } },
+                { "nosummary", "Prints only ETW events - no summary at the end.", v => {
+                    if (v != null) {
+                        options = TraceOutputOptions.NoSummary;                        
+                    }
+
+                } },
                 { "h|help", "Show this message and exit", v => showhelp = v != null },
                 { "?", "Show this message and exit", v => showhelp = v != null }
             };
@@ -59,19 +71,27 @@ namespace LowLevelDesign.WinTrace
                 return;
             }
 
-            if (!int.TryParse(procargs[0], out pid)) {
-                TraceNewProcess(procargs, spawnNewConsoleWindow, summaryOnly);
-            } else {
-                TraceRunningProcess(pid, summaryOnly);
+            try {
+                if (!int.TryParse(procargs[0], out pid)) {
+                    TraceNewProcess(procargs, spawnNewConsoleWindow, options);
+                }
+                else {
+                    TraceRunningProcess(pid, options);
+                }
+            }
+            catch (COMException ex) {
+                if ((uint)ex.HResult == 0x800700B7) {
+                    Console.Error.WriteLine("ERROR: could not start the kernel logger - make sure it is not running.");
+                }
             }
         }
 
-        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, bool summaryOnly)
+        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, TraceOutputOptions options)
         {
             using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
 
-                using (var collector = new TraceCollector(process.ProcessId, Console.Out, summaryOnly)) {
+                using (var collector = new TraceCollector(process.ProcessId, Console.Out, options)) {
                     SetConsoleCtrlCHook(collector);
 
                     ThreadPool.QueueUserWorkItem((o) => {
@@ -94,14 +114,14 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        static void TraceRunningProcess(int pid, bool summaryOnly)
+        static void TraceRunningProcess(int pid, TraceOutputOptions options)
         {
             var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
             if (hProcess.IsInvalid) {
                 Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
                 return;
             }
-            using (var collector = new TraceCollector(pid, Console.Out, summaryOnly)) {
+            using (var collector = new TraceCollector(pid, Console.Out, options)) {
                 SetConsoleCtrlCHook(collector);
                 ThreadPool.QueueUserWorkItem((o) => {
                     WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
@@ -132,7 +152,7 @@ namespace LowLevelDesign.WinTrace
                 Assembly.GetExecutingAssembly().GetName().Version.ToString());
             Console.WriteLine("Copyright (C) 2016 Sebastian Solnica (@lowleveldesign)");
             Console.WriteLine();
-            Console.WriteLine("Usage: wtrace [OPTIONS] args");
+            Console.WriteLine("Usage: wtrace [OPTIONS] pid|imagename args");
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);

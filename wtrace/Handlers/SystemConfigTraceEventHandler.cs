@@ -10,9 +10,9 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly TextWriter output;
         private readonly StringBuilder buffer = new StringBuilder();
 
-        public SystemConfigTraceEventHandler(TextWriter output)
+        public SystemConfigTraceEventHandler(TextWriter output, TraceOutputOptions options)
         {
-            this.output = output;
+            this.output = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
         }
 
         public void SubscribeToEvents(KernelTraceEventParser kernel)

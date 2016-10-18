@@ -24,10 +24,10 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly Dictionary<ulong, string> fileObjectToFileNameMap = new Dictionary<ulong, string>();
         private readonly Dictionary<string, FileIoSummary> fileIoSummary = new Dictionary<string, FileIoSummary>();
 
-        public FileIOTraceEventHandler(int pid, TextWriter output, bool summaryOnly)
+        public FileIOTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
         {
-            summaryOutput = output;
-            traceOutput = summaryOnly ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
             this.pid = pid;
 
         }

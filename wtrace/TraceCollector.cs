@@ -7,7 +7,14 @@ using System.Threading;
 
 namespace LowLevelDesign.WinTrace
 {
-    class TraceCollector : IDisposable
+    enum TraceOutputOptions
+    {
+        NoSummary,
+        OnlySummary,
+        TracesAndSummary
+    }
+
+    sealed class TraceCollector : IDisposable
     {
         private readonly TraceEventSession session;
         private readonly TextWriter output;
@@ -15,7 +22,7 @@ namespace LowLevelDesign.WinTrace
         private bool disposed = false;
         private readonly ITraceEventHandler[] handlers;
 
-        public TraceCollector(int pid, TextWriter output, bool summaryOnly)
+        public TraceCollector(int pid, TextWriter output, TraceOutputOptions options)
         {
             this.output = output;
             session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
@@ -26,9 +33,10 @@ namespace LowLevelDesign.WinTrace
             session.StopOnDispose = true;
 
             handlers = new ITraceEventHandler[] {
-                new SystemConfigTraceEventHandler(output),
-                new FileIOTraceEventHandler(pid, output, summaryOnly),
-                new NetworkTraceEventHandler(pid, output, summaryOnly)
+                new SystemConfigTraceEventHandler(output, options),
+                new FileIOTraceEventHandler(pid, output, options),
+                new NetworkTraceEventHandler(pid, output, options),
+                new ProcessThreadsTraceEventHandler(pid, output, options), 
             };
             foreach (var handler in handlers) {
                 handler.SubscribeToEvents(session.Source.Kernel);
