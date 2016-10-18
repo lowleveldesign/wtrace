@@ -58,6 +58,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
                 summaryOutput.WriteLine($"{summary.Key} {summary.Value.Write:#,0} / {summary.Value.Read:#,0}");
             }
+            summaryOutput.WriteLine();
         }
 
         private void HandleFileIoSimpleOp(FileIOSimpleOpTraceData data)

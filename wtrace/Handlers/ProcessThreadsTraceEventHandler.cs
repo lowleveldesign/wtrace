@@ -29,6 +29,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             summaryOutput.WriteLine("======= Process/Thread =======");
             summaryOutput.WriteLine($"Number of child processes started: {noOfChildProcessesStarted}");
             summaryOutput.WriteLine($"Number of threads started: {noOfThreadStarted}");
+            summaryOutput.WriteLine();
         }
 
         public void SubscribeToEvents(KernelTraceEventParser kernel)

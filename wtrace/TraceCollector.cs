@@ -62,6 +62,7 @@ namespace LowLevelDesign.WinTrace
 
                 output.WriteLine("======= ETW session =======");
                 output.WriteLine($"### ETW session stopped. Number of lost events: {eventsLost:#,0}");
+                output.WriteLine();
 
                 foreach (var handler in handlers) {
                     handler.PrintStatistics();

@@ -2,6 +2,7 @@
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -80,9 +81,12 @@ namespace LowLevelDesign.WinTrace
                 }
             }
             catch (COMException ex) {
-                if ((uint)ex.HResult == 0x800700B7) {
+                if ((uint) ex.HResult == 0x800700B7) {
                     Console.Error.WriteLine("ERROR: could not start the kernel logger - make sure it is not running.");
                 }
+            }
+            catch (Win32Exception ex) {
+                Console.Error.WriteLine($"ERROR: an error occurred while trying to start or open the process, code: 0x{ex.HResult:X}");
             }
         }
 

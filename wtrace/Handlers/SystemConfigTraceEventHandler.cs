@@ -25,7 +25,8 @@ namespace LowLevelDesign.WinTrace.Handlers
         public void PrintStatistics()
         {
             output.WriteLine("======= System Configuration =======");
-            output.WriteLine(buffer);
+            output.Write(buffer);
+            output.WriteLine();
         }
 
         private void Kernel_SystemConfigCPU(SystemConfigCPUTraceData data)

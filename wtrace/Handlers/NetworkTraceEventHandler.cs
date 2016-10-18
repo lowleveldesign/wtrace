@@ -66,6 +66,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
                 summaryOutput.WriteLine($"{summary.Key} {summary.Value.Send:#,0} / {summary.Value.Recv:#,0}");
             }
+            summaryOutput.WriteLine();
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)

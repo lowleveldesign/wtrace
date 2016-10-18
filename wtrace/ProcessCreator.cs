@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
+using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using WinHandles = VsChromium.Core.Win32.Handles;
 using WinProcesses = VsChromium.Core.Win32.Processes;
 
@@ -62,8 +63,12 @@ namespace LowLevelDesign.WinTrace
 
         public void Dispose()
         {
-            hThread.Dispose();
-            hProcess.Dispose();
+            if (hThread != null) {
+                hThread.Dispose();
+            }
+            if (hProcess != null) {
+                hProcess.Dispose();
+            }
         }
     }
 }
