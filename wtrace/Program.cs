@@ -19,10 +19,17 @@ namespace LowLevelDesign.WinTrace
     {
         static ManualResetEvent stopEvent = new ManualResetEvent(false);
 
+        [System.STAThreadAttribute()]
         public static void Main(string[] args)
         {
             Unpack();
 
+            DoMain(args);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void DoMain(string[] args)
+        {
             if (TraceEventSession.IsElevated() != true) {
                 Console.Error.WriteLine("Must be elevated (Admin) to run this program.");
                 return;
