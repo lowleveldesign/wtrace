@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using WinProcesses = VsChromium.Core.Win32.Processes;
 using WinHandles = VsChromium.Core.Win32.Handles;
+using Utilities;
+using System.IO;
+using Microsoft.Diagnostics.Utilities;
 
 namespace LowLevelDesign.WinTrace
 {
@@ -18,6 +21,8 @@ namespace LowLevelDesign.WinTrace
 
         public static void Main(string[] args)
         {
+            Unpack();
+
             if (TraceEventSession.IsElevated() != true) {
                 Console.Error.WriteLine("Must be elevated (Admin) to run this program.");
                 return;
@@ -86,7 +91,11 @@ namespace LowLevelDesign.WinTrace
                 }
             }
             catch (Win32Exception ex) {
-                Console.Error.WriteLine($"ERROR: an error occurred while trying to start or open the process, code: 0x{ex.HResult:X}");
+                Console.Error.WriteLine(
+                    $"ERROR: an error occurred while trying to start or open the process, code: 0x{ex.HResult:X}");
+            }
+            catch (Exception ex) {
+                Console.Error.WriteLine($"ERROR: severe error happened when starting application: {ex.Message}");
             }
         }
 
@@ -163,5 +172,12 @@ namespace LowLevelDesign.WinTrace
             Console.WriteLine();
         }
 
+        /// <summary>
+        /// Unpacks all the support files associated with this program.   
+        /// </summary>
+        public static bool Unpack()
+        {
+            return SupportFiles.UnpackResourcesIfNeeded();
+        }
     }
 }
