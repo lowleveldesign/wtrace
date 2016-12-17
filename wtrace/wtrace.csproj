@@ -77,6 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Handlers\AlpcTraceEventHandler.cs" />
     <Compile Include="Handlers\FileIOTraceEventHandler.cs" />
     <Compile Include="Handlers\ITraceEventHandler.cs" />
     <Compile Include="Handlers\NetworkTraceEventHandler.cs" />

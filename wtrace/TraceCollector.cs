@@ -28,7 +28,7 @@ namespace LowLevelDesign.WinTrace
             session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
             session.EnableKernelProvider(
                  KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
-                | KernelTraceEventParser.Keywords.NetworkTCPIP
+                | KernelTraceEventParser.Keywords.NetworkTCPIP | KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls
             );
             session.StopOnDispose = true;
 
@@ -37,6 +37,7 @@ namespace LowLevelDesign.WinTrace
                 new FileIOTraceEventHandler(pid, output, options),
                 new NetworkTraceEventHandler(pid, output, options),
                 new ProcessThreadsTraceEventHandler(pid, output, options), 
+                new AlpcTraceEventHandler(pid, output, options)
             };
             foreach (var handler in handlers) {
                 handler.SubscribeToEvents(session.Source.Kernel);
