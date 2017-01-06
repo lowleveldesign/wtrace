@@ -1,17 +1,20 @@
-﻿using Microsoft.Diagnostics.Tracing.Session;
+﻿using LowLevelDesign.WinTrace.Handlers;
+using LowLevelDesign.WinTrace.Tracing;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Session;
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using WinProcesses = VsChromium.Core.Win32.Processes;
-using WinHandles = VsChromium.Core.Win32.Handles;
 using Utilities;
-using System.IO;
-using Microsoft.Diagnostics.Utilities;
+using WinHandles = VsChromium.Core.Win32.Handles;
+using WinProcesses = VsChromium.Core.Win32.Processes;
 
 namespace LowLevelDesign.WinTrace
 {
@@ -19,7 +22,7 @@ namespace LowLevelDesign.WinTrace
     {
         static ManualResetEvent stopEvent = new ManualResetEvent(false);
 
-        [System.STAThreadAttribute()]
+        [STAThread()]
         public static void Main(string[] args)
         {
             Unpack();
@@ -111,15 +114,20 @@ namespace LowLevelDesign.WinTrace
             using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
 
-                using (var collector = new TraceCollector(process.ProcessId, Console.Out, options)) {
-                    SetConsoleCtrlCHook(collector);
+                using (TraceCollector kernelTraceCollector = new KernelTraceCollector(process.ProcessId, Console.Out, options),
+                    userTraceCollector = new UserTraceCollector(process.ProcessId, Console.Out, options)) {
+                    SetConsoleCtrlCHook(kernelTraceCollector, userTraceCollector);
 
                     ThreadPool.QueueUserWorkItem((o) => {
-                        collector.Start();
+                        kernelTraceCollector.Start();
+                    });
+                    ThreadPool.QueueUserWorkItem((o) => {
+                        userTraceCollector.Start();
                     });
                     ThreadPool.QueueUserWorkItem((o) => {
                         process.Join();
-                        collector.Stop();
+                        kernelTraceCollector.Stop();
+                        userTraceCollector.Stop();
 
                         stopEvent.Set();
                     });
@@ -141,26 +149,36 @@ namespace LowLevelDesign.WinTrace
                 Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
                 return;
             }
-            using (var collector = new TraceCollector(pid, Console.Out, options)) {
-                SetConsoleCtrlCHook(collector);
+            using (TraceCollector kernelTraceCollector = new KernelTraceCollector(pid, Console.Out, options),
+                userTraceCollector = new UserTraceCollector(pid, Console.Out, options)) {
+                SetConsoleCtrlCHook(kernelTraceCollector, userTraceCollector);
+
                 ThreadPool.QueueUserWorkItem((o) => {
                     WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
-                    collector.Stop();
+                    kernelTraceCollector.Stop();
+                    userTraceCollector.Stop();
 
                     stopEvent.Set();
                 });
-                collector.Start();
+
+                ThreadPool.QueueUserWorkItem((o) => {
+                    kernelTraceCollector.Start();
+                });
+                ThreadPool.QueueUserWorkItem((o) => {
+                    userTraceCollector.Start();
+                });
 
                 stopEvent.WaitOne();
             }
         }
 
-        static void SetConsoleCtrlCHook(TraceCollector collector)
+        static void SetConsoleCtrlCHook(TraceCollector kernelCollector, TraceCollector userCollector)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {
                 cancelArgs.Cancel = true;
-                collector.Stop();
+                kernelCollector.Stop();
+                userCollector.Stop();
 
                 stopEvent.Set();
             };

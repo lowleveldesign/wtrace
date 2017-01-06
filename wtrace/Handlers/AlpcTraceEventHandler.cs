@@ -1,4 +1,6 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using LowLevelDesign.WinTrace.Tracing;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
@@ -11,7 +13,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly TextWriter summaryOutput;
         private readonly TextWriter traceOutput;
         private readonly int pid;
-        private readonly Dictionary<int, Tuple<int, string>> sentMessages = new Dictionary<int, Tuple<int, string>>();
+        private readonly Dictionary<int, Tuple<int, string, int>> sentMessages = new Dictionary<int, Tuple<int, string, int>>();
         private readonly HashSet<string> connectedProcesses = new HashSet<string>();
 
         public AlpcTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
@@ -21,8 +23,9 @@ namespace LowLevelDesign.WinTrace.Handlers
             this.pid = pid;
         }
 
-        public void SubscribeToEvents(KernelTraceEventParser kernel)
+        public void SubscribeToEvents(TraceEventParser parser)
         {
+            var kernel = (KernelTraceEventParser)parser;
             kernel.ALPCReceiveMessage += HandleALPCReceiveMessage;
             kernel.ALPCSendMessage += HandleALPCSendMessage;
             //kernel.ALPCUnwait += HandleALPCUnwait;
@@ -32,7 +35,7 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         private void HandleALPCWaitForReply(ALPCWaitForReplyTraceData data)
         {
-            UpdateCache(data.ProcessID, data.ProcessName, data.MessageID);
+            UpdateCache(data.ProcessID, data.ProcessName, data.ThreadID, data.MessageID);
 
             if (pid == data.ProcessID) {
                 traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} (0x{data.MessageID:X})");
@@ -41,31 +44,31 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         private void HandleALPCSendMessage(ALPCSendMessageTraceData data)
         {
-            UpdateCache(data.ProcessID, data.ProcessName, data.MessageID);
+            UpdateCache(data.ProcessID, data.ProcessName, data.ThreadID, data.MessageID);
         }
 
         private void HandleALPCReceiveMessage(ALPCReceiveMessageTraceData data)
         {
-            Tuple<int, string> senderProcess;
+            Tuple<int, string, int> senderProcess;
             if (sentMessages.TryGetValue(data.MessageID, out senderProcess)) {
                 if (data.ProcessID == pid) {
                     connectedProcesses.Add($"{senderProcess.Item2} ({senderProcess.Item1})");
-                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ALPC {data.ProcessName} ({data.ProcessID}) " +
-                        $"<--(0x{data.MessageID:X})--- {senderProcess.Item2} ({senderProcess.Item1})");
+                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ALPC {data.ProcessName} ({data.ProcessID}.{data.ThreadID}) " +
+                        $"<--(0x{data.MessageID:X})--- {senderProcess.Item2} ({senderProcess.Item1}.{senderProcess.Item3})");
                 } else if (senderProcess.Item1 == pid) {
-                    connectedProcesses.Add($"{data.ProcessName} ({data.ProcessID})");
-                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ALPC {senderProcess.Item2} ({senderProcess.Item1}) " +
-                        $"---(0x{data.MessageID:X})--> {data.ProcessName} ({data.ProcessID})");
+                    connectedProcesses.Add($"{data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
+                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ALPC {senderProcess.Item2} ({senderProcess.Item1}.{senderProcess.Item3}) " +
+                        $"---(0x{data.MessageID:X})--> {data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
                 }
             }
         }
 
-        private void UpdateCache(int processId, string processName, int messageId)
+        private void UpdateCache(int processId, string processName, int threadId, int messageId)
         {
             if (sentMessages.ContainsKey(messageId)) {
-                sentMessages[messageId] = new Tuple<int, string>(processId, processName);
+                sentMessages[messageId] = new Tuple<int, string, int>(processId, processName, threadId);
             } else {
-                sentMessages.Add(messageId, new Tuple<int, string>(processId, processName));
+                sentMessages.Add(messageId, new Tuple<int, string, int>(processId, processName, threadId));
             }
         }
 

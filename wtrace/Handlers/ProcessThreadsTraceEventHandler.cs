@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using LowLevelDesign.WinTrace.Tracing;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.IO;
@@ -32,8 +29,9 @@ namespace LowLevelDesign.WinTrace.Handlers
             summaryOutput.WriteLine();
         }
 
-        public void SubscribeToEvents(KernelTraceEventParser kernel)
+        public void SubscribeToEvents(TraceEventParser parser)
         {
+            var kernel = (KernelTraceEventParser)parser;
             kernel.ProcessStart += HandleProcessStart;
             kernel.ThreadStart += HandleThreadStart;
         }

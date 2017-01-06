@@ -4,6 +4,8 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.IO;
 using System.Linq;
 using System.Net;
+using Microsoft.Diagnostics.Tracing;
+using LowLevelDesign.WinTrace.Tracing;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -31,8 +33,9 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         }
 
-        public void SubscribeToEvents(KernelTraceEventParser kernel)
+        public void SubscribeToEvents(TraceEventParser parser)
         {
+            var kernel = (KernelTraceEventParser)parser;
             kernel.TcpIpAccept += HandleTcpIpConnect;
             kernel.TcpIpAcceptIPV6 += HandleTcpIpV6Connect;
             kernel.TcpIpARPCopy += HandleTcpIp;

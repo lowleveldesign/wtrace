@@ -2,6 +2,9 @@
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.IO;
 using System.Text;
+using Microsoft.Diagnostics.Tracing;
+using System;
+using LowLevelDesign.WinTrace.Tracing;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -15,8 +18,9 @@ namespace LowLevelDesign.WinTrace.Handlers
             this.output = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
         }
 
-        public void SubscribeToEvents(KernelTraceEventParser kernel)
+        public void SubscribeToEvents(TraceEventParser parser)
         {
+            var kernel = (KernelTraceEventParser)parser;
             kernel.SystemConfigCPU += Kernel_SystemConfigCPU;
             kernel.SystemConfigNIC += HandleConfigNIC;
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;

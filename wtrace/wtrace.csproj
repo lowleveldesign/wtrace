@@ -76,17 +76,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Events\RPCEvents.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Handlers\AlpcTraceEventHandler.cs" />
     <Compile Include="Handlers\FileIOTraceEventHandler.cs" />
     <Compile Include="Handlers\ITraceEventHandler.cs" />
     <Compile Include="Handlers\NetworkTraceEventHandler.cs" />
     <Compile Include="Handlers\ProcessThreadsTraceEventHandler.cs" />
+    <Compile Include="Handlers\RpcTraceEventHandler.cs" />
     <Compile Include="Handlers\SystemConfigTraceEventHandler.cs" />
     <Compile Include="ProcessCreator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TraceCollector.cs" />
+    <Compile Include="Tracing\KernelTraceCollector.cs" />
+    <Compile Include="Tracing\TraceCollector.cs" />
+    <Compile Include="Tracing\UserTraceCollector.cs" />
     <Compile Include="Utilities\DirectoryUtilities.cs" />
     <Compile Include="Utilities\FileUtilities.cs" />
     <Compile Include="Utilities\ResourceUtilities.cs" />
@@ -149,6 +153,7 @@
     <Content Include="TraceEvent.ReadMe.txt" />
     <Content Include="TraceEvent.ReleaseNotes.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

@@ -1,4 +1,6 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using LowLevelDesign.WinTrace.Tracing;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Collections.Generic;
 using System.IO;
@@ -32,8 +34,9 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         }
 
-        public void SubscribeToEvents(KernelTraceEventParser kernel)
+        public void SubscribeToEvents(TraceEventParser parser)
         {
+            var kernel = (KernelTraceEventParser)parser;
             kernel.FileIOClose += HandleFileIoSimpleOp;
             kernel.FileIOFlush += HandleFileIoSimpleOp;
             kernel.FileIOCreate += HandleFileIoCreate;
