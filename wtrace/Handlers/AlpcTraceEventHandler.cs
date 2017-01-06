@@ -56,7 +56,7 @@ namespace LowLevelDesign.WinTrace.Handlers
                     traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) ALPC {data.ProcessName} " +
                         $"<--(0x{data.MessageID:X})--- {senderProcess.Item2} ({senderProcess.Item1}.{senderProcess.Item3})");
                 } else if (senderProcess.Item1 == pid) {
-                    connectedProcesses.Add($"{data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
+                    connectedProcesses.Add($"{data.ProcessName} ({data.ProcessID})");
                     traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({senderProcess.Item1}.{senderProcess.Item3}) ALPC {senderProcess.Item2} " +
                         $"---(0x{data.MessageID:X})--> {data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
                 }
