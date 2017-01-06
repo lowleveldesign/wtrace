@@ -39,7 +39,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleThreadStart(ThreadTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
                     $"{data.ParentProcessID} ({data.ParentThreadID})");
                 noOfThreadStarted++;
             }
@@ -48,7 +48,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleProcessStart(ProcessTraceData data)
         {
             if (data.ParentID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} " + 
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
                     $"{data.ProcessID} '{data.CommandLine}'");
                 noOfChildProcessesStarted++;
             }

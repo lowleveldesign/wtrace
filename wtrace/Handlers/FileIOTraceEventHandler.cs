@@ -71,7 +71,7 @@ namespace LowLevelDesign.WinTrace.Handlers
                 string fileName;
                 fileObjectToFileNameMap.TryGetValue(fileObject, out fileName);
 
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X})");
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X})");
             }
         }
 
@@ -85,7 +85,7 @@ namespace LowLevelDesign.WinTrace.Handlers
                     fileObjectToFileNameMap.Add(fileObject, fileName);
                 }
 
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X}) " +
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X}) " +
                     GenerateFileShareMask(data.ShareAccess) + GenerateFileAttributeMask(data.FileAttributes));
             }
         }
@@ -97,28 +97,28 @@ namespace LowLevelDesign.WinTrace.Handlers
                 string fileName;
                 fileObjectToFileNameMap.TryGetValue(fileObject, out fileName);
 
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X})");
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{fileName}' (0x{fileObject:X})");
             }
         }
 
         private void HandleFileIoName(FileIONameTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileKey:X})");
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileKey:X})");
             }
         }
 
         private void HandleFileIoMapFile(MapFileTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileKey:X})");
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileKey:X})");
             }
         }
 
         private void HandleFileIoReadWrite(FileIOReadWriteTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileObject:X})" +
+                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} '{data.FileName}' (0x{data.FileObject:X})" +
                     $" 0x{data.Offset:X} {data.IoSize}b");
 
                 if (data.FileName != null) {
