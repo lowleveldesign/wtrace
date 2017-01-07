@@ -1,14 +1,10 @@
-﻿using LowLevelDesign.WinTrace.Handlers;
-using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using LowLevelDesign.WinTrace.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;

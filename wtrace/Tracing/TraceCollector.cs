@@ -39,15 +39,14 @@ namespace LowLevelDesign.WinTrace.Tracing
             if (traceSession.IsActive) {
                 int eventsLost = traceSession.EventsLost;
 
-                output.WriteLine("### Stopping ETW session...");
+                output.WriteLine($"### Stopping {traceSession.SessionName} session...");
                 traceSession.Stop();
 
                 // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
                 Thread.Sleep(1500);
 
-                output.WriteLine("======= ETW session =======");
-                output.WriteLine($"### ETW session stopped. Number of lost events: {eventsLost:#,0}");
+                output.WriteLine($"### {traceSession.SessionName} session stopped. Number of lost events: {eventsLost:#,0}");
                 output.WriteLine();
 
                 foreach (var handler in eventHandlers) {

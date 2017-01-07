@@ -102,8 +102,10 @@ namespace LowLevelDesign.WinTrace.Handlers
                     rpcConnectionInfo);
 
                 if (data.Protocol == ProtocolSequences.LRPC) {
-                    awaitingClientCalls.Add(new Tuple<Guid, string, int>(
-                        data.InterfaceUuid, data.Endpoint, data.ProcNum), $"{data.ProcessID}.{data.ThreadID}");
+                    var key = new Tuple<Guid, string, int>(data.InterfaceUuid, data.Endpoint, data.ProcNum);
+                    if (!awaitingClientCalls.ContainsKey(key)) {
+                        awaitingClientCalls.Add(key, $"{data.ProcessID}.{data.ThreadID}");
+                    }
                 }
 
                 IncrementStatistics($"{data.InterfaceUuid} ({data.Endpoint})");
