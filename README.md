@@ -73,10 +73,7 @@ Number of child processes started: 0
 Number of threads started: 7
 ```
 
-In the [wiki](https://github.com/lowleveldesign/wtrace/wiki) you may find information:
-
-- [how to filter the wtrace output](https://github.com/lowleveldesign/wtrace/wiki/Filtering-Output)
-- [how to trace RPC calls](https://github.com/lowleveldesign/wtrace/wiki/Tracing-RPC)
+**Please visit the project [wiki](https://github.com/lowleveldesign/wtrace/wiki) to learn more**
 
 ## Links
 
