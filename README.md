@@ -1,5 +1,5 @@
 
-# Wtrace
+# wtrace
 
 This application will trace in real-time all File I/O, TCP IP, ALPC and RPC operations performed by a given process. It works on Windows 7+ and requires .NET 4.5.2+. Wtrace stops when the traced process exits, or if you issue Ctrl+C (Ctrl+Break in Powershell, when pipes are used) in its command line.
 
@@ -73,10 +73,10 @@ Number of child processes started: 0
 Number of threads started: 7
 ```
 
-In the [wiki](https://github.com/lowleveldesign/wtrace/wiki) you may find information on:
+In the [wiki](https://github.com/lowleveldesign/wtrace/wiki) you may find information:
 
-- [filtering the wtrace output](https://github.com/lowleveldesign/wtrace/wiki/Filtering-Output)
-- [tracing RPC calls](https://github.com/lowleveldesign/wtrace/wiki/Tracing-RPC)
+- [how to filter the wtrace output](https://github.com/lowleveldesign/wtrace/wiki/Filtering-Output)
+- [how to trace RPC calls](https://github.com/lowleveldesign/wtrace/wiki/Tracing-RPC)
 
 ## Links
 
