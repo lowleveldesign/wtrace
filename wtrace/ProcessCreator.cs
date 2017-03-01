@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using WinHandles = VsChromium.Core.Win32.Handles;
@@ -31,7 +32,7 @@ namespace LowLevelDesign.WinTrace
 
             if (!WinProcesses.NativeMethods.CreateProcess(null, new StringBuilder(string.Join(" ", args)), null, null, false,
                         processCreationFlags, null, null, si, pi)) {
-                throw new Win32Exception("Error while creating a new process.");
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
             hProcess = new WinProcesses.SafeProcessHandle(pi.hProcess);
