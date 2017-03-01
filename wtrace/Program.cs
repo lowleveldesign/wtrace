@@ -98,7 +98,8 @@ namespace LowLevelDesign.WinTrace
             }
             catch (Win32Exception ex) {
                 Console.Error.WriteLine(
-                    $"ERROR: an error occurred while trying to start or open the process, code: 0x{ex.HResult:X}\nErrorCode: 0x{ex.NativeErrorCode:X8}: {ex.Message}." );
+                    $"ERROR: an error occurred while trying to start or open the process, hr: 0x{ex.HResult:X8}, " + 
+                        $"code: 0x{ex.NativeErrorCode:X8} ({ex.Message})." );
             }
             catch (Exception ex) {
                 Console.Error.WriteLine($"ERROR: severe error happened when starting application: {ex.Message}");
