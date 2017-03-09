@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using WinHandles = VsChromium.Core.Win32.Handles;
 using WinProcesses = VsChromium.Core.Win32.Processes;
 
-namespace LowLevelDesign.WinTrace
+namespace LowLevelDesign.WinTrace.Tracing
 {
     class ProcessCreator : IDisposable
     {

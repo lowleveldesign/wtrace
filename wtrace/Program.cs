@@ -7,16 +7,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Utilities;
-using WinHandles = VsChromium.Core.Win32.Handles;
-using WinProcesses = VsChromium.Core.Win32.Processes;
 
 namespace LowLevelDesign.WinTrace
 {
     static class Program
     {
-        static ManualResetEvent stopEvent = new ManualResetEvent(false);
+        static ProcessTraceRunner processTraceRunner;
 
         [STAThread()]
         public static void Main(string[] args)
@@ -83,12 +80,13 @@ namespace LowLevelDesign.WinTrace
                 return;
             }
 
+            processTraceRunner = new ProcessTraceRunner(options);
             try {
                 if (!int.TryParse(procargs[0], out pid)) {
-                    TraceNewProcess(procargs, spawnNewConsoleWindow, options);
+                    processTraceRunner.TraceNewProcess(procargs, spawnNewConsoleWindow);
                 }
                 else {
-                    TraceRunningProcess(pid, options);
+                    processTraceRunner.TraceRunningProcess(pid);
                 }
             }
             catch (COMException ex) {
@@ -106,78 +104,12 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        static void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, TraceOutputOptions options)
-        {
-            using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
-                process.StartSuspended();
-
-                using (TraceCollector kernelTraceCollector = new KernelTraceCollector(process.ProcessId, Console.Out, options),
-                    userTraceCollector = new UserTraceCollector(process.ProcessId, Console.Out, options)) {
-                    SetConsoleCtrlCHook(kernelTraceCollector, userTraceCollector);
-
-                    ThreadPool.QueueUserWorkItem((o) => {
-                        kernelTraceCollector.Start();
-                    });
-                    ThreadPool.QueueUserWorkItem((o) => {
-                        userTraceCollector.Start();
-                    });
-                    ThreadPool.QueueUserWorkItem((o) => {
-                        process.Join();
-                        kernelTraceCollector.Stop();
-                        userTraceCollector.Stop();
-
-                        stopEvent.Set();
-                    });
-
-                    Thread.Sleep(1000);
-
-                    // resume thread
-                    process.Resume();
-
-                    stopEvent.WaitOne();
-                }
-            }
-        }
-
-        static void TraceRunningProcess(int pid, TraceOutputOptions options)
-        {
-            var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid);
-            if (hProcess.IsInvalid) {
-                Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
-                return;
-            }
-            using (TraceCollector kernelTraceCollector = new KernelTraceCollector(pid, Console.Out, options),
-                userTraceCollector = new UserTraceCollector(pid, Console.Out, options)) {
-                SetConsoleCtrlCHook(kernelTraceCollector, userTraceCollector);
-
-                ThreadPool.QueueUserWorkItem((o) => {
-                    WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
-                    kernelTraceCollector.Stop();
-                    userTraceCollector.Stop();
-
-                    stopEvent.Set();
-                });
-
-                ThreadPool.QueueUserWorkItem((o) => {
-                    kernelTraceCollector.Start();
-                });
-                ThreadPool.QueueUserWorkItem((o) => {
-                    userTraceCollector.Start();
-                });
-
-                stopEvent.WaitOne();
-            }
-        }
-
         static void SetConsoleCtrlCHook(TraceCollector kernelCollector, TraceCollector userCollector)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {
                 cancelArgs.Cancel = true;
-                kernelCollector.Stop();
-                userCollector.Stop();
-
-                stopEvent.Set();
+                processTraceRunner.Stop();
             };
         }
 
