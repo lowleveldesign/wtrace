@@ -13,8 +13,6 @@ namespace LowLevelDesign.WinTrace
 {
     static class Program
     {
-        static ProcessTraceRunner processTraceRunner;
-
         [STAThread()]
         public static void Main(string[] args)
         {
@@ -80,7 +78,10 @@ namespace LowLevelDesign.WinTrace
                 return;
             }
 
-            processTraceRunner = new ProcessTraceRunner(options);
+            var processTraceRunner = new ProcessTraceRunner(options);
+
+            SetConsoleCtrlCHook(processTraceRunner);
+
             try {
                 if (!int.TryParse(procargs[0], out pid)) {
                     processTraceRunner.TraceNewProcess(procargs, spawnNewConsoleWindow);
@@ -104,7 +105,7 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        static void SetConsoleCtrlCHook(TraceCollector kernelCollector, TraceCollector userCollector)
+        static void SetConsoleCtrlCHook(ProcessTraceRunner processTraceRunner)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {

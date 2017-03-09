@@ -10,6 +10,7 @@ namespace LowLevelDesign.WinTrace.Tracing
     {
         private readonly ManualResetEvent stopEvent = new ManualResetEvent(false);
         private readonly TraceOutputOptions traceOutputOptions;
+        private Action stopTraceCollectors;
 
         public ProcessTraceRunner(TraceOutputOptions traceOutputOptions)
         {
@@ -25,17 +26,23 @@ namespace LowLevelDesign.WinTrace.Tracing
                     userTraceCollector = new UserTraceCollector(process.ProcessId, Console.Out, traceOutputOptions)) {
 
                     ThreadPool.QueueUserWorkItem((o) => {
-                        kernelTraceCollector.Start();
-                    });
-                    ThreadPool.QueueUserWorkItem((o) => {
-                        userTraceCollector.Start();
-                    });
-                    ThreadPool.QueueUserWorkItem((o) => {
                         process.Join();
                         kernelTraceCollector.Stop();
                         userTraceCollector.Stop();
 
                         stopEvent.Set();
+                    });
+
+                    stopTraceCollectors = () => {
+                        kernelTraceCollector.Stop();
+                        userTraceCollector.Stop();
+                    };
+
+                    ThreadPool.QueueUserWorkItem((o) => {
+                        kernelTraceCollector.Start();
+                    });
+                    ThreadPool.QueueUserWorkItem((o) => {
+                        userTraceCollector.Start();
                     });
 
                     Thread.Sleep(1000);
@@ -66,6 +73,11 @@ namespace LowLevelDesign.WinTrace.Tracing
                         stopEvent.Set();
                     });
 
+                    stopTraceCollectors = () => {
+                        kernelTraceCollector.Stop();
+                        userTraceCollector.Stop();
+                    };
+
                     ThreadPool.QueueUserWorkItem((o) => {
                         kernelTraceCollector.Start();
                     });
@@ -80,6 +92,11 @@ namespace LowLevelDesign.WinTrace.Tracing
 
         public void Stop()
         {
+            if (stopTraceCollectors != null) {
+                stopTraceCollectors();
+                stopTraceCollectors = null;
+            }
+
             stopEvent.Set();
         }
     }

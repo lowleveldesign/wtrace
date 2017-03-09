@@ -80,7 +80,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Events\RPCEvents.cs" />
+    <Compile Include="Tracing\Events\RPCEvents.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Handlers\AlpcTraceEventHandler.cs" />
     <Compile Include="Handlers\FileIOTraceEventHandler.cs" />
