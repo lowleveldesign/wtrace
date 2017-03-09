@@ -117,7 +117,7 @@ namespace LowLevelDesign.WinTrace
         {
             Console.WriteLine("wtrace v{0} - collects traces of Windows processes",
                 Assembly.GetExecutingAssembly().GetName().Version.ToString());
-            Console.WriteLine("Copyright (C) 2016 Sebastian Solnica (@lowleveldesign)");
+            Console.WriteLine("Copyright (C) 2017 Sebastian Solnica (@lowleveldesign)");
             Console.WriteLine();
             Console.WriteLine("Usage: wtrace [OPTIONS] pid|imagename args");
             Console.WriteLine();

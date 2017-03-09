@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace VsChromium.Core.Win32.Interop
 {
     [StructLayout(LayoutKind.Sequential)]
-    public class SecurityAttributes
+    class SecurityAttributes
     {
         public int nLength;
         public IntPtr lpSecurityDescriptor;

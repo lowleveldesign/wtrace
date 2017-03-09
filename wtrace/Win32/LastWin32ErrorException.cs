@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace VsChromium.Core.Win32 {
-  public class LastWin32ErrorException : Win32Exception {
+  class LastWin32ErrorException : Win32Exception {
     public LastWin32ErrorException()
       : base(Marshal.GetLastWin32Error()) {
     }

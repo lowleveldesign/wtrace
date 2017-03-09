@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.Utilities;
 
 namespace Utilities
 {
-    public class ResourceUtilities
+    class ResourceUtilities
     {
         public static bool UnpackResourceAsFile(string resourceName, string targetFileName)
         {

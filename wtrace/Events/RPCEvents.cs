@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC;
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
-    public sealed class MicrosoftWindowsRPCTraceEventParser : TraceEventParser 
+    sealed class MicrosoftWindowsRPCTraceEventParser : TraceEventParser 
     {
         public static string ProviderName = "Microsoft-Windows-RPC";
         public static Guid ProviderGuid = new Guid(unchecked((int) 0x6ad52b32), unchecked((short) 0xd609), unchecked((short) 0x4be9), 0xae, 0x07, 0xce, 0x8d, 0xae, 0x93, 0x7e, 0x39);
@@ -256,7 +256,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
 {
-    public sealed class Args : TraceEvent
+    sealed class Args : TraceEvent
     {
         public int Status { get { return GetInt32At(0); } }
 
@@ -313,7 +313,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<Args> m_target;
         #endregion
     }
-    public sealed class Args3 : TraceEvent
+    sealed class Args3 : TraceEvent
     {
         public string ImageName { get { return GetUnicodeStringAt(0); } }
         public int DetectionLocation { get { return GetInt16At(SkipUnicodeString(0)); } }
@@ -386,7 +386,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<Args3> m_target;
         #endregion
     }
-    public sealed class DebugArgs : TraceEvent
+    sealed class DebugArgs : TraceEvent
     {
         public long SubjectPointer { get { return GetInt64At(0); } }
         public int FragmentSize { get { return GetInt32At(8); } }
@@ -448,7 +448,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<DebugArgs> m_target;
         #endregion
     }
-    public sealed class Debug10Args : TraceEvent
+    sealed class Debug10Args : TraceEvent
     {
         public long SubjectPointer { get { return GetInt64At(0); } }
         public int FragmentSize { get { return GetInt32At(8); } }
@@ -510,7 +510,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<Debug10Args> m_target;
         #endregion
     }
-    public sealed class Debug4Args : TraceEvent
+    sealed class Debug4Args : TraceEvent
     {
         public SubjectTypes Subject { get { return (SubjectTypes)GetByteAt(0); } }
         public EventTypes Verb { get { return (EventTypes)GetByteAt(1); } }
@@ -583,7 +583,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<Debug4Args> m_target;
         #endregion
     }
-    public sealed class DebugStartArgs : TraceEvent
+    sealed class DebugStartArgs : TraceEvent
     {
         public RpcHttp2ObjectTypes ObjectType { get { return (RpcHttp2ObjectTypes)GetInt32At(0); } }
         public RpcHttp2Operations Operation { get { return (RpcHttp2Operations)GetInt32At(4); } }
@@ -652,7 +652,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<DebugStartArgs> m_target;
         #endregion
     }
-    public sealed class DebugStopArgs : TraceEvent
+    sealed class DebugStopArgs : TraceEvent
     {
         public RpcHttp2ObjectTypes ObjectType { get { return (RpcHttp2ObjectTypes)GetInt32At(0); } }
         public RpcHttp2Operations Operation { get { return (RpcHttp2Operations)GetInt32At(4); } }
@@ -721,7 +721,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<DebugStopArgs> m_target;
         #endregion
     }
-    public sealed class RpcClientCallStartArgs : TraceEvent
+    sealed class RpcClientCallStartArgs : TraceEvent
     {
         public Guid InterfaceUuid { get { return GetGuidAt(0); } }
         public int ProcNum { get { return GetInt32At(16); } }
@@ -810,7 +810,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<RpcClientCallStartArgs> m_target;
         #endregion
     }
-    public sealed class RpcClientCallStopArgs : TraceEvent
+    sealed class RpcClientCallStopArgs : TraceEvent
     {
         public int Status { get { return GetInt32At(0); } }
 
@@ -867,7 +867,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<RpcClientCallStopArgs> m_target;
         #endregion
     }
-    public sealed class RpcClientCallStop1Args : TraceEvent
+    sealed class RpcClientCallStop1Args : TraceEvent
     {
         public string ImageName { get { return GetUnicodeStringAt(0); } }
         public string ComputerName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
@@ -978,7 +978,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<RpcClientCallStop1Args> m_target;
         #endregion
     }
-    public sealed class RpcServerCallArgs : TraceEvent
+    sealed class RpcServerCallArgs : TraceEvent
     {
         public string ImangeName { get { return GetUnicodeStringAt(0); } }
         public Guid InterfaceUuid { get { return GetGuidAt(SkipUnicodeString(0)); } }
@@ -1043,7 +1043,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<RpcServerCallArgs> m_target;
         #endregion
     }
-    public sealed class RpcServerCallStartArgs : TraceEvent
+    sealed class RpcServerCallStartArgs : TraceEvent
     {
         public Guid InterfaceUuid { get { return GetGuidAt(0); } }
         public int ProcNum { get { return GetInt32At(16); } }
@@ -1132,7 +1132,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
         private event Action<RpcServerCallStartArgs> m_target;
         #endregion
     }
-    public sealed class RpcServerCallStopArgs : TraceEvent
+    sealed class RpcServerCallStopArgs : TraceEvent
     {
         public int Status { get { return GetInt32At(0); } }
 

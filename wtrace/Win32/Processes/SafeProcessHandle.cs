@@ -6,7 +6,7 @@ using System;
 using Microsoft.Win32.SafeHandles;
 
 namespace VsChromium.Core.Win32.Processes {
-  public sealed class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid {
+  sealed class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid {
     public SafeProcessHandle()
       : base(true) {
     }

@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace VsChromium.Core.Win32.Processes {
   [StructLayout(LayoutKind.Sequential)]
-  public class STARTUPINFO : IDisposable {
+  class STARTUPINFO : IDisposable {
     public int cb;
     public IntPtr lpReserved = IntPtr.Zero;
     public IntPtr lpDesktop = IntPtr.Zero;

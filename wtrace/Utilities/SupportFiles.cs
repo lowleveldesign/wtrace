@@ -171,7 +171,6 @@ namespace Utilities
                     // of some other EXE.   This means that SupportFiles.cs needs to be in the main exe.  
                     var exeAssembly = Assembly.GetExecutingAssembly();
                     s_exePath = exeAssembly.ManifestModule.FullyQualifiedName;
-                    Debug.Assert(s_exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
                 }
                 return s_exePath;
             }

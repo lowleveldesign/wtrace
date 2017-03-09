@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace VsChromium.Core.Win32.Processes {
   [StructLayout(LayoutKind.Sequential)]
-  public class PROCESS_INFORMATION {
+  class PROCESS_INFORMATION {
     /// <summary>
     /// Handle to the created process. The caller *must* call CloseHandle to avoid leaks.
     /// </summary>

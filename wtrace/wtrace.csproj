@@ -89,7 +89,8 @@
     <Compile Include="Handlers\ProcessThreadsTraceEventHandler.cs" />
     <Compile Include="Handlers\RpcTraceEventHandler.cs" />
     <Compile Include="Handlers\SystemConfigTraceEventHandler.cs" />
-    <Compile Include="InvokeWtraceCommand.cs" />
+    <Compile Include="PowerShell\InvokeWtraceCommand.cs" />
+    <Compile Include="PowerShell\PowershellModuleAssemblyInitializer.cs" />
     <Compile Include="Tracing\ProcessCreator.cs" />
     <Compile Include="Tracing\ProcessTraceRunner.cs" />
     <Compile Include="Program.cs" />
