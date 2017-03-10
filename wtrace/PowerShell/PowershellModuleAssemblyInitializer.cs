@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LowLevelDesign.WinTrace.PowerShell
 {
-    public class PowershellModuleAssemblyInitializer : IModuleAssemblyInitializer
+    public class PowerShellModuleAssemblyInitializer : IModuleAssemblyInitializer
     {
         public void OnImport()
         {

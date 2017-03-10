@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 
@@ -10,6 +11,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
 {
 
     [Cmdlet("Invoke", "Wtrace", DefaultParameterSetName = "StartNewProcess")]
+    [OutputType(typeof(PSWtraceEvent))]
     public class InvokeWtraceCommand : PSCmdlet
     {
         ProcessTraceRunner processTraceRunner;
@@ -60,8 +62,11 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 WriteError(errorRecord);
                 return;
             }
-            // FIXME trace output options
-            processTraceRunner = new ProcessTraceRunner(TraceOutputOptions.TracesAndSummary);
+
+            // for trace events
+            //Trace.Listeners.Add(new PowerShellVerboseTraceListener(this));
+
+            processTraceRunner = new ProcessTraceRunner(new PowerShellTraceOutput(this), TraceOutputOptions.TracesAndSummary);
             try {
                 if (string.Equals(ParameterSetName, "StartNewProcess", StringComparison.Ordinal)) {
                     var args = new List<string>() { FilePath };

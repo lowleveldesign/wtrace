@@ -2,6 +2,7 @@
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -18,15 +19,13 @@ namespace LowLevelDesign.WinTrace.Tracing
     {
         private bool disposed = false;
 
-        protected readonly TextWriter output;
         protected readonly TraceEventSession traceSession;
         protected readonly List<ITraceEventHandler> eventHandlers;
 
-        public TraceCollector(TraceEventSession session, TextWriter output)
+        public TraceCollector(TraceEventSession session)
         {
-            this.output = output;
-            this.traceSession = session;
-            this.eventHandlers = new List<ITraceEventHandler>();
+            traceSession = session;
+            eventHandlers = new List<ITraceEventHandler>();
         }
 
         public void Start()
@@ -39,18 +38,17 @@ namespace LowLevelDesign.WinTrace.Tracing
             if (traceSession.IsActive) {
                 int eventsLost = traceSession.EventsLost;
 
-                output.WriteLine($"### Stopping {traceSession.SessionName} session...");
+                Trace.WriteLine($"### Stopping {traceSession.SessionName} session...");
                 traceSession.Stop();
 
                 // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
                 Thread.Sleep(1500);
 
-                output.WriteLine($"### {traceSession.SessionName} session stopped. Number of lost events: {eventsLost:#,0}");
-                output.WriteLine();
+                Trace.WriteLine($"### {traceSession.SessionName} session stopped. Number of lost events: {eventsLost:#,0}");
 
                 foreach (var handler in eventHandlers) {
-                    handler.PrintStatistics();
+                    handler.PrintStatistics(traceSession.Source.SessionEndTimeRelativeMSec);
                 }
             }
         }

@@ -80,6 +80,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TraceOutput.cs" />
+    <Compile Include="PowerShell\PowerShellTraceOutput.cs" />
     <Compile Include="Tracing\Events\RPCEvents.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Handlers\AlpcTraceEventHandler.cs" />
@@ -90,7 +92,7 @@
     <Compile Include="Handlers\RpcTraceEventHandler.cs" />
     <Compile Include="Handlers\SystemConfigTraceEventHandler.cs" />
     <Compile Include="PowerShell\InvokeWtraceCommand.cs" />
-    <Compile Include="PowerShell\PowershellModuleAssemblyInitializer.cs" />
+    <Compile Include="PowerShell\PowerShellModuleAssemblyInitializer.cs" />
     <Compile Include="Tracing\ProcessCreator.cs" />
     <Compile Include="Tracing\ProcessTraceRunner.cs" />
     <Compile Include="Program.cs" />

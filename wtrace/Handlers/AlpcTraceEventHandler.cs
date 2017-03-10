@@ -10,16 +10,16 @@ namespace LowLevelDesign.WinTrace.Handlers
 {
     class AlpcTraceEventHandler : ITraceEventHandler
     {
-        private readonly TextWriter summaryOutput;
-        private readonly TextWriter traceOutput;
+        private readonly ITraceOutput summaryOutput;
+        private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<int, Tuple<int, string, int>> sentMessages = new Dictionary<int, Tuple<int, string, int>>();
         private readonly HashSet<string> connectedProcesses = new HashSet<string>();
 
-        public AlpcTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
+        public AlpcTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
             this.pid = pid;
         }
 
@@ -38,7 +38,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             UpdateCache(data.ProcessID, data.ProcessName, data.ThreadID, data.MessageID);
 
             if (pid == data.ProcessID) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}{data.ThreadID}) {data.EventName} (0x{data.MessageID:X})");
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, $"(0x{data.MessageID:X})");
             }
         }
 
@@ -53,12 +53,12 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (sentMessages.TryGetValue(data.MessageID, out senderProcess)) {
                 if (data.ProcessID == pid) {
                     connectedProcesses.Add($"{senderProcess.Item2} ({senderProcess.Item1})");
-                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) ALPC {data.ProcessName} " +
-                        $"<--(0x{data.MessageID:X})--- {senderProcess.Item2} ({senderProcess.Item1}.{senderProcess.Item3})");
+                    traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, "ALPC", 
+                        $"{data.ProcessName} <--(0x{data.MessageID:X})--- {senderProcess.Item2} ({senderProcess.Item1}.{senderProcess.Item3})");
                 } else if (senderProcess.Item1 == pid) {
                     connectedProcesses.Add($"{data.ProcessName} ({data.ProcessID})");
-                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({senderProcess.Item1}.{senderProcess.Item3}) ALPC {senderProcess.Item2} " +
-                        $"---(0x{data.MessageID:X})--> {data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
+                    traceOutput.Write(data.TimeStampRelativeMSec, senderProcess.Item1, senderProcess.Item3, "ALPC", 
+                        $"{senderProcess.Item2} ---(0x{data.MessageID:X})--> {data.ProcessName} ({data.ProcessID}.{data.ThreadID})");
                 }
             }
         }
@@ -72,17 +72,14 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
         {
             if (connectedProcesses.Count == 0) {
                 return;
             }
-            summaryOutput.WriteLine("======= ALPC =======");
-            summaryOutput.WriteLine("Filtered process connected through ALPC with:");
             foreach (var process in connectedProcesses) {
-                summaryOutput.WriteLine($"- {process}");
+                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/ALPC", $"endpoint: {process}");
             }
-            summaryOutput.WriteLine();
         }
     }
 }

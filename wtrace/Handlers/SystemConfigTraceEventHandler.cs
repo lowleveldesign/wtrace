@@ -5,17 +5,20 @@ using System.Text;
 using Microsoft.Diagnostics.Tracing;
 using System;
 using LowLevelDesign.WinTrace.Tracing;
+using System.Collections.Generic;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class SystemConfigTraceEventHandler : ITraceEventHandler
     {
-        private readonly TextWriter output;
-        private readonly StringBuilder buffer = new StringBuilder();
+        private readonly int pid;
+        private readonly ITraceOutput output;
+        private readonly List<string> buffer = new List<string>();
 
-        public SystemConfigTraceEventHandler(TextWriter output, TraceOutputOptions options)
+        public SystemConfigTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
         {
-            this.output = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
+            this.pid = pid;
+            this.output = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -26,28 +29,28 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
         {
-            output.WriteLine("======= System Configuration =======");
-            output.Write(buffer);
-            output.WriteLine();
+            foreach (var ev in buffer) {
+                output.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/SysConfig", ev);
+            }
         }
 
         private void Kernel_SystemConfigCPU(SystemConfigCPUTraceData data)
         {
-            buffer.AppendLine($"Host: {data.ComputerName} ({data.DomainName})");
-            buffer.AppendLine($"CPU: {data.MHz}MHz {data.NumberOfProcessors}cores {data.MemSize}MB");
+            buffer.Add($"Host: {data.ComputerName} ({data.DomainName})");
+            buffer.Add($"CPU: {data.MHz}MHz {data.NumberOfProcessors}cores {data.MemSize}MB");
         }
 
         private void HandleConfigNIC(SystemConfigNICTraceData data)
         {
-            buffer.AppendLine($"NIC: {data.NICDescription} {data.IpAddresses}");
+            buffer.Add($"NIC: {data.NICDescription} {data.IpAddresses}");
         }
 
         private void Kernel_SystemConfigLogDisk(SystemConfigLogDiskTraceData data)
         {
             long size = (data.BytesPerSector*data.SectorsPerCluster*data.TotalNumberOfClusters) >> 30;
-            buffer.AppendLine($"LOGICAL DISK: {data.DiskNumber} {data.DriveLetterString} {data.FileSystem} " +
+            buffer.Add($"LOGICAL DISK: {data.DiskNumber} {data.DriveLetterString} {data.FileSystem} " +
                 $"{size}GB");
         }
     }

@@ -7,10 +7,10 @@ namespace LowLevelDesign.WinTrace.Tracing
 {
     sealed class KernelTraceCollector : TraceCollector
     {
-        public KernelTraceCollector(int pid, TextWriter output, TraceOutputOptions options)
-            : base(CreateKernelTraceEventSession(), output)
+        public KernelTraceCollector(int pid, ITraceOutput output, TraceOutputOptions options)
+            : base(CreateKernelTraceEventSession())
         {
-            eventHandlers.Add(new SystemConfigTraceEventHandler(output, options));
+            eventHandlers.Add(new SystemConfigTraceEventHandler(pid, output, options));
             eventHandlers.Add(new FileIOTraceEventHandler(pid, output, options));
             eventHandlers.Add(new NetworkTraceEventHandler(pid, output, options));
             eventHandlers.Add(new ProcessThreadsTraceEventHandler(pid, output, options));

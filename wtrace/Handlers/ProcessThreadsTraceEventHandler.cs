@@ -8,25 +8,23 @@ namespace LowLevelDesign.WinTrace.Handlers
 {
     sealed class ProcessThreadsTraceEventHandler : ITraceEventHandler
     {
-        private readonly TextWriter summaryOutput;
-        private readonly TextWriter traceOutput;
+        private readonly ITraceOutput summaryOutput;
+        private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private int noOfChildProcessesStarted = 0;
         private int noOfThreadStarted = 0;
 
-        public ProcessThreadsTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
+        public ProcessThreadsTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
             this.pid = pid;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
         {
-            summaryOutput.WriteLine("======= Process/Thread =======");
-            summaryOutput.WriteLine($"Number of child processes started: {noOfChildProcessesStarted}");
-            summaryOutput.WriteLine($"Number of threads started: {noOfThreadStarted}");
-            summaryOutput.WriteLine();
+            summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Process", $"Number of child processes started: {noOfChildProcessesStarted}");
+            summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Thread", $"Number of threads started: {noOfThreadStarted}");
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -39,7 +37,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleThreadStart(ThreadTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.ParentProcessID} ({data.ParentThreadID})");
                 noOfThreadStarted++;
             }
@@ -48,7 +46,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleProcessStart(ProcessTraceData data)
         {
             if (data.ParentID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.ProcessID} '{data.CommandLine}'");
                 noOfChildProcessesStarted++;
             }

@@ -20,15 +20,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             public long Total;
         }
 
-        private readonly TextWriter summaryOutput;
-        private readonly TextWriter traceOutput;
+        private readonly ITraceOutput summaryOutput;
+        private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
-        public NetworkTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
+        public NetworkTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
             this.pid = pid;
 
         }
@@ -59,23 +59,20 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.TcpIpTCPCopyIPV6 += HandleTcpIpV6;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
         {
             if (networkIoSummary.Count == 0) {
                 return;
             }
-            summaryOutput.WriteLine("======= TCP/IP =======");
-            summaryOutput.WriteLine("Source -> Destination  Send / Receive (bytes)");
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                summaryOutput.WriteLine($"{summary.Key} {summary.Value.Send:#,0} / {summary.Value.Recv:#,0}");
+                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Network", $"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
             }
-            summaryOutput.WriteLine();
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, 
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -83,7 +80,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Connect(TcpIpV6ConnectTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -91,7 +88,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIp(TcpIpTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -99,7 +96,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6(TcpIpV6TraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
             }
         }
@@ -107,7 +104,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpRev(TcpIpTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, true, data.size);
             }
@@ -116,7 +113,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Rev(TcpIpV6TraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.daddr}:{data.dport} <- {data.saddr}:{data.sport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, true, data.size);
             }
@@ -125,7 +122,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpFail(TcpIpFailTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"0x{data.FailureCode:X}");
             }
         }
@@ -133,7 +130,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpSend(TcpIpSendTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, false, data.size);
             }
@@ -142,7 +139,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         private void HandleTcpIpV6Send(TcpIpV6SendTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName,
                     $"{data.saddr}:{data.sport} -> {data.daddr}:{data.dport} (0x{data.connid:X})");
                 UpdateStats(data.saddr, data.daddr, false, data.size);
             }

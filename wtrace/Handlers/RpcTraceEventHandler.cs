@@ -11,31 +11,28 @@ namespace LowLevelDesign.WinTrace.Handlers
 {
     sealed class RpcTraceEventHandler : ITraceEventHandler
     {
-        private readonly TextWriter summaryOutput;
-        private readonly TextWriter traceOutput;
+        private readonly ITraceOutput summaryOutput;
+        private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<string, int> rpcSummary = new Dictionary<string, int>();
-        private readonly Dictionary<Tuple<Guid, string, int>, string> awaitingClientCalls = new Dictionary<Tuple<Guid, string, int>, string>();
+        private readonly Dictionary<Tuple<Guid, string, int>, Tuple<int, int>> awaitingClientCalls = new Dictionary<Tuple<Guid, string, int>, Tuple<int, int>>();
         private readonly Dictionary<Guid, string> rpcActivity = new Dictionary<Guid, string>();
 
-        public RpcTraceEventHandler(int pid, TextWriter output, TraceOutputOptions options)
+        public RpcTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? TextWriter.Null : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? TextWriter.Null : output;
+            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
+            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
             this.pid = pid;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
         {
             if (rpcSummary.Count == 0) {
                 return;
             }
-            summaryOutput.WriteLine("======= RPC =======");
-            summaryOutput.WriteLine("Interface (Endpoint)  Number of interactions");
             foreach (var summary in rpcSummary.AsEnumerable().OrderByDescending(kv => kv.Value)) {
-                summaryOutput.WriteLine($"{summary.Key} {summary.Value}");
+                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/RPC", $"endpoint: {summary.Key}, connections: {summary.Value}");
             }
-            summaryOutput.WriteLine();
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -51,8 +48,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         {
             string rpcConnectionInfo;
             if (rpcActivity.TryGetValue(data.ActivityID, out rpcConnectionInfo)) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName}  " +
-                    rpcConnectionInfo);
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, rpcConnectionInfo);
                 rpcActivity.Remove(data.ActivityID);
             }
         }
@@ -63,19 +59,18 @@ namespace LowLevelDesign.WinTrace.Handlers
                 var rpcConnectionInfo = $"--- {data.Protocol} --> {data.InterfaceUuid} ({data.Endpoint}) {data.ProcNum} {data.NetworkAddress}";
                 rpcActivity.Add(data.ActivityID, rpcConnectionInfo);
 
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " +
-                    rpcConnectionInfo);
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, rpcConnectionInfo);
 
                 IncrementStatistics($"{data.InterfaceUuid} ({data.Endpoint})");
             } else if (data.Protocol == ProtocolSequences.LRPC ) {
                 var key = new Tuple<Guid, string, int>(data.InterfaceUuid, data.Endpoint, data.ProcNum);
-                string clientProcessInfo;
+                Tuple<int, int> clientProcessInfo;
                 if (awaitingClientCalls.TryGetValue(key, out clientProcessInfo)) {
                     var rpcConnectionInfo = $"<-- {data.Protocol} --- {data.InterfaceUuid} ({data.Endpoint}) {data.ProcNum} " +
                         $"{data.NetworkAddress} ({data.ProcessID}.{data.ThreadID})";
                     rpcActivity.Add(data.ActivityID, rpcConnectionInfo);
 
-                    traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({clientProcessInfo}) {data.EventName} " +
+                    traceOutput.Write(data.TimeStampRelativeMSec, clientProcessInfo.Item1, clientProcessInfo.Item2, data.EventName,
                         rpcConnectionInfo);
                     awaitingClientCalls.Remove(key);
                 }
@@ -86,8 +81,7 @@ namespace LowLevelDesign.WinTrace.Handlers
         {
             string rpcConnectionInfo;
             if (rpcActivity.TryGetValue(data.ActivityID, out rpcConnectionInfo)) {
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName}  " +
-                    rpcConnectionInfo);
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, rpcConnectionInfo);
                 rpcActivity.Remove(data.ActivityID);
             }
         }
@@ -98,13 +92,12 @@ namespace LowLevelDesign.WinTrace.Handlers
                 var rpcConnectionInfo = $"--- {data.Protocol} --> {data.InterfaceUuid} ({data.Endpoint}) {data.ProcNum} {data.NetworkAddress}";
                 rpcActivity.Add(data.ActivityID, rpcConnectionInfo);
 
-                traceOutput.WriteLine($"{data.TimeStampRelativeMSec:0.0000} ({data.ProcessID}.{data.ThreadID}) {data.EventName} " + 
-                    rpcConnectionInfo);
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, rpcConnectionInfo);
 
                 if (data.Protocol == ProtocolSequences.LRPC) {
                     var key = new Tuple<Guid, string, int>(data.InterfaceUuid, data.Endpoint, data.ProcNum);
                     if (!awaitingClientCalls.ContainsKey(key)) {
-                        awaitingClientCalls.Add(key, $"{data.ProcessID}.{data.ThreadID}");
+                        awaitingClientCalls.Add(key, new Tuple<int, int>(data.ProcessID, data.ThreadID));
                     }
                 }
 

@@ -78,7 +78,10 @@ namespace LowLevelDesign.WinTrace
                 return;
             }
 
-            var processTraceRunner = new ProcessTraceRunner(options);
+            // for diagnostics information
+            Trace.Listeners.Add(new ConsoleTraceListener());
+
+            var processTraceRunner = new ProcessTraceRunner(new ConsoleTraceOutput(), options);
 
             SetConsoleCtrlCHook(processTraceRunner);
 
