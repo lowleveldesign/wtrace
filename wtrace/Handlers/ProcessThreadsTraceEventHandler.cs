@@ -2,29 +2,33 @@
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System.Diagnostics;
 using System.IO;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     sealed class ProcessThreadsTraceEventHandler : ITraceEventHandler
     {
-        private readonly ITraceOutput summaryOutput;
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private int noOfChildProcessesStarted = 0;
         private int noOfThreadStarted = 0;
 
-        public ProcessThreadsTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public ProcessThreadsTraceEventHandler(int pid, ITraceOutput output)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
+            traceOutput = output;
             this.pid = pid;
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
-            summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Process", $"Number of child processes started: {noOfChildProcessesStarted}");
-            summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Thread", $"Number of threads started: {noOfThreadStarted}");
+            Debug.Assert(traceEventSource != null);
+            traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Process", 
+                $"Number of child processes started: {noOfChildProcessesStarted}");
+            traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Thread", 
+                $"Number of threads started: {noOfThreadStarted}");
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -32,6 +36,8 @@ namespace LowLevelDesign.WinTrace.Handlers
             var kernel = (KernelTraceEventParser)parser;
             kernel.ProcessStart += HandleProcessStart;
             kernel.ThreadStart += HandleThreadStart;
+
+            traceEventSource = parser.Source;
         }
 
         private void HandleThreadStart(ThreadTraceData data)

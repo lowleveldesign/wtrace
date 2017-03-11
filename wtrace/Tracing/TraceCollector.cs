@@ -8,13 +8,6 @@ using System.Threading;
 
 namespace LowLevelDesign.WinTrace.Tracing
 {
-    enum TraceOutputOptions
-    {
-        NoSummary,
-        OnlySummary,
-        TracesAndSummary
-    }
-
     abstract class TraceCollector : IDisposable
     {
         private bool disposed = false;
@@ -33,7 +26,7 @@ namespace LowLevelDesign.WinTrace.Tracing
             traceSession.Source.Process();
         }
 
-        public void Stop()
+        public void Stop(bool printSummary)
         {
             if (traceSession.IsActive) {
                 int eventsLost = traceSession.EventsLost;
@@ -47,8 +40,10 @@ namespace LowLevelDesign.WinTrace.Tracing
 
                 Trace.WriteLine($"### {traceSession.SessionName} session stopped. Number of lost events: {eventsLost:#,0}");
 
-                foreach (var handler in eventHandlers) {
-                    handler.PrintStatistics(traceSession.Source.SessionEndTimeRelativeMSec);
+                if (printSummary) {
+                    foreach (var handler in eventHandlers) {
+                        handler.PrintStatistics();
+                    }
                 }
             }
         }

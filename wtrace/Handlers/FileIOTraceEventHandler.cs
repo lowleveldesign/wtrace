@@ -1,8 +1,8 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,16 +20,16 @@ namespace LowLevelDesign.WinTrace.Handlers
             public long Total;
         }
 
-        private readonly ITraceOutput summaryOutput;
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<ulong, string> fileObjectToFileNameMap = new Dictionary<ulong, string>();
         private readonly Dictionary<string, FileIoSummary> fileIoSummary = new Dictionary<string, FileIoSummary>();
 
-        public FileIOTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public FileIOTraceEventHandler(int pid, ITraceOutput output)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
+            traceOutput = output;
             this.pid = pid;
 
         }
@@ -49,15 +49,19 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.FileIORead += HandleFileIoReadWrite;
             kernel.FileIOWrite += HandleFileIoReadWrite;
             kernel.FileIOMapFile += HandleFileIoMapFile;
+
+            traceEventSource = parser.Source;
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
             if (fileIoSummary.Count == 0) {
                 return;
             }
+            Debug.Assert(traceEventSource != null);
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/FileIO", $"{summary.Key} W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
+                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, 
+                    "Summary/FileIO", $"{summary.Key} W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
             }
         }
 

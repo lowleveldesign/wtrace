@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -11,27 +12,29 @@ namespace LowLevelDesign.WinTrace.Handlers
 {
     sealed class RpcTraceEventHandler : ITraceEventHandler
     {
-        private readonly ITraceOutput summaryOutput;
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<string, int> rpcSummary = new Dictionary<string, int>();
         private readonly Dictionary<Tuple<Guid, string, int>, Tuple<int, int>> awaitingClientCalls = new Dictionary<Tuple<Guid, string, int>, Tuple<int, int>>();
         private readonly Dictionary<Guid, string> rpcActivity = new Dictionary<Guid, string>();
 
-        public RpcTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public RpcTraceEventHandler(int pid, ITraceOutput output)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
+            traceOutput = output;
             this.pid = pid;
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
             if (rpcSummary.Count == 0) {
                 return;
             }
+            Debug.Assert(traceEventSource != null);
             foreach (var summary in rpcSummary.AsEnumerable().OrderByDescending(kv => kv.Value)) {
-                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/RPC", $"endpoint: {summary.Key}, connections: {summary.Value}");
+                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/RPC", 
+                    $"endpoint: {summary.Key}, connections: {summary.Value}");
             }
         }
 
@@ -42,6 +45,8 @@ namespace LowLevelDesign.WinTrace.Handlers
             rpcParser.RpcClientCallStop += RpcClientCallStop;
             rpcParser.RpcServerCallStart += RpcServerCallStart;
             rpcParser.RpcServerCallStop += RpcServerCallStop;
+
+            traceEventSource = parser.Source;
         }
 
         private void RpcServerCallStop(RpcServerCallStopArgs data)

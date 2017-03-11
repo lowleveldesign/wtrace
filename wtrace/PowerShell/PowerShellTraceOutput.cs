@@ -1,10 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using System.Management.Automation;
+﻿using System.Collections.Concurrent;
 
 namespace LowLevelDesign.WinTrace.PowerShell
 {
-    public class PSWtraceEvent
+    public class PowerShellWtraceEvent
     {
         public double TimeStampRelativeInMSec { get; set; }
 
@@ -19,43 +17,22 @@ namespace LowLevelDesign.WinTrace.PowerShell
 
     class PowerShellTraceOutput : ITraceOutput
     {
-        private readonly PSCmdlet cmdlet;
+        private readonly ConcurrentQueue<PowerShellWtraceEvent> eventQueue;
 
-        public PowerShellTraceOutput(PSCmdlet cmdlet)
+        public PowerShellTraceOutput(ConcurrentQueue<PowerShellWtraceEvent> eventQueue)
         {
-            this.cmdlet = cmdlet;
+            this.eventQueue = eventQueue;
         }
 
         public void Write(double timeStampRelativeInMSec, int processId, int threadId, string eventName, string details)
         {
-            cmdlet.WriteObject(new PSWtraceEvent {
+            eventQueue.Enqueue(new PowerShellWtraceEvent {
                 TimeStampRelativeInMSec = timeStampRelativeInMSec,
                 ProcessId = processId,
                 ThreadId = threadId,
                 EventName = eventName,
                 EventDetails = details
             });
-        }
-    }
-
-    class PowerShellVerboseTraceListener : TraceListener
-    {
-        private readonly PSCmdlet cmdlet;
-
-        public PowerShellVerboseTraceListener(PSCmdlet cmdlet)
-        {
-            this.cmdlet = cmdlet;
-        }
-
-
-        public override void Write(string message)
-        {
-            cmdlet.WriteVerbose(message);
-        }
-
-        public override void WriteLine(string message)
-        {
-            cmdlet.WriteVerbose(message);
         }
     }
 }

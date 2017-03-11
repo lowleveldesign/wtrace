@@ -1,11 +1,8 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using System.IO;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using System;
-using LowLevelDesign.WinTrace.Tracing;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -15,10 +12,12 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly ITraceOutput output;
         private readonly List<string> buffer = new List<string>();
 
-        public SystemConfigTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public SystemConfigTraceEventHandler(int pid, ITraceOutput output)
         {
             this.pid = pid;
-            this.output = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
+            this.output = output;
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -27,12 +26,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.SystemConfigCPU += Kernel_SystemConfigCPU;
             kernel.SystemConfigNIC += HandleConfigNIC;
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;
+
+            traceEventSource = parser.Source;
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
+            Debug.Assert(traceEventSource != null);
             foreach (var ev in buffer) {
-                output.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/SysConfig", ev);
+                output.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/SysConfig", ev);
             }
         }
 

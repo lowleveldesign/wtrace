@@ -6,6 +6,6 @@ namespace LowLevelDesign.WinTrace.Handlers
     {
         void SubscribeToEvents(TraceEventParser parser);
 
-        void PrintStatistics(double sessionEndTimeRelativeInMSec);
+        void PrintStatistics();
     }
 }

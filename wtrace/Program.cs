@@ -31,21 +31,16 @@ namespace LowLevelDesign.WinTrace
 
             List<string> procargs = null;
             bool showhelp = false, spawnNewConsoleWindow = false;
-            TraceOutputOptions options = TraceOutputOptions.TracesAndSummary;
+            bool printSummary = true;
 
             int pid = 0;
 
             var p = new OptionSet
             {
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
-                { "summary", "Prints only a summary of the collected trace.", v => {
-                    if (v != null) {
-                        options = TraceOutputOptions.OnlySummary;
-                    }
-                } },
                 { "nosummary", "Prints only ETW events - no summary at the end.", v => {
                     if (v != null) {
-                        options = TraceOutputOptions.NoSummary;                        
+                        printSummary = false;
                     }
 
                 } },
@@ -81,7 +76,7 @@ namespace LowLevelDesign.WinTrace
             // for diagnostics information
             Trace.Listeners.Add(new ConsoleTraceListener());
 
-            var processTraceRunner = new ProcessTraceRunner(new ConsoleTraceOutput(), options);
+            var processTraceRunner = new ProcessTraceRunner(new ConsoleTraceOutput(), printSummary);
 
             SetConsoleCtrlCHook(processTraceRunner);
 

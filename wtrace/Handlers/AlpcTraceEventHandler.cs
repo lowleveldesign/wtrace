@@ -1,25 +1,24 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
     class AlpcTraceEventHandler : ITraceEventHandler
     {
-        private readonly ITraceOutput summaryOutput;
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<int, Tuple<int, string, int>> sentMessages = new Dictionary<int, Tuple<int, string, int>>();
         private readonly HashSet<string> connectedProcesses = new HashSet<string>();
 
-        public AlpcTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public AlpcTraceEventHandler(int pid, ITraceOutput output)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
+            traceOutput = output;
             this.pid = pid;
         }
 
@@ -31,6 +30,8 @@ namespace LowLevelDesign.WinTrace.Handlers
             //kernel.ALPCUnwait += HandleALPCUnwait;
             //kernel.ALPCWaitForNewMessage += HandleALPCWaitForNewMessage;
             kernel.ALPCWaitForReply += HandleALPCWaitForReply;
+
+            traceEventSource = parser.Source;
         }
 
         private void HandleALPCWaitForReply(ALPCWaitForReplyTraceData data)
@@ -72,13 +73,14 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
             if (connectedProcesses.Count == 0) {
                 return;
             }
+            Debug.Assert(traceEventSource != null);
             foreach (var process in connectedProcesses) {
-                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/ALPC", $"endpoint: {process}");
+                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/ALPC", $"endpoint: {process}");
             }
         }
     }

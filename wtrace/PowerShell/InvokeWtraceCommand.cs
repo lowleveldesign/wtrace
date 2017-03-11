@@ -1,19 +1,20 @@
 ﻿using LowLevelDesign.WinTrace.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Management.Automation;
-using System.Runtime.InteropServices;
+using System.Management.Automation.Host;
+using System.Threading;
 
 namespace LowLevelDesign.WinTrace.PowerShell
 {
 
     [Cmdlet("Invoke", "Wtrace", DefaultParameterSetName = "StartNewProcess")]
-    [OutputType(typeof(PSWtraceEvent))]
+    [OutputType(typeof(PowerShellWtraceEvent))]
     public class InvokeWtraceCommand : PSCmdlet
     {
+        readonly ConcurrentQueue<PowerShellWtraceEvent> eventQueue = new ConcurrentQueue<PowerShellWtraceEvent>();
         ProcessTraceRunner processTraceRunner;
 
         [Parameter(HelpMessage = "Defines whether events statistics will be printed at the end of the trace.")]
@@ -56,43 +57,55 @@ namespace LowLevelDesign.WinTrace.PowerShell
 
         protected override void BeginProcessing()
         {
+            ErrorRecord errorRecord = null;
             if (TraceEventSession.IsElevated() != true) {
-                ErrorRecord errorRecord = new ErrorRecord(new InvalidOperationException("Must be elevated (Admin) to run this cmdlet."),
+                errorRecord = new ErrorRecord(new InvalidOperationException("Must be elevated (Admin) to run this cmdlet."),
                     "MissingAdminRights", ErrorCategory.InvalidOperation, null);
                 WriteError(errorRecord);
                 return;
             }
 
-            // for trace events
-            //Trace.Listeners.Add(new PowerShellVerboseTraceListener(this));
+            processTraceRunner = new ProcessTraceRunner(new PowerShellTraceOutput(eventQueue), !NoSummary);
+            bool isMainThreadFinished = false;
 
-            processTraceRunner = new ProcessTraceRunner(new PowerShellTraceOutput(this), TraceOutputOptions.TracesAndSummary);
-            try {
-                if (string.Equals(ParameterSetName, "StartNewProcess", StringComparison.Ordinal)) {
-                    var args = new List<string>() { FilePath };
-                    if (ArgumentList != null) {
-                        args.AddRange(ArgumentList);
+            ThreadPool.QueueUserWorkItem((o) => {
+                try {
+                    if (string.Equals(ParameterSetName, "StartNewProcess", StringComparison.Ordinal)) {
+                        var args = new List<string>() { FilePath };
+                        if (ArgumentList != null) {
+                            args.AddRange(ArgumentList);
+                        }
+                        processTraceRunner.TraceNewProcess(args, NewConsole);
+                    } else {
+                        processTraceRunner.TraceRunningProcess(Pid);
                     }
-                    processTraceRunner.TraceNewProcess(args, NewConsole);
-                } else {
-                    processTraceRunner.TraceRunningProcess(Pid);
+                    isMainThreadFinished = true;
+                } catch (Exception ex) {
+                    errorRecord = new ErrorRecord(ex, ex.GetType().FullName, ErrorCategory.InvalidOperation, null);
+                    isMainThreadFinished = true;
                 }
-            } catch (COMException ex) {
-                if ((uint)ex.HResult == 0x800700B7) {
-                    Console.Error.WriteLine("ERROR: could not start the kernel logger - make sure it is not running.");
+            });
+
+            PowerShellWtraceEvent ev;
+            while (!isMainThreadFinished) {
+                while (eventQueue.TryDequeue(out ev)) {
+                    WriteObject(ev);
                 }
-            } catch (Win32Exception ex) {
-                ErrorRecord errorRecord = new ErrorRecord(ex, ex.GetType().FullName, ErrorCategory.InvalidOperation, null);
-                WriteError(errorRecord);
-            } catch (Exception ex) {
-                ErrorRecord errorRecord = new ErrorRecord(ex, ex.GetType().FullName, ErrorCategory.InvalidOperation, null);
+                Thread.Sleep(50);
+            }
+            // the rest of the events
+            while (eventQueue.TryDequeue(out ev)) {
+                WriteObject(ev);
+            }
+
+            if (errorRecord != null) {
                 WriteError(errorRecord);
             }
         }
 
         protected override void StopProcessing()
         {
-            processTraceRunner.Stop();
+            processTraceRunner.Stop(false);
         }
     }
 }

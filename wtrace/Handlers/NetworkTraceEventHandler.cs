@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using Microsoft.Diagnostics.Tracing;
 using LowLevelDesign.WinTrace.Tracing;
+using System.Diagnostics;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -20,15 +21,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             public long Total;
         }
 
-        private readonly ITraceOutput summaryOutput;
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
-        public NetworkTraceEventHandler(int pid, ITraceOutput output, TraceOutputOptions options)
+        private TraceEventSource traceEventSource;
+
+        public NetworkTraceEventHandler(int pid, ITraceOutput output)
         {
-            summaryOutput = options == TraceOutputOptions.NoSummary ? NullTraceOutput.Instance : output;
-            traceOutput = options == TraceOutputOptions.OnlySummary ? NullTraceOutput.Instance : output;
+            traceOutput = output;
             this.pid = pid;
 
         }
@@ -57,15 +58,19 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.TcpIpSendIPV6 += HandleTcpIpV6Send;
             kernel.TcpIpTCPCopy += HandleTcpIp;
             kernel.TcpIpTCPCopyIPV6 += HandleTcpIpV6;
+
+            traceEventSource = parser.Source; 
         }
 
-        public void PrintStatistics(double sessionEndTimeRelativeInMSec)
+        public void PrintStatistics()
         {
             if (networkIoSummary.Count == 0) {
                 return;
             }
+            Debug.Assert(traceEventSource != null);
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                summaryOutput.Write(sessionEndTimeRelativeInMSec, pid, 0, "Summary/Network", $"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
+                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Network", 
+                    $"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
             }
         }
 

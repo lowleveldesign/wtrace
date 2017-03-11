@@ -8,11 +8,11 @@ namespace LowLevelDesign.WinTrace.Tracing
 {
     sealed class UserTraceCollector : TraceCollector
     {
-        public UserTraceCollector(int pid, ITraceOutput output, TraceOutputOptions options)
+        public UserTraceCollector(int pid, ITraceOutput output)
             : base(CreateUserTraceEventSession())
         {
             TraceEventParser parser = new MicrosoftWindowsRPCTraceEventParser(traceSession.Source);
-            ITraceEventHandler eventHandler = new RpcTraceEventHandler(pid, output, options);
+            ITraceEventHandler eventHandler = new RpcTraceEventHandler(pid, output);
             eventHandler.SubscribeToEvents(parser);
             eventHandlers.Add(eventHandler);
 
