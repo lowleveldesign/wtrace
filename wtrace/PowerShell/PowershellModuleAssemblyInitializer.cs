@@ -12,7 +12,6 @@ namespace LowLevelDesign.WinTrace.PowerShell
     {
         public void OnImport()
         {
-            Trace.WriteLine("Module load");
             Program.Unpack();
         }
     }

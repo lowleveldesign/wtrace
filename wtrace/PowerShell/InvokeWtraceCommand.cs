@@ -4,7 +4,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Management.Automation;
-using System.Management.Automation.Host;
 using System.Threading;
 
 namespace LowLevelDesign.WinTrace.PowerShell
@@ -54,8 +53,11 @@ namespace LowLevelDesign.WinTrace.PowerShell
         [Alias("Id")]
         public int Pid { get; set; }
 
-
         protected override void BeginProcessing()
+        {
+        }
+
+        protected override void ProcessRecord()
         {
             ErrorRecord errorRecord = null;
             if (TraceEventSession.IsElevated() != true) {
@@ -91,7 +93,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 while (eventQueue.TryDequeue(out ev)) {
                     WriteObject(ev);
                 }
-                Thread.Sleep(50);
+                Thread.Sleep(100);
             }
             // the rest of the events
             while (eventQueue.TryDequeue(out ev)) {
