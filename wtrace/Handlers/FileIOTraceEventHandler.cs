@@ -25,8 +25,6 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly Dictionary<ulong, string> fileObjectToFileNameMap = new Dictionary<ulong, string>();
         private readonly Dictionary<string, FileIoSummary> fileIoSummary = new Dictionary<string, FileIoSummary>();
 
-        private TraceEventSource traceEventSource;
-
         public FileIOTraceEventHandler(int pid, ITraceOutput output)
         {
             traceOutput = output;
@@ -49,18 +47,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.FileIORead += HandleFileIoReadWrite;
             kernel.FileIOWrite += HandleFileIoReadWrite;
             kernel.FileIOMapFile += HandleFileIoMapFile;
-
-            traceEventSource = parser.Source;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeInMs)
         {
             if (fileIoSummary.Count == 0) {
                 return;
             }
-            Debug.Assert(traceEventSource != null);
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, 
+                traceOutput.Write(sessionEndTimeInMs, pid, 0, 
                     "Summary/FileIO", $"{summary.Key} W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
             }
         }

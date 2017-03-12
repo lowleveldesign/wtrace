@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading;
 
 namespace LowLevelDesign.WinTrace.Tracing
@@ -14,6 +13,7 @@ namespace LowLevelDesign.WinTrace.Tracing
 
         protected readonly TraceEventSession traceSession;
         protected readonly List<ITraceEventHandler> eventHandlers;
+        protected readonly Stopwatch sw = new Stopwatch();
 
         public TraceCollector(TraceEventSession session)
         {
@@ -23,6 +23,7 @@ namespace LowLevelDesign.WinTrace.Tracing
 
         public void Start()
         {
+            sw.Start();
             traceSession.Source.Process();
         }
 
@@ -34,6 +35,8 @@ namespace LowLevelDesign.WinTrace.Tracing
                 Trace.WriteLine($"### Stopping {traceSession.SessionName} session...");
                 traceSession.Stop();
 
+                sw.Stop();
+
                 // This timeout is needed to handle all the DCStop events 
                 // (in case we ever are going to do anything about them)
                 Thread.Sleep(1500);
@@ -42,7 +45,7 @@ namespace LowLevelDesign.WinTrace.Tracing
 
                 if (printSummary) {
                     foreach (var handler in eventHandlers) {
-                        handler.PrintStatistics();
+                        handler.PrintStatistics(sw.Elapsed.TotalMilliseconds);
                     }
                 }
             }

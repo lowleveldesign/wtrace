@@ -12,8 +12,6 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly ITraceOutput output;
         private readonly List<string> buffer = new List<string>();
 
-        private TraceEventSource traceEventSource;
-
         public SystemConfigTraceEventHandler(int pid, ITraceOutput output)
         {
             this.pid = pid;
@@ -26,15 +24,12 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.SystemConfigCPU += Kernel_SystemConfigCPU;
             kernel.SystemConfigNIC += HandleConfigNIC;
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;
-
-            traceEventSource = parser.Source;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeInMs)
         {
-            Debug.Assert(traceEventSource != null);
             foreach (var ev in buffer) {
-                output.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/SysConfig", ev);
+                output.Write(sessionEndTimeInMs, pid, 0, "Summary/SysConfig", ev);
             }
         }
 

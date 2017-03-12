@@ -25,8 +25,6 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
-        private TraceEventSource traceEventSource;
-
         public NetworkTraceEventHandler(int pid, ITraceOutput output)
         {
             traceOutput = output;
@@ -58,18 +56,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             kernel.TcpIpSendIPV6 += HandleTcpIpV6Send;
             kernel.TcpIpTCPCopy += HandleTcpIp;
             kernel.TcpIpTCPCopyIPV6 += HandleTcpIpV6;
-
-            traceEventSource = parser.Source; 
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeInMs)
         {
             if (networkIoSummary.Count == 0) {
                 return;
             }
-            Debug.Assert(traceEventSource != null);
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Network", 
+                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Network", 
                     $"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
             }
         }

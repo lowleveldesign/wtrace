@@ -14,8 +14,6 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly Dictionary<int, Tuple<int, string, int>> sentMessages = new Dictionary<int, Tuple<int, string, int>>();
         private readonly HashSet<string> connectedProcesses = new HashSet<string>();
 
-        private TraceEventSource traceEventSource;
-
         public AlpcTraceEventHandler(int pid, ITraceOutput output)
         {
             traceOutput = output;
@@ -30,8 +28,6 @@ namespace LowLevelDesign.WinTrace.Handlers
             //kernel.ALPCUnwait += HandleALPCUnwait;
             //kernel.ALPCWaitForNewMessage += HandleALPCWaitForNewMessage;
             kernel.ALPCWaitForReply += HandleALPCWaitForReply;
-
-            traceEventSource = parser.Source;
         }
 
         private void HandleALPCWaitForReply(ALPCWaitForReplyTraceData data)
@@ -73,14 +69,13 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeInMs)
         {
             if (connectedProcesses.Count == 0) {
                 return;
             }
-            Debug.Assert(traceEventSource != null);
             foreach (var process in connectedProcesses) {
-                traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/ALPC", $"endpoint: {process}");
+                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/ALPC", $"endpoint: {process}");
             }
         }
     }

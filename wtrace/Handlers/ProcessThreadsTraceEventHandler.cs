@@ -14,20 +14,17 @@ namespace LowLevelDesign.WinTrace.Handlers
         private int noOfChildProcessesStarted = 0;
         private int noOfThreadStarted = 0;
 
-        private TraceEventSource traceEventSource;
-
         public ProcessThreadsTraceEventHandler(int pid, ITraceOutput output)
         {
             traceOutput = output;
             this.pid = pid;
         }
 
-        public void PrintStatistics()
+        public void PrintStatistics(double sessionEndTimeInMs)
         {
-            Debug.Assert(traceEventSource != null);
-            traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Process", 
+            traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Process", 
                 $"Number of child processes started: {noOfChildProcessesStarted}");
-            traceOutput.Write(traceEventSource.SessionEndTimeRelativeMSec, pid, 0, "Summary/Thread", 
+            traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Thread", 
                 $"Number of threads started: {noOfThreadStarted}");
         }
 
@@ -36,8 +33,6 @@ namespace LowLevelDesign.WinTrace.Handlers
             var kernel = (KernelTraceEventParser)parser;
             kernel.ProcessStart += HandleProcessStart;
             kernel.ThreadStart += HandleThreadStart;
-
-            traceEventSource = parser.Source;
         }
 
         private void HandleThreadStart(ThreadTraceData data)

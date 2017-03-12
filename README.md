@@ -1,7 +1,11 @@
 
 # wtrace
 
-This application will trace in real-time all File I/O, TCP IP, ALPC and RPC operations performed by a given process. It works on Windows 7+ and requires .NET 4.5.2+. Wtrace stops when the traced process exits, or if you issue Ctrl+C (Ctrl+Break in Powershell, when pipes are used) in its command line.
+This application will trace in real-time all File I/O, TCP IP, ALPC and RPC operations performed by a given process. It works on Windows 7+ and requires .NET 4.5.2+. Wtrace stops when the traced process exits, or if you issue Ctrl+C in its command line.
+
+Use pipeline to filter the events, e.g.: `wtrace notepad | findstr  "FileIO/Write"`
+
+It is possible to use wtrace as a **PowerShell cmdlet**. Please check the [wiki](https://github.com/lowleveldesign/wtrace/wiki/PowerShell-support) for more details.
 
 The available options are:
 
@@ -10,7 +14,6 @@ Usage: wtrace [OPTIONS] pid|imagename args
 
 Options:
       --newconsole           Start the process in a new console window.
-      --summary              Prints only a summary of the collected trace.
       --nosummary            Prints only ETW events - no summary at the end.
   -h, --help                 Show this message and exit
   -?                         Show this message and exit
@@ -44,33 +47,6 @@ PS temp> wtrace mspaint
 1385,3323 (1072) FileIO/Read '' (0xFFFFFA801FDBFCD0) 0x5C200 16384b
 2318,6876 (1072) FileIO/Read '' (0xFFFFFA80230F5970) 0x209400 32768b
 2319,3279 (1072) FileIO/Read '' (0xFFFFFA80230F5970) 0x213400 32768b
-### Stopping ETW session...
-======= ETW session =======
-### ETW session stopped. Number of lost events: 0
-
-======= System Configuration =======
-Host: TEST (test.example.com)
-CPU: 2793MHz 8cores 32382MB
-LOGICAL DISK: 0 C: NTFS 238GB
-NIC: VirtualBox Host-Only Ethernet Adapter fe80::9d86:1063:fe66:ef0b;169.254.239.11
-NIC: Software Loopback Interface 1 ::1;127.0.0.1
-
-======= File I/O =======
-File name  Writes / Reads (bytes)
-C:\Windows\SysWOW64\mspaint.exe 0 / 12 759 040
- 0 / 1 905 760
-C:\Windows\SysWOW64\MFC42u.dll 0 / 455 728
-C:\Windows\SysWOW64\sti.dll 0 / 431 472
-C:\Windows\SysWOW64\UIRibbon.dll 0 / 412 016
-C:\Windows\SysWOW64\UIRibbonRes.dll 0 / 255 088
-C:\Windows\SysWOW64\en-US\UIRibbon.dll.mui 0 / 179 312
-C:\Windows\win.ini 0 / 516
-C:\Windows\Fonts\staticcache.dat 0 / 60
-C:\ProgramData\NVIDIA Corporation\Drs\nvdrssel.bin 0 / 1
-
-======= Process/Thread =======
-Number of child processes started: 0
-Number of threads started: 7
 ```
 
 **Please visit the project [wiki](https://github.com/lowleveldesign/wtrace/wiki) to learn more**
