@@ -56,7 +56,7 @@ namespace LowLevelDesign.WinTrace.Handlers
             }
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
                 traceOutput.Write(sessionEndTimeInMs, pid, 0, 
-                    "Summary/FileIO", $"{summary.Key} W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
+                    "Summary/FileIO", $"'{summary.Key}' W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
             }
         }
 
