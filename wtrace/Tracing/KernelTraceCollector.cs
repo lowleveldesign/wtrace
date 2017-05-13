@@ -15,6 +15,7 @@ namespace LowLevelDesign.WinTrace.Tracing
             eventHandlers.Add(new NetworkTraceEventHandler(pid, output));
             eventHandlers.Add(new ProcessThreadsTraceEventHandler(pid, output));
             eventHandlers.Add(new AlpcTraceEventHandler(pid, output));
+            eventHandlers.Add(new RegistryTraceEventHandler(pid, output));
 
             foreach (var handler in eventHandlers) {
                 handler.SubscribeToEvents(traceSession.Source.Kernel);
@@ -27,8 +28,11 @@ namespace LowLevelDesign.WinTrace.Tracing
                 StopOnDispose = true
             };
             kernelSession.EnableKernelProvider(
-                 KernelTraceEventParser.Keywords.FileIOInit  | KernelTraceEventParser.Keywords.FileIO
-                | KernelTraceEventParser.Keywords.NetworkTCPIP | KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls
+                 KernelTraceEventParser.Keywords.FileIOInit  
+                 | KernelTraceEventParser.Keywords.FileIO
+                 | KernelTraceEventParser.Keywords.Registry
+                 | KernelTraceEventParser.Keywords.NetworkTCPIP 
+                 | KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls
             );
 
             return kernelSession;
