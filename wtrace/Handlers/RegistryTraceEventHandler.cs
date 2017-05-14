@@ -1,8 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace LowLevelDesign.WinTrace.Handlers
 {
@@ -10,7 +8,6 @@ namespace LowLevelDesign.WinTrace.Handlers
     {
         private readonly ITraceOutput traceOutput;
         private readonly int pid;
-        private readonly Dictionary<string, int> registrySummary = new Dictionary<string, int>();
 
         public RegistryTraceEventHandler(int pid, ITraceOutput traceOutput)
         {
@@ -20,14 +17,6 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void PrintStatistics(double sessionEndTimeInMs)
         {
-            // Currently turned off - number of events is overwhelming
-            if (registrySummary.Count == 0) {
-                return;
-            }
-            foreach (var summary in registrySummary.OrderByDescending(kv => kv.Value)) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0,
-                    "Summary/Registry", $"'{summary.Key}' Opened: {summary.Value:#,0}");
-            }
         }
 
         public void SubscribeToEvents(TraceEventParser parser)
@@ -55,16 +44,6 @@ namespace LowLevelDesign.WinTrace.Handlers
                 ulong keyHandle = data.KeyHandle;
                 string valueName = data.ValueName;
                 string keyName = data.KeyName;
-
-                // we count RegistryOpen event for statistics
-                if ((byte)data.Opcode == 11 && !string.IsNullOrEmpty(keyName)) {
-                    int openCount;
-                    if (registrySummary.TryGetValue(keyName, out openCount)) {
-                        registrySummary[keyName] = openCount + 1;
-                    } else {
-                        registrySummary.Add(keyName, 1);
-                    }
-                }
 
                 string value;
                 if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valueName)) {
