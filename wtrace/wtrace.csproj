@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Handlers\RegistryTraceEventHandler.cs" />
+    <Compile Include="Handlers\ImageLoadTraceEventHandler.cs" />
     <Compile Include="TraceOutput.cs" />
     <Compile Include="PowerShell\PowerShellTraceOutput.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -102,6 +103,7 @@
     <Compile Include="Tracing\UserTraceCollector.cs" />
     <Compile Include="Utilities\DirectoryUtilities.cs" />
     <Compile Include="Utilities\FileUtilities.cs" />
+    <Compile Include="Utilities\DriverImageUtilities.cs" />
     <Compile Include="Utilities\ResourceUtilities.cs" />
     <Compile Include="Utilities\StreamUtilities.cs" />
     <Compile Include="Utilities\SupportFiles.cs" />
