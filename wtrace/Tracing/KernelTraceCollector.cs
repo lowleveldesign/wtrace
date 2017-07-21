@@ -17,6 +17,7 @@ namespace LowLevelDesign.WinTrace.Tracing
             eventHandlers.Add(new AlpcTraceEventHandler(pid, output));
             eventHandlers.Add(new RegistryTraceEventHandler(pid, output));
             eventHandlers.Add(new ImageLoadTraceEventHandler(pid, output));
+            eventHandlers.Add(new IsrTraceEventHandler(pid, output));
 
             foreach (var handler in eventHandlers) {
                 handler.SubscribeToEvents(traceSession.Source.Kernel);
@@ -35,6 +36,7 @@ namespace LowLevelDesign.WinTrace.Tracing
                  | KernelTraceEventParser.Keywords.NetworkTCPIP 
                  | KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls
                  | KernelTraceEventParser.Keywords.ImageLoad
+                 | KernelTraceEventParser.Keywords.Interrupt
             );
 
             return kernelSession;

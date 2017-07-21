@@ -38,7 +38,7 @@ namespace LowLevelDesign.WinTrace.Handlers
 
             if (data.ProcessID == pid) {
                 traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
-                    data.EventName, $"0x{data.ImageBase:X8} '{data.FileName}' ({data.ImageSize:0,0} b)");
+                    data.EventName, $"0x{data.ImageBase:X8} '{data.FileName}' ({data.ImageSize}b)");
             }
         }
 
@@ -53,7 +53,7 @@ namespace LowLevelDesign.WinTrace.Handlers
 
             if (data.ProcessID == pid) {
                 traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
-                    data.EventName, $"0x{data.ImageBase:X8} '{data.FileName}' ({data.ImageSize:0,0} b)");
+                    data.EventName, $"0x{data.ImageBase:X8} '{data.FileName}' ({data.ImageSize}b)");
             }
         }
     }

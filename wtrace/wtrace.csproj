@@ -35,6 +35,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -79,6 +80,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Handlers\DpcTraceEventHandler.cs" />
+    <Compile Include="Handlers\IsrTraceEventHandler.cs" />
     <Compile Include="Handlers\RegistryTraceEventHandler.cs" />
     <Compile Include="Handlers\ImageLoadTraceEventHandler.cs" />
     <Compile Include="TraceOutput.cs" />
@@ -105,6 +108,7 @@
     <Compile Include="Utilities\FileUtilities.cs" />
     <Compile Include="Utilities\DriverImageUtilities.cs" />
     <Compile Include="Utilities\ResourceUtilities.cs" />
+    <Compile Include="Utilities\StatisticsUtilities.cs" />
     <Compile Include="Utilities\StreamUtilities.cs" />
     <Compile Include="Utilities\SupportFiles.cs" />
     <Compile Include="Win32\ComPtr.cs" />
