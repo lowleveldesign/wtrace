@@ -1,27 +1,43 @@
-﻿using LowLevelDesign.WinTrace.Handlers;
+﻿using LowLevelDesign.WinTrace.EventHandlers;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
-namespace LowLevelDesign.WinTrace.Tracing
+namespace LowLevelDesign.WinTrace
 {
-    abstract class TraceCollector : IDisposable
+    public sealed class TraceCollector : IDisposable
     {
         private bool disposed = false;
 
-        protected readonly TraceEventSession traceSession;
-        protected readonly List<ITraceEventHandler> eventHandlers;
+        private readonly TraceEventSession traceSession;
+        private readonly List<ITraceEventHandler> eventHandlers;
+        private KernelTraceEventParser.Keywords kernelFlags = KernelTraceEventParser.Keywords.None;
 
-        public TraceCollector(TraceEventSession session)
+        public TraceCollector(string sessionName)
         {
-            traceSession = session;
+            traceSession = new TraceEventSession(sessionName) { StopOnDispose = true };
             eventHandlers = new List<ITraceEventHandler>();
+        }
+
+        public void AddHandler(ITraceEventHandler handler)
+        {
+            Debug.Assert(!traceSession.IsActive);
+
+            kernelFlags |= handler.RequiredKernelFlags;
+            eventHandlers.Add(handler);
         }
 
         public void Start()
         {
+            if (kernelFlags != KernelTraceEventParser.Keywords.None) {
+                traceSession.EnableKernelProvider(kernelFlags);
+            }
+            foreach (var handler in eventHandlers) {
+                handler.SubscribeToSession(traceSession);
+            }
             traceSession.Source.Process();
         }
 
@@ -52,24 +68,8 @@ namespace LowLevelDesign.WinTrace.Tracing
             if (disposed) {
                 return;
             }
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing) {
-                traceSession.Dispose();
-            }
+            traceSession.Dispose();
             disposed = true;
-        }
-
-        ~TraceCollector()
-        {
-            if (disposed) {
-                return;
-            }
-            Dispose(false);
         }
     }
 }

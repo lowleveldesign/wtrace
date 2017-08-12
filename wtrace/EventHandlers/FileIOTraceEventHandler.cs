@@ -1,12 +1,14 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     sealed class FileIOTraceEventHandler : ITraceEventHandler
     {
@@ -31,9 +33,12 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.FileIOInit
+                 | KernelTraceEventParser.Keywords.FileIO;
+
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.FileIOClose += HandleFileIoSimpleOp;
             kernel.FileIOFlush += HandleFileIoSimpleOp;
             kernel.FileIOCreate += HandleFileIoCreate;

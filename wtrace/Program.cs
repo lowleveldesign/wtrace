@@ -1,5 +1,4 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
+﻿using Microsoft.Diagnostics.Tracing.Session;
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
@@ -76,7 +75,7 @@ namespace LowLevelDesign.WinTrace
             // for diagnostics information
             Trace.Listeners.Add(new ConsoleTraceListener());
 
-            var processTraceRunner = new ProcessTraceRunner(new ConsoleTraceOutput(), printSummary);
+            var processTraceRunner = new TraceProcess(new ConsoleTraceOutput(), printSummary);
 
             SetConsoleCtrlCHook(processTraceRunner);
 
@@ -98,12 +97,14 @@ namespace LowLevelDesign.WinTrace
                     $"ERROR: an error occurred while trying to start or open the process, hr: 0x{ex.HResult:X8}, " + 
                         $"code: 0x{ex.NativeErrorCode:X8} ({ex.Message})." );
             }
+#if !DEBUG
             catch (Exception ex) {
                 Console.Error.WriteLine($"ERROR: severe error happened when starting application: {ex.Message}");
             }
+#endif
         }
 
-        static void SetConsoleCtrlCHook(ProcessTraceRunner processTraceRunner)
+        static void SetConsoleCtrlCHook(TraceProcess processTraceRunner)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {

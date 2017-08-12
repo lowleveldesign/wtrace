@@ -1,22 +1,33 @@
-﻿using LowLevelDesign.WinTrace.Utilities;
+﻿using LowLevelDesign.WinTrace.EventHandlers;
+using LowLevelDesign.WinTrace.Utilities;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using PInvoke;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace LowLevelDesign.WinTrace.Tracing
+namespace LowLevelDesign.WinTrace
 {
-    class ProcessTraceRunner
+    class TraceProcess
     {
+        const string WinTraceUserTraceSessionName = "wtrace-customevents";
+
         private readonly ManualResetEvent stopEvent = new ManualResetEvent(false);
         private readonly bool printSummary;
         private readonly ITraceOutput traceOutput;
         private Action<bool> stopTraceCollectors;
 
-        public ProcessTraceRunner(ITraceOutput traceOutput, bool printSummary)
+        public TraceProcess(ITraceOutput traceOutput, bool printSummary)
         {
             this.traceOutput = traceOutput;
             this.printSummary = printSummary;
+        }
+
+        private void InitializeHandlers(TraceCollector kernelCollector, TraceCollector customCollector, int pid)
+        {
+            kernelCollector.AddHandler(new FileIOTraceEventHandler(pid, traceOutput));
+
+            customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
         }
 
         public void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow)
@@ -24,27 +35,29 @@ namespace LowLevelDesign.WinTrace.Tracing
             using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
 
-                using (TraceCollector kernelTraceCollector = new KernelTraceCollector(process.ProcessId, traceOutput),
-                    userTraceCollector = new UserTraceCollector(process.ProcessId, traceOutput)) {
+                using (TraceCollector kernelTraceCollector = new TraceCollector(KernelTraceEventParser.KernelSessionName),
+                    customTraceCollector = new TraceCollector(WinTraceUserTraceSessionName)) {
+
+                    InitializeHandlers(kernelTraceCollector, customTraceCollector, process.ProcessId);
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         process.Join();
                         kernelTraceCollector.Stop(printSummary);
-                        userTraceCollector.Stop(printSummary);
+                        customTraceCollector.Stop(printSummary);
 
                         stopEvent.Set();
                     });
 
                     stopTraceCollectors = (bool overridenPrintSummary) => {
                         kernelTraceCollector.Stop(overridenPrintSummary);
-                        userTraceCollector.Stop(overridenPrintSummary);
+                        customTraceCollector.Stop(overridenPrintSummary);
                     };
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         kernelTraceCollector.Start();
                     });
                     ThreadPool.QueueUserWorkItem((o) => {
-                        userTraceCollector.Start();
+                        customTraceCollector.Start();
                     });
 
                     Thread.Sleep(1000);
@@ -64,27 +77,29 @@ namespace LowLevelDesign.WinTrace.Tracing
                     Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
                     return;
                 }
-                using (TraceCollector kernelTraceCollector = new KernelTraceCollector(pid, traceOutput),
-                    userTraceCollector = new UserTraceCollector(pid, traceOutput)) {
+                using (TraceCollector kernelTraceCollector = new TraceCollector(KernelTraceEventParser.KernelSessionName),
+                    customTraceCollector = new TraceCollector(WinTraceUserTraceSessionName)) {
+
+                    InitializeHandlers(kernelTraceCollector, customTraceCollector, pid);
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         Kernel32.WaitForSingleObject(hProcess, Constants.INFINITE);
                         kernelTraceCollector.Stop(printSummary);
-                        userTraceCollector.Stop(printSummary);
+                        customTraceCollector.Stop(printSummary);
 
                         stopEvent.Set();
                     });
 
                     stopTraceCollectors = (bool overridenPrintSummary) => {
                         kernelTraceCollector.Stop(overridenPrintSummary);
-                        userTraceCollector.Stop(overridenPrintSummary);
+                        customTraceCollector.Stop(overridenPrintSummary);
                     };
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         kernelTraceCollector.Start();
                     });
                     ThreadPool.QueueUserWorkItem((o) => {
-                        userTraceCollector.Start();
+                        customTraceCollector.Start();
                     });
 
                     stopEvent.WaitOne();

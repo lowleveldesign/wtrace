@@ -21,7 +21,11 @@ namespace LowLevelDesign.WinTrace.Utilities
         public void StartSuspended()
         {
             var pi = new Kernel32.PROCESS_INFORMATION();
-            var si = new Kernel32.STARTUPINFO();
+            var si = new Kernel32.STARTUPINFO() {
+                hStdInput = Kernel32.SafeObjectHandle.Null,
+                hStdOutput = Kernel32.SafeObjectHandle.Null,
+                hStdError = Kernel32.SafeObjectHandle.Null 
+            };
             var processCreationFlags = Kernel32.CreateProcessFlags.CREATE_SUSPENDED;
             if (SpawnNewConsoleWindow) {
                 processCreationFlags |= Kernel32.CreateProcessFlags.CREATE_NEW_CONSOLE;

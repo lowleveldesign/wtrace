@@ -1,5 +1,4 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
+﻿using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
     public class InvokeWtraceCommand : PSCmdlet
     {
         readonly ConcurrentQueue<PowerShellWtraceEvent> eventQueue = new ConcurrentQueue<PowerShellWtraceEvent>();
-        ProcessTraceRunner processTraceRunner;
+        TraceProcess processTraceRunner;
 
         [Parameter(HelpMessage = "Defines whether events statistics will be printed at the end of the trace.")]
         public bool NoSummary { get; set; }
@@ -67,7 +66,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 return;
             }
 
-            processTraceRunner = new ProcessTraceRunner(new PowerShellTraceOutput(eventQueue), !NoSummary);
+            processTraceRunner = new TraceProcess(new PowerShellTraceOutput(eventQueue), !NoSummary);
             bool isMainThreadFinished = false;
 
             ThreadPool.QueueUserWorkItem((o) => {
