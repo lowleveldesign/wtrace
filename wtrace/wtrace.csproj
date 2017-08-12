@@ -66,6 +66,12 @@
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="PInvoke.Kernel32, Version=0.5.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
+      <HintPath>..\packages\PInvoke.Kernel32.0.5.97\lib\net45\PInvoke.Kernel32.dll</HintPath>
+    </Reference>
+    <Reference Include="PInvoke.Windows.Core, Version=0.5.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
+      <HintPath>..\packages\PInvoke.Windows.Core.0.5.97\lib\net35\PInvoke.Windows.Core.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -111,32 +117,26 @@
     <Compile Include="Utilities\StatisticsUtilities.cs" />
     <Compile Include="Utilities\StreamUtilities.cs" />
     <Compile Include="Utilities\SupportFiles.cs" />
-    <Compile Include="Win32\ComPtr.cs" />
-    <Compile Include="Win32\Constants.cs" />
-    <Compile Include="Win32\Handles\NativeMethods.cs" />
-    <Compile Include="Win32\HResults.cs" />
-    <Compile Include="Win32\Interop\SecurityAttributes.cs" />
-    <Compile Include="Win32\LastWin32ErrorException.cs" />
-    <Compile Include="Win32\NtStatus.cs" />
-    <Compile Include="Win32\Processes\NativeEnums.cs" />
-    <Compile Include="Win32\Processes\NativeMethods.cs" />
-    <Compile Include="Win32\Processes\NativeStructs.cs" />
-    <Compile Include="Win32\Processes\ProcessCreationFlags.cs" />
-    <Compile Include="Win32\Processes\PROCESS_INFORMATION.cs" />
-    <Compile Include="Win32\Processes\SafeProcessHandle.cs" />
-    <Compile Include="Win32\Processes\SafeThreadHandle.cs" />
-    <Compile Include="Win32\Processes\Startupinfo.cs" />
-    <Compile Include="Win32\UnicodeString.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="binaries\NDesk.Options.dll">
+    <EmbeddedResource Include="$(OutputPath)\NDesk.Options.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Ndesk.Options.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\PInvoke.Windows.Core.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\PInvoke.Windows.Core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\PInvoke.Kernel32.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\PInvoke.Kernel32.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="binaries\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
@@ -189,8 +189,10 @@
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>powershell -Command "Copy-Item $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\net35\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net45\*.dll $(TargetDir) "</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

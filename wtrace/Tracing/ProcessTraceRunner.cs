@@ -1,8 +1,8 @@
-﻿using System;
+﻿using LowLevelDesign.WinTrace.Utilities;
+using PInvoke;
+using System;
 using System.Collections.Generic;
 using System.Threading;
-using WinHandles = VsChromium.Core.Win32.Handles;
-using WinProcesses = VsChromium.Core.Win32.Processes;
 
 namespace LowLevelDesign.WinTrace.Tracing
 {
@@ -59,7 +59,7 @@ namespace LowLevelDesign.WinTrace.Tracing
 
         public void TraceRunningProcess(int pid)
         {
-            using (var hProcess = WinProcesses.NativeMethods.OpenProcess(WinProcesses.ProcessAccessFlags.Synchronize, false, pid)) {
+            using (var hProcess = Kernel32.OpenProcess(Kernel32.ACCESS_MASK.StandardRight.SYNCHRONIZE, false, pid)) {
                 if (hProcess.IsInvalid) {
                     Console.Error.WriteLine("ERROR: the process with a given PID was not found or you don't have access to it.");
                     return;
@@ -68,7 +68,7 @@ namespace LowLevelDesign.WinTrace.Tracing
                     userTraceCollector = new UserTraceCollector(pid, traceOutput)) {
 
                     ThreadPool.QueueUserWorkItem((o) => {
-                        WinHandles.NativeMethods.WaitForSingleObject(hProcess, VsChromium.Core.Win32.Constants.INFINITE);
+                        Kernel32.WaitForSingleObject(hProcess, Constants.INFINITE);
                         kernelTraceCollector.Stop(printSummary);
                         userTraceCollector.Stop(printSummary);
 
