@@ -25,6 +25,8 @@ namespace LowLevelDesign.WinTrace
 
         private void InitializeHandlers(TraceCollector kernelCollector, TraceCollector customCollector, int pid)
         {
+            kernelCollector.AddHandler(new IsrDpcTraceEventHandler(pid, traceOutput));
+#if !DEBUG
             kernelCollector.AddHandler(new FileIOTraceEventHandler(pid, traceOutput));
             kernelCollector.AddHandler(new AlpcTraceEventHandler(pid, traceOutput));
             kernelCollector.AddHandler(new NetworkTraceEventHandler(pid, traceOutput));
@@ -32,6 +34,7 @@ namespace LowLevelDesign.WinTrace
             kernelCollector.AddHandler(new SystemConfigTraceEventHandler(pid, traceOutput));
 
             customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
+#endif
 
             // DISABLED ON PURPOSE:
             // kernelCollector.AddHandler(new RegistryTraceEventHandler(pid, traceOutput)); // TODO: strange and sometimes missing key names
