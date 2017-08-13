@@ -1,11 +1,10 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
+﻿using System;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using System.Diagnostics;
-using System.IO;
+using Microsoft.Diagnostics.Tracing.Session;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     sealed class ProcessThreadsTraceEventHandler : ITraceEventHandler
     {
@@ -13,6 +12,9 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly int pid;
         private int noOfChildProcessesStarted = 0;
         private int noOfThreadStarted = 0;
+
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.Process
+            | KernelTraceEventParser.Keywords.Thread;
 
         public ProcessThreadsTraceEventHandler(int pid, ITraceOutput output)
         {
@@ -22,15 +24,11 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void PrintStatistics(double sessionEndTimeInMs)
         {
-            traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Process", 
-                $"Number of child processes started: {noOfChildProcessesStarted}");
-            traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Thread", 
-                $"Number of threads started: {noOfThreadStarted}");
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.ProcessStart += HandleProcessStart;
             kernel.ThreadStart += HandleThreadStart;
         }

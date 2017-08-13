@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace LowLevelDesign.WinTrace.PowerShell
 {
@@ -33,6 +34,10 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 EventName = eventName,
                 EventDetails = details
             });
+        }
+
+        public void WriteSummary(string title, string eventsSummary)
+        {
         }
     }
 }

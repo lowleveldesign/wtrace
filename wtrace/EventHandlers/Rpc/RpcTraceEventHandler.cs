@@ -1,11 +1,13 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC;
+using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers.Rpc
 {
     sealed class RpcTraceEventHandler : ITraceEventHandler
     {
@@ -14,6 +16,8 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly Dictionary<string, int> rpcSummary = new Dictionary<string, int>();
         private readonly Dictionary<Tuple<Guid, string, int>, Tuple<int, int>> awaitingClientCalls = new Dictionary<Tuple<Guid, string, int>, Tuple<int, int>>();
         private readonly Dictionary<Guid, string> rpcActivity = new Dictionary<Guid, string>();
+
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.None;
 
         public RpcTraceEventHandler(int pid, ITraceOutput output)
         {
@@ -26,19 +30,26 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (rpcSummary.Count == 0) {
                 return;
             }
+            var buffer = new StringBuilder();
             foreach (var summary in rpcSummary.AsEnumerable().OrderByDescending(kv => kv.Value)) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/RPC", 
-                    $"endpoint: {summary.Key}, connections: {summary.Value}");
+                if (buffer.Length != 0) {
+                    buffer.AppendLine();
+                }
+                buffer.Append($"endpoint: {summary.Key}, connections: {summary.Value}");
             }
+            traceOutput.WriteSummary("RPC", buffer.ToString());
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var rpcParser = (MicrosoftWindowsRPCTraceEventParser)parser;
+            var rpcParser = new MicrosoftWindowsRPCTraceEventParser(session.Source);
+
             rpcParser.RpcClientCallStart += RpcClientCallStart;
             rpcParser.RpcClientCallStop += RpcClientCallStop;
             rpcParser.RpcServerCallStart += RpcServerCallStart;
             rpcParser.RpcServerCallStop += RpcServerCallStop;
+
+            session.EnableProvider(MicrosoftWindowsRPCTraceEventParser.ProviderGuid, TraceEventLevel.Informational);
         }
 
         private void RpcServerCallStop(RpcServerCallStopArgs data)

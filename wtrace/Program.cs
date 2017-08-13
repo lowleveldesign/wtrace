@@ -1,5 +1,4 @@
-﻿using LowLevelDesign.WinTrace.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
+﻿using Microsoft.Diagnostics.Tracing.Session;
 using NDesk.Options;
 using System;
 using System.Collections.Generic;
@@ -30,20 +29,16 @@ namespace LowLevelDesign.WinTrace
             }
 
             List<string> procargs = null;
-            bool showhelp = false, spawnNewConsoleWindow = false;
-            bool printSummary = true;
+            bool showhelp = false, spawnNewConsoleWindow = false, 
+                collectSystemStats = false, printSummary = true;
 
             int pid = 0;
 
             var p = new OptionSet
             {
+                { "s|system", "Collect system statistics (DPC/ISR)", v => { collectSystemStats = v != null; } },
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
-                { "nosummary", "Prints only ETW events - no summary at the end.", v => {
-                    if (v != null) {
-                        printSummary = false;
-                    }
-
-                } },
+                { "nosummary", "Prints only ETW events - no summary at the end.", v => { printSummary = v == null; } },
                 { "h|help", "Show this message and exit", v => showhelp = v != null },
                 { "?", "Show this message and exit", v => showhelp = v != null }
             };
@@ -74,9 +69,11 @@ namespace LowLevelDesign.WinTrace
             }
 
             // for diagnostics information
+#if DEBUG
             Trace.Listeners.Add(new ConsoleTraceListener());
+#endif
 
-            var processTraceRunner = new ProcessTraceRunner(new ConsoleTraceOutput(), printSummary);
+            var processTraceRunner = new TraceProcess(new ConsoleTraceOutput(), printSummary, collectSystemStats);
 
             SetConsoleCtrlCHook(processTraceRunner);
 
@@ -98,12 +95,14 @@ namespace LowLevelDesign.WinTrace
                     $"ERROR: an error occurred while trying to start or open the process, hr: 0x{ex.HResult:X8}, " + 
                         $"code: 0x{ex.NativeErrorCode:X8} ({ex.Message})." );
             }
+#if !DEBUG
             catch (Exception ex) {
                 Console.Error.WriteLine($"ERROR: severe error happened when starting application: {ex.Message}");
             }
+#endif
         }
 
-        static void SetConsoleCtrlCHook(ProcessTraceRunner processTraceRunner)
+        static void SetConsoleCtrlCHook(TraceProcess processTraceRunner)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {
