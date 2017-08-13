@@ -36,7 +36,7 @@ namespace LowLevelDesign.WinTrace
 
             var p = new OptionSet
             {
-                { "s|system", "Collect system statistics (DPC/ISR)", v => { collectSystemStats = v != null; } },
+                { "s|system", "Collect system statistics (DPC/ISR) - shown in the summary", v => { collectSystemStats = v != null; } },
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
                 { "nosummary", "Prints only ETW events - no summary at the end.", v => { printSummary = v == null; } },
                 { "h|help", "Show this message and exit", v => showhelp = v != null },
