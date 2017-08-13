@@ -41,7 +41,7 @@ namespace LowLevelDesign.WinTrace
             traceSession.Source.Process();
         }
 
-        public void Stop(bool printSummary)
+        public void Stop()
         {
             if (traceSession.IsActive) {
                 int eventsLost = traceSession.EventsLost;
@@ -54,12 +54,13 @@ namespace LowLevelDesign.WinTrace
                 Thread.Sleep(1500);
 
                 Trace.WriteLine($"### {traceSession.SessionName} session stopped. Number of lost events: {eventsLost:#,0}");
+            }
+        }
 
-                if (printSummary) {
-                    foreach (var handler in eventHandlers) {
-                        handler.PrintStatistics(traceSession.Source.SessionEndTimeRelativeMSec);
-                    }
-                }
+        public void PrintSummary()
+        {
+            foreach (var handler in eventHandlers) {
+                handler.PrintStatistics(traceSession.Source.SessionEndTimeRelativeMSec);
             }
         }
 

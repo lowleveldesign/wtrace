@@ -66,7 +66,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 return;
             }
 
-            processTraceRunner = new TraceProcess(new PowerShellTraceOutput(eventQueue), !NoSummary);
+            processTraceRunner = new TraceProcess(new PowerShellTraceOutput(eventQueue), !NoSummary, false);
             bool isMainThreadFinished = false;
 
             ThreadPool.QueueUserWorkItem((o) => {

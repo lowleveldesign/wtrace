@@ -69,7 +69,7 @@ namespace LowLevelDesign.WinTrace.EventHandlers
                 if (buffer.Length != 0) {
                     buffer.AppendLine();
                 }
-                buffer.Append($"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
+                buffer.Append($"{summary.Key} --> S: {summary.Value.Send:0} b / R: {summary.Value.Recv:0} b");
             }
             traceOutput.WriteSummary("Network", buffer.ToString());
         }
