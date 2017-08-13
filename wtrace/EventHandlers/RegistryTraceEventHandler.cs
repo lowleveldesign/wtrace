@@ -1,8 +1,10 @@
-﻿using Microsoft.Diagnostics.Tracing;
+﻿using System;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     class RegistryTraceEventHandler : ITraceEventHandler
     {
@@ -15,13 +17,15 @@ namespace LowLevelDesign.WinTrace.Handlers
             this.pid = pid;
         }
 
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.Registry;
+
         public void PrintStatistics(double sessionEndTimeInMs)
         {
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.RegistryClose += HandleRegistryTraceData;
             kernel.RegistryCreate += HandleRegistryTraceData;
             kernel.RegistryDelete += HandleRegistryTraceData;

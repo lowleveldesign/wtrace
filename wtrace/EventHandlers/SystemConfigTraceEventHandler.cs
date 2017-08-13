@@ -2,9 +2,11 @@
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Collections.Generic;
-using System.Diagnostics;
+using Microsoft.Diagnostics.Tracing.Session;
+using System;
+using System.Text;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     class SystemConfigTraceEventHandler : ITraceEventHandler
     {
@@ -12,15 +14,17 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly ITraceOutput output;
         private readonly List<string> buffer = new List<string>();
 
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.None;
+
         public SystemConfigTraceEventHandler(int pid, ITraceOutput output)
         {
             this.pid = pid;
             this.output = output;
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.SystemConfigCPU += Kernel_SystemConfigCPU;
             kernel.SystemConfigNIC += HandleConfigNIC;
             kernel.SystemConfigLogDisk += Kernel_SystemConfigLogDisk;
@@ -28,9 +32,7 @@ namespace LowLevelDesign.WinTrace.Handlers
 
         public void PrintStatistics(double sessionEndTimeInMs)
         {
-            foreach (var ev in buffer) {
-                output.Write(sessionEndTimeInMs, pid, 0, "Summary/SysConfig", ev);
-            }
+            output.WriteSummary("System Configuration", String.Join(Environment.NewLine, buffer));
         }
 
         private void Kernel_SystemConfigCPU(SystemConfigCPUTraceData data)

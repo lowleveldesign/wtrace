@@ -3,9 +3,10 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using Microsoft.Diagnostics.Tracing.Session;
+using System.Text;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     class AlpcTraceEventHandler : ITraceEventHandler
     {
@@ -19,10 +20,11 @@ namespace LowLevelDesign.WinTrace.Handlers
             traceOutput = output;
             this.pid = pid;
         }
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls;
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.ALPCReceiveMessage += HandleALPCReceiveMessage;
             kernel.ALPCSendMessage += HandleALPCSendMessage;
             //kernel.ALPCUnwait += HandleALPCUnwait;
@@ -74,9 +76,14 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (connectedProcesses.Count == 0) {
                 return;
             }
+            var buffer = new StringBuilder();
             foreach (var process in connectedProcesses) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/ALPC", $"endpoint: {process}");
+                if (buffer.Length != 0) {
+                    buffer.AppendLine();
+                }
+                buffer.Append($"endpoint: {process}");
             }
+            traceOutput.WriteSummary("ALPC", buffer.ToString());
         }
     }
 }

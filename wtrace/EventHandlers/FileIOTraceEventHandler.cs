@@ -58,10 +58,14 @@ namespace LowLevelDesign.WinTrace.EventHandlers
             if (fileIoSummary.Count == 0) {
                 return;
             }
+            var buffer = new StringBuilder();
             foreach (var summary in fileIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0, 
-                    "Summary/FileIO", $"'{summary.Key}' W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
+                if (buffer.Length != 0) {
+                    buffer.AppendLine();
+                }
+                buffer.Append($"'{summary.Key}' W: {summary.Value.Write:#,0} b / R: {summary.Value.Read:#,0} b");
             }
+            traceOutput.WriteSummary("File I/O", buffer.ToString());
         }
 
         private void HandleFileIoSimpleOp(FileIOSimpleOpTraceData data)
@@ -104,7 +108,14 @@ namespace LowLevelDesign.WinTrace.EventHandlers
         private void HandleFileIoName(FileIONameTraceData data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, $"'{data.FileName}' (0x{data.FileKey:X})");
+                string fileName = data.FileName;
+                ulong fileObject = data.FileKey;
+
+                if (!fileObjectToFileNameMap.ContainsKey(fileObject)) {
+                    fileObjectToFileNameMap.Add(fileObject, fileName);
+                }
+
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, data.EventName, $"'{fileName}' (0x{data.FileKey:X})");
             }
         }
 

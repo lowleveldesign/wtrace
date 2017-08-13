@@ -73,7 +73,9 @@ namespace LowLevelDesign.WinTrace
             }
 
             // for diagnostics information
+#if DEBUG
             Trace.Listeners.Add(new ConsoleTraceListener());
+#endif
 
             var processTraceRunner = new TraceProcess(new ConsoleTraceOutput(), printSummary);
 

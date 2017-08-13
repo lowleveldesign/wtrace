@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using System.IO;
 using System.Linq;
 using System.Net;
 using Microsoft.Diagnostics.Tracing;
-using LowLevelDesign.WinTrace.Tracing;
-using System.Diagnostics;
+using Microsoft.Diagnostics.Tracing.Session;
+using System;
+using System.Text;
 
-namespace LowLevelDesign.WinTrace.Handlers
+namespace LowLevelDesign.WinTrace.EventHandlers
 {
     class NetworkTraceEventHandler : ITraceEventHandler
     {
@@ -25,16 +25,17 @@ namespace LowLevelDesign.WinTrace.Handlers
         private readonly int pid;
         private readonly Dictionary<string, NetworkIoSummary> networkIoSummary = new Dictionary<string, NetworkIoSummary>();
 
+        public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.NetworkTCPIP;
+
         public NetworkTraceEventHandler(int pid, ITraceOutput output)
         {
             traceOutput = output;
             this.pid = pid;
-
         }
 
-        public void SubscribeToEvents(TraceEventParser parser)
+        public void SubscribeToSession(TraceEventSession session)
         {
-            var kernel = (KernelTraceEventParser)parser;
+            var kernel = session.Source.Kernel;
             kernel.TcpIpAccept += HandleTcpIpConnect;
             kernel.TcpIpAcceptIPV6 += HandleTcpIpV6Connect;
             kernel.TcpIpARPCopy += HandleTcpIp;
@@ -63,10 +64,14 @@ namespace LowLevelDesign.WinTrace.Handlers
             if (networkIoSummary.Count == 0) {
                 return;
             }
+            var buffer = new StringBuilder();
             foreach (var summary in networkIoSummary.OrderByDescending(kv => kv.Value.Total)) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/Network", 
-                    $"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
+                if (buffer.Length != 0) {
+                    buffer.AppendLine();
+                }
+                buffer.Append($"{summary.Key} --> S: {summary.Value.Send:#,0} b / R: {summary.Value.Recv:#,0} b");
             }
+            traceOutput.WriteSummary("Network", buffer.ToString());
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)

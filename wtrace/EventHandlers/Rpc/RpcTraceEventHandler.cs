@@ -5,6 +5,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace LowLevelDesign.WinTrace.EventHandlers.Rpc
 {
@@ -29,10 +30,14 @@ namespace LowLevelDesign.WinTrace.EventHandlers.Rpc
             if (rpcSummary.Count == 0) {
                 return;
             }
+            var buffer = new StringBuilder();
             foreach (var summary in rpcSummary.AsEnumerable().OrderByDescending(kv => kv.Value)) {
-                traceOutput.Write(sessionEndTimeInMs, pid, 0, "Summary/RPC", 
-                    $"endpoint: {summary.Key}, connections: {summary.Value}");
+                if (buffer.Length != 0) {
+                    buffer.AppendLine();
+                }
+                buffer.Append($"endpoint: {summary.Key}, connections: {summary.Value}");
             }
+            traceOutput.WriteSummary("RPC", buffer.ToString());
         }
 
         public void SubscribeToSession(TraceEventSession session)

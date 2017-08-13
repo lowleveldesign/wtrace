@@ -15,7 +15,7 @@ namespace LowLevelDesign.WinTrace
         private readonly ManualResetEvent stopEvent = new ManualResetEvent(false);
         private readonly bool printSummary;
         private readonly ITraceOutput traceOutput;
-        private Action<bool> stopTraceCollectors;
+        private Action stopTraceCollectors;
 
         public TraceProcess(ITraceOutput traceOutput, bool printSummary)
         {
@@ -26,8 +26,15 @@ namespace LowLevelDesign.WinTrace
         private void InitializeHandlers(TraceCollector kernelCollector, TraceCollector customCollector, int pid)
         {
             kernelCollector.AddHandler(new FileIOTraceEventHandler(pid, traceOutput));
+            kernelCollector.AddHandler(new AlpcTraceEventHandler(pid, traceOutput));
+            kernelCollector.AddHandler(new NetworkTraceEventHandler(pid, traceOutput));
+            kernelCollector.AddHandler(new ProcessThreadsTraceEventHandler(pid, traceOutput));
+            kernelCollector.AddHandler(new SystemConfigTraceEventHandler(pid, traceOutput));
 
             customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
+
+            // DISABLED ON PURPOSE:
+            // kernelCollector.AddHandler(new RegistryTraceEventHandler(pid, traceOutput)); // TODO: strange and sometimes missing key names
         }
 
         public void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow)
@@ -48,9 +55,9 @@ namespace LowLevelDesign.WinTrace
                         stopEvent.Set();
                     });
 
-                    stopTraceCollectors = (bool overridenPrintSummary) => {
-                        kernelTraceCollector.Stop(overridenPrintSummary);
-                        customTraceCollector.Stop(overridenPrintSummary);
+                    stopTraceCollectors = () => {
+                        kernelTraceCollector.Stop(printSummary);
+                        customTraceCollector.Stop(printSummary);
                     };
 
                     ThreadPool.QueueUserWorkItem((o) => {
@@ -90,9 +97,9 @@ namespace LowLevelDesign.WinTrace
                         stopEvent.Set();
                     });
 
-                    stopTraceCollectors = (bool overridenPrintSummary) => {
-                        kernelTraceCollector.Stop(overridenPrintSummary);
-                        customTraceCollector.Stop(overridenPrintSummary);
+                    stopTraceCollectors = () => {
+                        kernelTraceCollector.Stop(printSummary);
+                        customTraceCollector.Stop(printSummary);
                     };
 
                     ThreadPool.QueueUserWorkItem((o) => {
@@ -110,7 +117,7 @@ namespace LowLevelDesign.WinTrace
         public void Stop()
         {
             if (stopTraceCollectors != null) {
-                stopTraceCollectors(printSummary);
+                stopTraceCollectors();
                 stopTraceCollectors = null;
             }
 
@@ -120,7 +127,7 @@ namespace LowLevelDesign.WinTrace
         public void Stop(bool overridenPrintSummary)
         {
             if (stopTraceCollectors != null) {
-                stopTraceCollectors(overridenPrintSummary);
+                stopTraceCollectors();
                 stopTraceCollectors = null;
             }
 
