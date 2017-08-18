@@ -188,7 +188,9 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>powershell -Command "Copy-Item $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\net35\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net45\*.dll $(TargetDir) "</PreBuildEvent>
+    <PreBuildEvent>powershell -Command "Copy-Item $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\net35\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net45\*.dll $(TargetDir) "
+powershell -Command "Copy-Item -Recurse $(ProjectDir)binaries\amd64 $(TargetDir) "
+powershell -Command "Copy-Item -Recurse $(ProjectDir)binaries\x86 $(TargetDir) "</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

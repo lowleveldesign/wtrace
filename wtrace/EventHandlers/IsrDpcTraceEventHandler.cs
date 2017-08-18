@@ -85,7 +85,8 @@ namespace LowLevelDesign.WinTrace.EventHandlers
                 var driverImage = loadedDrivers.FindImage(kv.Key);
                 Debug.Assert(driverImage != null);
                 if (driverImage != null) {
-                    if (!statsPerDriver.TryGetValue(driverImage.FileName, out var driverStats)) {
+                    ExecutionStats driverStats;
+                    if (!statsPerDriver.TryGetValue(driverImage.FileName, out driverStats)) {
                         statsPerDriver.Add(driverImage.FileName, kv.Value);
                     } else {
                         driverStats.Count += kv.Value.Count;
