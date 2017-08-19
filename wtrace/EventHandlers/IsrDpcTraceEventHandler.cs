@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Text;
+using System;
+using System.Reflection;
+using Microsoft.Diagnostics.Tracing;
 
 namespace LowLevelDesign.WinTrace.EventHandlers
 {
@@ -16,6 +19,9 @@ namespace LowLevelDesign.WinTrace.EventHandlers
         private readonly DriverImages loadedDrivers = new DriverImages();
         private readonly Dictionary<ulong, ExecutionStats> isrTimePerRoutine = new Dictionary<ulong, ExecutionStats>();
         private readonly Dictionary<ulong, ExecutionStats> dpcTimePerRoutine = new Dictionary<ulong, ExecutionStats>();
+
+        private readonly byte[] bufferForInitialTimeValue = new byte[sizeof(Int64)];
+        private Func<long, double> QPCTimeToRelMSec;
 
         public IsrDpcTraceEventHandler(int pid, ITraceOutput traceOutput)
         {
@@ -35,16 +41,32 @@ namespace LowLevelDesign.WinTrace.EventHandlers
             kernel.PerfInfoDPC += HandleDpc;
             kernel.PerfInfoThreadedDPC += HandleDpc;
             kernel.PerfInfoTimerDPC += HandleDpc;
+
+            // stub method for valid calculation of the elapsed time for ISR/DPC events
+            var methodInfo = session.Source.GetType().GetMethod("QPCTimeToRelMSec", BindingFlags.Instance | BindingFlags.NonPublic);
+            var traceSource = session.Source;
+            var args = new object[1];
+            QPCTimeToRelMSec = (long qpcTime) => {
+                args[0] = qpcTime;
+                return (double)methodInfo.Invoke(traceSource, args);
+            };
+        }
+
+        private double ComputeElapsedTimeMSec(TraceEvent ev)
+        {
+            ev.EventData(bufferForInitialTimeValue, 0, 0, bufferForInitialTimeValue.Length);
+            var initialTime = BitConverter.ToInt64(bufferForInitialTimeValue, 0);
+            return ev.TimeStampRelativeMSec - QPCTimeToRelMSec(initialTime);
         }
 
         private void HandleIsr(ISRTraceData data)
         {
-            //FIXME: UpdateExecutionStats(isrTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
+            UpdateExecutionStats(isrTimePerRoutine, data.Routine, ComputeElapsedTimeMSec(data));
         }
 
         private void HandleDpc(DPCTraceData data)
         {
-            // FIXME: UpdateExecutionStats(dpcTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
+            UpdateExecutionStats(dpcTimePerRoutine, data.Routine, ComputeElapsedTimeMSec(data));
         }
 
         private static void UpdateExecutionStats(Dictionary<ulong, ExecutionStats> historicStats, ulong routine, double elapsedTimeMSec)
@@ -73,8 +95,12 @@ namespace LowLevelDesign.WinTrace.EventHandlers
 
         public void PrintStatistics(double sessionEndTimeInMs)
         {
-            PrintExecutionStatistics("ISR", isrTimePerRoutine);
-            PrintExecutionStatistics("DPC", dpcTimePerRoutine);
+            if (isrTimePerRoutine.Count > 0) {
+                PrintExecutionStatistics("ISR", isrTimePerRoutine);
+            }
+            if (dpcTimePerRoutine.Count > 0) {
+                PrintExecutionStatistics("DPC", dpcTimePerRoutine);
+            }
         }
 
         private void PrintExecutionStatistics(string title, Dictionary<ulong, ExecutionStats> statsPerRoutine)

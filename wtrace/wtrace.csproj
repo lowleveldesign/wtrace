@@ -59,8 +59,8 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <HintPath>binaries\Microsoft.Diagnostics.Tracing.TraceEvent.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Tracing.TraceEvent, Version=1.0.41.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\lib\net40\Microsoft.Diagnostics.Tracing.TraceEvent.dll</HintPath>
     </Reference>
     <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
@@ -121,6 +121,7 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="_TraceEventProgrammersGuide.docx" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(OutputPath)\NDesk.Options.dll">
@@ -138,39 +139,47 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\PInvoke.Kernel32.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="binaries\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+    <EmbeddedResource Include="$(OutputPath)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="binaries\amd64\KernelTraceControl.dll">
+    <EmbeddedResource Include="$(OutputPath)\amd64\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="binaries\amd64\msdia140.dll">
+    <EmbeddedResource Include="$(OutputPath)\amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="binaries\x86\KernelTraceControl.dll">
+    <EmbeddedResource Include="$(OutputPath)\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="binaries\x86\msdia140.dll">
+    <EmbeddedResource Include="$(OutputPath)\x86\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="TraceEvent.ReadMe.txt" />
+    <Content Include="TraceEvent.ReleaseNotes.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>powershell -Command "Copy-Item -Force $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\*net*\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net4?\*.dll $(TargetDir) "
-powershell -Command "Copy-Item -Force -Recurse $(ProjectDir)binaries\amd64 $(TargetDir) "
-powershell -Command "Copy-Item -Force -Recurse $(ProjectDir)binaries\x86 $(TargetDir) "</PreBuildEvent>
+    <PreBuildEvent>powershell -Command "Copy-Item -Force $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\*net*\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net4?\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\Microsoft.Diagnostics.Tracing.TraceEvent.*\lib\net40\*.dll $(TargetDir);Copy-Item -Force -Recurse $(SolutionDir)packages\Microsoft.Diagnostics.Tracing.TraceEvent.*\lib\native\* $(TargetDir) "</PreBuildEvent>
   </PropertyGroup>
+  <Import Project="..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
