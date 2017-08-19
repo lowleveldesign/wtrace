@@ -15,7 +15,6 @@ namespace LowLevelDesign.WinTrace.EventHandlers
     class IsrDpcTraceEventHandler : ITraceEventHandler
     {
         private readonly ITraceOutput traceOutput;
-        private readonly int pid;
         private readonly DriverImages loadedDrivers = new DriverImages();
         private readonly Dictionary<ulong, ExecutionStats> isrTimePerRoutine = new Dictionary<ulong, ExecutionStats>();
         private readonly Dictionary<ulong, ExecutionStats> dpcTimePerRoutine = new Dictionary<ulong, ExecutionStats>();
@@ -23,10 +22,9 @@ namespace LowLevelDesign.WinTrace.EventHandlers
         private readonly byte[] bufferForInitialTimeValue = new byte[sizeof(Int64)];
         private Func<long, double> QPCTimeToRelMSec;
 
-        public IsrDpcTraceEventHandler(int pid, ITraceOutput traceOutput)
+        public IsrDpcTraceEventHandler(ITraceOutput traceOutput)
         {
             this.traceOutput = traceOutput;
-            this.pid = pid;
         }
 
         public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.Interrupt

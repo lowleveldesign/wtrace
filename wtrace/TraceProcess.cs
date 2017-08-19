@@ -34,7 +34,7 @@ namespace LowLevelDesign.WinTrace
             kernelCollector.AddHandler(new SystemConfigTraceEventHandler(pid, traceOutput));
 
             if (collectSystemStats) {
-                kernelCollector.AddHandler(new IsrDpcTraceEventHandler(pid, traceOutput));
+                kernelCollector.AddHandler(new IsrDpcTraceEventHandler(traceOutput));
             }
 
             customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
