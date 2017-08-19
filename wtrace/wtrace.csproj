@@ -66,11 +66,11 @@
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PInvoke.Kernel32, Version=0.5.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
-      <HintPath>..\packages\PInvoke.Kernel32.0.5.97\lib\net45\PInvoke.Kernel32.dll</HintPath>
+    <Reference Include="PInvoke.Kernel32, Version=0.2.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
+      <HintPath>..\packages\PInvoke.Kernel32.0.2.1\lib\net40\PInvoke.Kernel32.dll</HintPath>
     </Reference>
-    <Reference Include="PInvoke.Windows.Core, Version=0.5.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
-      <HintPath>..\packages\PInvoke.Windows.Core.0.5.97\lib\net35\PInvoke.Windows.Core.dll</HintPath>
+    <Reference Include="PInvoke.Windows.Core, Version=0.2.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
+      <HintPath>..\packages\PInvoke.Windows.Core.0.2.1\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\PInvoke.Windows.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -115,8 +115,12 @@
     <Compile Include="Utilities\SupportFiles.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(OutputPath)\NDesk.Options.dll">
@@ -138,31 +142,6 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="binaries\Interop.Dia2Lib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="binaries\Microsoft.Diagnostics.FastSerialization.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="binaries\ZipLib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\ZipLib.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="binaries\OSExtensions.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\OSExtensions.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="binaries\TraceReloggerLib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\TraceReloggerLib.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="binaries\amd64\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
@@ -188,9 +167,9 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>powershell -Command "Copy-Item $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\net35\*.dll $(TargetDir);Copy-Item $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net45\*.dll $(TargetDir) "
-powershell -Command "Copy-Item -Recurse $(ProjectDir)binaries\amd64 $(TargetDir) "
-powershell -Command "Copy-Item -Recurse $(ProjectDir)binaries\x86 $(TargetDir) "</PreBuildEvent>
+    <PreBuildEvent>powershell -Command "Copy-Item -Force $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\*net*\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net4?\*.dll $(TargetDir) "
+powershell -Command "Copy-Item -Force -Recurse $(ProjectDir)binaries\amd64 $(TargetDir) "
+powershell -Command "Copy-Item -Force -Recurse $(ProjectDir)binaries\x86 $(TargetDir) "</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

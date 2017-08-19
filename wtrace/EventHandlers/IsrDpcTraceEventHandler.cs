@@ -39,12 +39,12 @@ namespace LowLevelDesign.WinTrace.EventHandlers
 
         private void HandleIsr(ISRTraceData data)
         {
-            UpdateExecutionStats(isrTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
+            //FIXME: UpdateExecutionStats(isrTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
         }
 
         private void HandleDpc(DPCTraceData data)
         {
-            UpdateExecutionStats(dpcTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
+            // FIXME: UpdateExecutionStats(dpcTimePerRoutine, data.Routine, data.ElapsedTimeMSec);
         }
 
         private static void UpdateExecutionStats(Dictionary<ulong, ExecutionStats> historicStats, ulong routine, double elapsedTimeMSec)
