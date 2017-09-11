@@ -83,7 +83,7 @@ namespace LowLevelDesign.WinTrace.EventHandlers
                 }
                 buffer.Append($"endpoint: {process}");
             }
-            traceOutput.WriteSummary("ALPC", buffer.ToString());
+            traceOutput.WriteSummary($"ALPC ({pid})", buffer.ToString());
         }
     }
 }

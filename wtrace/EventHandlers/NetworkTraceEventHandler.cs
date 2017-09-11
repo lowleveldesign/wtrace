@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Session;
-using System;
 using System.Text;
 
 namespace LowLevelDesign.WinTrace.EventHandlers
@@ -71,7 +69,7 @@ namespace LowLevelDesign.WinTrace.EventHandlers
                 }
                 buffer.Append($"{summary.Key} --> S: {summary.Value.Send:0} b / R: {summary.Value.Recv:0} b");
             }
-            traceOutput.WriteSummary("Network", buffer.ToString());
+            traceOutput.WriteSummary($"Network ({pid})", buffer.ToString());
         }
 
         private void HandleTcpIpConnect(TcpIpConnectTraceData data)

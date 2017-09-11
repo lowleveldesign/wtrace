@@ -10,15 +10,13 @@ namespace LowLevelDesign.WinTrace.EventHandlers
 {
     class SystemConfigTraceEventHandler : ITraceEventHandler
     {
-        private readonly int pid;
         private readonly ITraceOutput output;
         private readonly List<string> buffer = new List<string>();
 
         public KernelTraceEventParser.Keywords RequiredKernelFlags => KernelTraceEventParser.Keywords.None;
 
-        public SystemConfigTraceEventHandler(int pid, ITraceOutput output)
+        public SystemConfigTraceEventHandler(ITraceOutput output)
         {
-            this.pid = pid;
             this.output = output;
         }
 

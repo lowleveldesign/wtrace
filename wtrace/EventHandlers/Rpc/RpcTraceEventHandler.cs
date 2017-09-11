@@ -37,7 +37,7 @@ namespace LowLevelDesign.WinTrace.EventHandlers.Rpc
                 }
                 buffer.Append($"endpoint: {summary.Key}, connections: {summary.Value}");
             }
-            traceOutput.WriteSummary("RPC", buffer.ToString());
+            traceOutput.WriteSummary($"RPC ({pid})", buffer.ToString());
         }
 
         public void SubscribeToSession(TraceEventSession session)

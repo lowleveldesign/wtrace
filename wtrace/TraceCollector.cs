@@ -24,9 +24,12 @@ namespace LowLevelDesign.WinTrace
 
         public void AddHandler(ITraceEventHandler handler)
         {
-            Debug.Assert(!traceSession.IsActive);
-
-            kernelFlags |= handler.RequiredKernelFlags;
+            if (traceSession.IsActive) {
+                // live handler adding
+                handler.SubscribeToSession(traceSession);
+            } else {
+                kernelFlags |= handler.RequiredKernelFlags;
+            }
             eventHandlers.Add(handler);
         }
 

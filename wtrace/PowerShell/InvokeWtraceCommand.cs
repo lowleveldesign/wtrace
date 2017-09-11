@@ -52,6 +52,11 @@ namespace LowLevelDesign.WinTrace.PowerShell
         [Alias("Id")]
         public int Pid { get; set; }
 
+        [Parameter(
+            Mandatory = false,
+            HelpMessage = "Trace child processes.")]
+        public bool TraceChildProcesses { get; set; }
+
         protected override void BeginProcessing()
         {
         }
@@ -77,9 +82,10 @@ namespace LowLevelDesign.WinTrace.PowerShell
                         if (ArgumentList != null) {
                             args.AddRange(ArgumentList);
                         }
-                        processTraceRunner.TraceNewProcess(args, NewConsole, collectSystemStats);
+                        processTraceRunner.TraceNewProcess(args, NewConsole, TraceChildProcesses, 
+                            collectSystemStats);
                     } else {
-                        processTraceRunner.TraceRunningProcess(Pid, collectSystemStats);
+                        processTraceRunner.TraceRunningProcess(Pid, TraceChildProcesses, collectSystemStats);
                     }
                     isMainThreadFinished = true;
                 } catch (Exception ex) {

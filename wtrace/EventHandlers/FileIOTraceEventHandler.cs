@@ -65,7 +65,7 @@ namespace LowLevelDesign.WinTrace.EventHandlers
                 }
                 buffer.Append($"'{summary.Key}' W: {summary.Value.Write:0} b / R: {summary.Value.Read:0} b");
             }
-            traceOutput.WriteSummary("File I/O", buffer.ToString());
+            traceOutput.WriteSummary($"File I/O ({pid})", buffer.ToString());
         }
 
         private void HandleFileIoSimpleOp(FileIOSimpleOpTraceData data)

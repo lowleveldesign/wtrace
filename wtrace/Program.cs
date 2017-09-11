@@ -30,13 +30,14 @@ namespace LowLevelDesign.WinTrace
 
             List<string> procargs = null;
             bool showhelp = false, spawnNewConsoleWindow = false,
-                collectSystemStats = false, printSummary = true;
+                collectSystemStats = false, printSummary = true, traceChildProcesses = false;
 
             int pid = 0;
 
             var p = new OptionSet
             {
                 { "s|system", "Collect system statistics (DPC/ISR) - shown in the summary", v => { collectSystemStats = v != null; } },
+                { "c|children", "Trace process and all its children.", v => { traceChildProcesses = v != null; } },
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
                 { "nosummary", "Prints only ETW events - no summary at the end.", v => { printSummary = v == null; } },
                 { "h|help", "Show this message and exit", v => showhelp = v != null },
@@ -82,9 +83,10 @@ namespace LowLevelDesign.WinTrace
                     Console.WriteLine("System tracing has started. Press Ctrl + C to stop...");
                     traceSession.TraceSystemOnly();
                 } else if (!int.TryParse(procargs[0], out pid)) {
-                    traceSession.TraceNewProcess(procargs, spawnNewConsoleWindow, collectSystemStats);
+                    traceSession.TraceNewProcess(procargs, spawnNewConsoleWindow, traceChildProcesses, 
+                        collectSystemStats);
                 } else {
-                    traceSession.TraceRunningProcess(pid, collectSystemStats);
+                    traceSession.TraceRunningProcess(pid, traceChildProcesses, collectSystemStats);
                 }
             } catch (COMException ex) {
                 if ((uint)ex.HResult == 0x800700B7) {

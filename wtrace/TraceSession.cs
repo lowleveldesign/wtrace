@@ -12,6 +12,8 @@ namespace LowLevelDesign.WinTrace
     {
         const string WinTraceUserTraceSessionName = "wtrace-customevents";
 
+        private static Action<int> emptyAction = (int pid) => { };
+
         private readonly ManualResetEvent stopEvent = new ManualResetEvent(false);
         private readonly bool printSummary;
         private readonly ITraceOutput traceOutput;
@@ -23,30 +25,34 @@ namespace LowLevelDesign.WinTrace
             this.printSummary = printSummary;
         }
 
-        private void InitializeSystemHandlers(TraceCollector kernelCollector)
+        private void InitializeSystemHandlers(TraceCollector kernelCollector, bool collectDriverStats)
         {
-            kernelCollector.AddHandler(new IsrDpcTraceEventHandler(traceOutput));
+            kernelCollector.AddHandler(new SystemConfigTraceEventHandler(traceOutput));
+            if (collectDriverStats) {
+                kernelCollector.AddHandler(new IsrDpcTraceEventHandler(traceOutput));
+            }
         }
 
-        private void InitializeProcessHandlers(TraceCollector kernelCollector, TraceCollector customCollector, int pid)
+        private void InitializeProcessHandlers(TraceCollector kernelCollector, TraceCollector customCollector, 
+            int pid, bool traceChildProcesses)
         {
             kernelCollector.AddHandler(new FileIOTraceEventHandler(pid, traceOutput));
             kernelCollector.AddHandler(new AlpcTraceEventHandler(pid, traceOutput));
             kernelCollector.AddHandler(new NetworkTraceEventHandler(pid, traceOutput));
-            kernelCollector.AddHandler(new ProcessThreadsTraceEventHandler(pid, traceOutput));
-            kernelCollector.AddHandler(new SystemConfigTraceEventHandler(pid, traceOutput));
-
-            customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
+            kernelCollector.AddHandler(new ProcessThreadsTraceEventHandler(pid, traceOutput, traceChildProcesses ?
+                (int processId) => { InitializeProcessHandlers(kernelCollector, customCollector, processId, true); } : emptyAction));
 
             // DISABLED ON PURPOSE:
             // kernelCollector.AddHandler(new RegistryTraceEventHandler(pid, traceOutput)); // TODO: strange and sometimes missing key names
+
+            customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
         }
 
         public void TraceSystemOnly()
         {
             using (TraceCollector kernelTraceCollector = new TraceCollector(KernelTraceEventParser.KernelSessionName)) {
 
-                InitializeSystemHandlers(kernelTraceCollector);
+                InitializeSystemHandlers(kernelTraceCollector, true);
 
                 stopTraceCollectors = () => {
                     StopCollector(kernelTraceCollector);
@@ -60,7 +66,8 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        public void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, bool collectSystemStats)
+        public void TraceNewProcess(IEnumerable<string> procargs, bool spawnNewConsoleWindow, 
+            bool traceChildProcesses, bool collectDriverStats)
         {
             using (var process = new ProcessCreator(procargs) { SpawnNewConsoleWindow = spawnNewConsoleWindow }) {
                 process.StartSuspended();
@@ -68,10 +75,9 @@ namespace LowLevelDesign.WinTrace
                 using (TraceCollector kernelTraceCollector = new TraceCollector(KernelTraceEventParser.KernelSessionName),
                     customTraceCollector = new TraceCollector(WinTraceUserTraceSessionName)) {
 
-                    if (collectSystemStats) {
-                        InitializeSystemHandlers(kernelTraceCollector);
-                    }
-                    InitializeProcessHandlers(kernelTraceCollector, customTraceCollector, process.ProcessId);
+                    InitializeSystemHandlers(kernelTraceCollector, collectDriverStats);
+                    InitializeProcessHandlers(kernelTraceCollector, customTraceCollector, 
+                        process.ProcessId, traceChildProcesses);
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         process.Join();
@@ -100,7 +106,7 @@ namespace LowLevelDesign.WinTrace
             }
         }
 
-        public void TraceRunningProcess(int pid, bool collectSystemStats)
+        public void TraceRunningProcess(int pid, bool traceChildProcesses, bool collectDriverStats)
         {
             using (var hProcess = Kernel32.OpenProcess(Kernel32.ACCESS_MASK.StandardRight.SYNCHRONIZE, false, pid)) {
                 if (hProcess.IsInvalid) {
@@ -110,10 +116,9 @@ namespace LowLevelDesign.WinTrace
                 using (TraceCollector kernelTraceCollector = new TraceCollector(KernelTraceEventParser.KernelSessionName),
                     customTraceCollector = new TraceCollector(WinTraceUserTraceSessionName)) {
 
-                    if (collectSystemStats) {
-                        InitializeSystemHandlers(kernelTraceCollector);
-                    }
-                    InitializeProcessHandlers(kernelTraceCollector, customTraceCollector, pid);
+                    InitializeSystemHandlers(kernelTraceCollector, collectDriverStats);
+                    InitializeProcessHandlers(kernelTraceCollector, customTraceCollector, 
+                        pid, traceChildProcesses);
 
                     ThreadPool.QueueUserWorkItem((o) => {
                         Kernel32.WaitForSingleObject(hProcess, Constants.INFINITE);
