@@ -29,7 +29,7 @@ namespace LowLevelDesign.WinTrace
             }
 
             List<string> procargs = null;
-            bool showhelp = false, spawnNewConsoleWindow = false, 
+            bool showhelp = false, spawnNewConsoleWindow = false,
                 collectSystemStats = false, printSummary = true;
 
             int pid = 0;
@@ -57,8 +57,8 @@ namespace LowLevelDesign.WinTrace
             }
 
             Debug.Assert(procargs != null);
-            if (!showhelp && procargs.Count == 0) {
-                Console.Error.WriteLine("ERROR: please provide either process name or PID of the already running process");
+            if (!showhelp && !collectSystemStats && procargs.Count == 0) {
+                Console.Error.WriteLine("ERROR: please provide either process name, PID, or turn on system tracing (-s)");
                 Console.Error.WriteLine();
                 showhelp = true;
             }
@@ -73,27 +73,27 @@ namespace LowLevelDesign.WinTrace
             Trace.Listeners.Add(new ConsoleTraceListener());
 #endif
 
-            var processTraceRunner = new TraceProcess(new ConsoleTraceOutput(), printSummary, collectSystemStats);
+            var traceSession = new TraceSession(new ConsoleTraceOutput(), printSummary);
 
-            SetConsoleCtrlCHook(processTraceRunner);
+            SetConsoleCtrlCHook(traceSession);
 
             try {
-                if (!int.TryParse(procargs[0], out pid)) {
-                    processTraceRunner.TraceNewProcess(procargs, spawnNewConsoleWindow);
+                if (procargs.Count == 0) {
+                    Console.WriteLine("System tracing has started. Press Ctrl + C to stop...");
+                    traceSession.TraceSystemOnly();
+                } else if (!int.TryParse(procargs[0], out pid)) {
+                    traceSession.TraceNewProcess(procargs, spawnNewConsoleWindow, collectSystemStats);
+                } else {
+                    traceSession.TraceRunningProcess(pid, collectSystemStats);
                 }
-                else {
-                    processTraceRunner.TraceRunningProcess(pid);
-                }
-            }
-            catch (COMException ex) {
-                if ((uint) ex.HResult == 0x800700B7) {
+            } catch (COMException ex) {
+                if ((uint)ex.HResult == 0x800700B7) {
                     Console.Error.WriteLine("ERROR: could not start the kernel logger - make sure it is not running.");
                 }
-            }
-            catch (Win32Exception ex) {
+            } catch (Win32Exception ex) {
                 Console.Error.WriteLine(
-                    $"ERROR: an error occurred while trying to start or open the process, hr: 0x{ex.HResult:X8}, " + 
-                        $"code: 0x{ex.NativeErrorCode:X8} ({ex.Message})." );
+                    $"ERROR: an error occurred while trying to start or open the process, hr: 0x{ex.HResult:X8}, " +
+                        $"code: 0x{ex.NativeErrorCode:X8} ({ex.Message}).");
             }
 #if !DEBUG
             catch (Exception ex) {
@@ -102,7 +102,7 @@ namespace LowLevelDesign.WinTrace
 #endif
         }
 
-        static void SetConsoleCtrlCHook(TraceProcess processTraceRunner)
+        static void SetConsoleCtrlCHook(TraceSession processTraceRunner)
         {
             // Set up Ctrl-C to stop both user mode and kernel mode sessions
             Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs cancelArgs) => {

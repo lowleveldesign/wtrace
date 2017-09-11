@@ -13,7 +13,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
     public class InvokeWtraceCommand : PSCmdlet
     {
         readonly ConcurrentQueue<PowerShellWtraceEvent> eventQueue = new ConcurrentQueue<PowerShellWtraceEvent>();
-        TraceProcess processTraceRunner;
+        TraceSession processTraceRunner;
 
         [Parameter(HelpMessage = "Defines whether events statistics will be printed at the end of the trace.")]
         public bool NoSummary { get; set; }
@@ -66,8 +66,9 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 return;
             }
 
-            processTraceRunner = new TraceProcess(new PowerShellTraceOutput(eventQueue), !NoSummary, false);
+            processTraceRunner = new TraceSession(new PowerShellTraceOutput(eventQueue), !NoSummary);
             bool isMainThreadFinished = false;
+            const bool collectSystemStats = false; // not available in PowerShell
 
             ThreadPool.QueueUserWorkItem((o) => {
                 try {
@@ -76,9 +77,9 @@ namespace LowLevelDesign.WinTrace.PowerShell
                         if (ArgumentList != null) {
                             args.AddRange(ArgumentList);
                         }
-                        processTraceRunner.TraceNewProcess(args, NewConsole);
+                        processTraceRunner.TraceNewProcess(args, NewConsole, collectSystemStats);
                     } else {
-                        processTraceRunner.TraceRunningProcess(Pid);
+                        processTraceRunner.TraceRunningProcess(Pid, collectSystemStats);
                     }
                     isMainThreadFinished = true;
                 } catch (Exception ex) {
