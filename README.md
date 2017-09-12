@@ -15,6 +15,7 @@ Usage: wtrace [OPTIONS] pid|imagename args
 Options:
   -s, --system               Collect system statistics (DPC/ISR) - shown in
                                the summary
+  -c, --children             Trace process and all its children.
       --newconsole           Start the process in a new console window.
       --nosummary            Prints only ETW events - no summary at the end.
   -h, --help                 Show this message and exit
