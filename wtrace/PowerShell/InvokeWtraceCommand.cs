@@ -54,6 +54,11 @@ namespace LowLevelDesign.WinTrace.PowerShell
 
         [Parameter(
             Mandatory = false,
+            HelpMessage = "Display only events which names contain the given keyword (case insensitive).")]
+        public string Filter { get; set; }
+
+        [Parameter(
+            Mandatory = false,
             HelpMessage = "Trace child processes.")]
         public bool TraceChildProcesses { get; set; }
 
@@ -71,7 +76,7 @@ namespace LowLevelDesign.WinTrace.PowerShell
                 return;
             }
 
-            processTraceRunner = new TraceSession(new PowerShellTraceOutput(eventQueue), !NoSummary);
+            processTraceRunner = new TraceSession(new PowerShellTraceOutput(eventQueue, Filter), !NoSummary);
             bool isMainThreadFinished = false;
             const bool collectSystemStats = false; // not available in PowerShell
 

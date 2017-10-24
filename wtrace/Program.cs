@@ -31,17 +31,20 @@ namespace LowLevelDesign.WinTrace
             List<string> procargs = null;
             bool showhelp = false, spawnNewConsoleWindow = false,
                 collectSystemStats = false, printSummary = true, traceChildProcesses = false;
+            string eventNameFilter = null;
 
             int pid = 0;
 
             var p = new OptionSet
             {
-                { "s|system", "Collect system statistics (DPC/ISR) - shown in the summary", v => { collectSystemStats = v != null; } },
+                { "f|filter=", "Display only events which names contain the given keyword " +
+                    "(case insensitive). Does not impact the summary.", v => { eventNameFilter = v; } },
+                { "s|system", "Collect system statistics (DPC/ISR) - shown in the summary.", v => { collectSystemStats = v != null; } },
                 { "c|children", "Trace process and all its children.", v => { traceChildProcesses = v != null; } },
                 { "newconsole", "Start the process in a new console window.", v => { spawnNewConsoleWindow = v != null; } },
                 { "nosummary", "Prints only ETW events - no summary at the end.", v => { printSummary = v == null; } },
-                { "h|help", "Show this message and exit", v => showhelp = v != null },
-                { "?", "Show this message and exit", v => showhelp = v != null }
+                { "h|help", "Show this message and exit.", v => showhelp = v != null },
+                { "?", "Show this message and exit.", v => showhelp = v != null }
             };
 
             try {
@@ -74,7 +77,7 @@ namespace LowLevelDesign.WinTrace
             Trace.Listeners.Add(new ConsoleTraceListener());
 #endif
 
-            var traceSession = new TraceSession(new ConsoleTraceOutput(), printSummary);
+            var traceSession = new TraceSession(new ConsoleTraceOutput(eventNameFilter), printSummary);
 
             SetConsoleCtrlCHook(traceSession);
 

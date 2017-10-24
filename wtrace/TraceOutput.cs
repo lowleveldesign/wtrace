@@ -11,9 +11,19 @@ namespace LowLevelDesign.WinTrace
 
     class ConsoleTraceOutput : ITraceOutput
     {
+        private readonly string eventNameFilter;
+
+        public ConsoleTraceOutput(string eventNameFilter)
+        {
+            this.eventNameFilter = eventNameFilter;
+        }
+
         public void Write(double timeStampRelativeInMSec, int processId, int threadId, string eventName, string details)
         {
-            Console.WriteLine($"{timeStampRelativeInMSec:0.0000} ({processId}.{threadId}) {eventName} {details}");
+            if (eventNameFilter == null || 
+                eventName.IndexOf(eventNameFilter, StringComparison.OrdinalIgnoreCase) >= 0) {
+                Console.WriteLine($"{timeStampRelativeInMSec:0.0000} ({processId}.{threadId}) {eventName} {details}");
+            }
         }
 
         public void WriteSummary(string title, string eventsSummary)

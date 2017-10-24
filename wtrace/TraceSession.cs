@@ -45,6 +45,7 @@ namespace LowLevelDesign.WinTrace
             // DISABLED ON PURPOSE:
             // kernelCollector.AddHandler(new RegistryTraceEventHandler(pid, traceOutput)); // TODO: strange and sometimes missing key names
 
+            customCollector.AddHandler(new EventHandlers.PowerShell.PowerShellTraceEventHandler(pid, traceOutput));
             customCollector.AddHandler(new EventHandlers.Rpc.RpcTraceEventHandler(pid, traceOutput));
         }
 

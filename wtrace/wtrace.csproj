@@ -90,6 +90,8 @@
     <Compile Include="EventHandlers\IsrDpcTraceEventHandler.cs" />
     <Compile Include="EventHandlers\ITraceEventHandler.cs" />
     <Compile Include="EventHandlers\NetworkTraceEventHandler.cs" />
+    <Compile Include="EventHandlers\PowerShell\PowerShellEvents.cs" />
+    <Compile Include="EventHandlers\PowerShell\PowerShellTraceEventHandler.cs" />
     <Compile Include="EventHandlers\ProcessThreadsTraceEventHandler.cs" />
     <Compile Include="EventHandlers\RegistryTraceEventHandler.cs" />
     <Compile Include="EventHandlers\Rpc\RpcTraceEventHandler.cs" />
