@@ -123,7 +123,6 @@ namespace Microsoft.Diagnostics.Utilities
                 }
                 catch (Exception)
                 {
-                    // TODO trace message;
                     ret = false;
                 }
             }

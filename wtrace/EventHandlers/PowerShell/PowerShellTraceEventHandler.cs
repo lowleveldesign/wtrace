@@ -28,16 +28,17 @@ namespace LowLevelDesign.WinTrace.EventHandlers.PowerShell
         {
             var powerShellParser = new MicrosoftWindowsPowerShellTraceEventParser(session.Source);
 
-            powerShellParser.CommandEvent += OnCommandEvent;
-            powerShellParser.ScriptBlockEvent += OnScriptBlockEvent;
+            powerShellParser.CommandEvent7937 += OnCommandEvent;
+            powerShellParser.CommandEvent4103 += OnCommandEvent;
+            powerShellParser.ScriptBlockEvent4104 += OnScriptBlockEvent4104;
 
             session.EnableProvider(MicrosoftWindowsPowerShellTraceEventParser.ProviderGuid);
         }
 
-        private void OnScriptBlockEvent(ScriptBlockEventArgs data)
+        private void OnScriptBlockEvent4104(ScriptBlockEventArgs data)
         {
             if (data.ProcessID == pid) {
-                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, 
+                traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
                     "PowerShell/ScriptBlock", data.ScriptBlockText);
             }
         }
@@ -45,14 +46,41 @@ namespace LowLevelDesign.WinTrace.EventHandlers.PowerShell
         private void OnCommandEvent(CommandEventArgs data)
         {
             if (data.ProcessID == pid) {
-                // It is a very strange way of distinguishing those events, but I could not find a better one
-                if (data.Payload.EndsWith($"Started.{Environment.NewLine}", System.StringComparison.OrdinalIgnoreCase)) {
-                    string commandName = ExtractDataFromContextInfo(data.ContextInfo, "Command Name");
-                    string commandType = ExtractDataFromContextInfo(data.ContextInfo, "Command Type");
+                string commandType = ExtractDataFromContextInfo(data.ContextInfo, "Command Type");
+                string eventName = $"PowerShell/{commandType}";
 
-                    string eventName = $"PowerShell/{commandType}";
-                    traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID, 
+                // It is a very strange way of distinguishing those events, but I could not find a better one
+                if ((int)data.ID == 7937 && data.Payload.EndsWith($"Started.{Environment.NewLine}", System.StringComparison.OrdinalIgnoreCase)) {
+                    string commandName = ExtractDataFromContextInfo(data.ContextInfo, "Command Name");
+
+                    traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
                         eventName, commandName);
+                } else if ((int)data.ID == 4103) {
+                    traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
+                        eventName, data.Payload); 
+                    /* FIXME better split the commands
+CommandInvocation(Set-StrictMode): "Set-StrictMode"
+ParameterBinding(Set-StrictMode): name="Off"; value="True"
+
+                or
+
+CommandInvocation(Out-Default): "Out-Default"
+ParameterBinding(Out-Default): name="InputObject"; value="books"
+ParameterBinding(Out-Default): name="InputObject"; value="debug-recipes"
+ParameterBinding(Out-Default): name="InputObject"; value="dev"
+ParameterBinding(Out-Default): name="InputObject"; value="diag"
+ParameterBinding(Out-Default): name="InputObject"; value="moje"
+ParameterBinding(Out-Default): name="InputObject"; value="mybooks"
+ParameterBinding(Out-Default): name="InputObject"; value="reference-docs"
+ParameterBinding(Out-Default): name="InputObject"; value="repos"
+ParameterBinding(Out-Default): name="InputObject"; value="research"
+ParameterBinding(Out-Default): name="InputObject"; value="research-archive"
+ParameterBinding(Out-Default): name="InputObject"; value="scripts"
+ParameterBinding(Out-Default): name="InputObject"; value="shortcuts"
+ParameterBinding(Out-Default): name="InputObject"; value="tools
+ 
+                 */
+
                 }
             }
         }

@@ -34,11 +34,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public MicrosoftWindowsPowerShellTraceEventParser(TraceEventSource source) : base(source) {}
 
-        public event Action<ScriptBlockEventArgs> ScriptBlockEvent
+        public event Action<ScriptBlockEventArgs> ScriptBlockEvent4104
         {
             add
             {
-                source.RegisterEventTemplate(ScriptBlockEventTemplate(value));
+                source.RegisterEventTemplate(ScriptBlock4104EventTemplate(value));
             }
             remove
             {
@@ -46,11 +46,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        public event Action<CommandEventArgs> CommandEvent
+        public event Action<CommandEventArgs> CommandEvent4103
         {
             add
             {
-                source.RegisterEventTemplate(CommandEventTemplate(value));
+                source.RegisterEventTemplate(CommandEvent4103Template(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 4103, ProviderGuid);
+            }
+        }
+
+        public event Action<CommandEventArgs> CommandEvent7937
+        {
+            add
+            {
+                source.RegisterEventTemplate(CommandEvent7937Template(value));
             }
             remove
             {
@@ -60,14 +72,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         protected override string GetProviderName() { return ProviderName; }
 
-        static private ScriptBlockEventArgs ScriptBlockEventTemplate(Action<ScriptBlockEventArgs> action)
+        static private ScriptBlockEventArgs ScriptBlock4104EventTemplate(Action<ScriptBlockEventArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new ScriptBlockEventArgs(action, 4104, 102, "StartingCommand", Guid.Empty, 15, "Oncreatecalls", ProviderGuid, ProviderName );
         }
 
-        static private CommandEventArgs CommandEventTemplate(Action<CommandEventArgs> action)
+        static private CommandEventArgs CommandEvent7937Template(Action<CommandEventArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new CommandEventArgs(action, 7937, 0, "None", Guid.Empty, 20, "Tobeusedwhenoperationisjustexecutingamethod", ProviderGuid, ProviderName );
+        }
+
+        static private CommandEventArgs CommandEvent4103Template(Action<CommandEventArgs> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new CommandEventArgs(action, 4103, 0, "None", Guid.Empty, 19, "Tobeusedwhenanexceptionisraised", ProviderGuid, ProviderName );
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -75,9 +92,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[2];
-                templates[0] = ScriptBlockEventTemplate(null);
-                templates[1] = CommandEventTemplate(null);
+                var templates = new TraceEvent[3];
+                templates[0] = ScriptBlock4104EventTemplate(null);
+                templates[1] = CommandEvent7937Template(null);
+                templates[2] = CommandEvent4103Template(null);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
