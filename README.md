@@ -13,14 +13,16 @@ The available options are:
 Usage: wtrace [OPTIONS] pid|imagename args
 
 Options:
+  -f, --filter=VALUE         Display only events which names contain the
+                               given keyword (case insensitive). Does not
+                               impact the summary.
   -s, --system               Collect system statistics (DPC/ISR) - shown in
-                               the summary
+                               the summary.
   -c, --children             Trace process and all its children.
       --newconsole           Start the process in a new console window.
       --nosummary            Prints only ETW events - no summary at the end.
-  -h, --help                 Show this message and exit
-  -?                         Show this message and exit
-```
+  -h, --help                 Show this message and exit.
+  -?                         Show this message and exit.```
 
 A sample trace session might look as follows:
 
