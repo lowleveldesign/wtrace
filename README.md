@@ -22,7 +22,8 @@ Options:
       --newconsole           Start the process in a new console window.
       --nosummary            Prints only ETW events - no summary at the end.
   -h, --help                 Show this message and exit.
-  -?                         Show this message and exit.```
+  -?                         Show this message and exit.
+```
 
 A sample trace session might look as follows:
 
