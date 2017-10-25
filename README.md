@@ -60,3 +60,4 @@ PS temp> wtrace mspaint
 ## Links
 
 - [Releasing wtrace 1.0 and procgov 2.0](https://lowleveldesign.wordpress.com/2016/10/21/releasing-wtrace-1-0-and-procgov-2-0/)
+- [Wtrace 2.2](https://lowleveldesign.org/2017/10/25/wtrace-2-2/)
