@@ -3,6 +3,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsPowerShell;
 using System;
+using System.Text;
 
 namespace LowLevelDesign.WinTrace.EventHandlers.PowerShell
 {
@@ -56,31 +57,21 @@ namespace LowLevelDesign.WinTrace.EventHandlers.PowerShell
                     traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
                         eventName, commandName);
                 } else if ((int)data.ID == 4103) {
+                    string payload = data.Payload.Trim();
+                    if (payload.IndexOf(Environment.NewLine) >= 0) {
+                        const string scriptSeparatorBegin = "~~~~~~~~~~~~~~~~~ BEGIN ~~~~~~~~~~~~~~~~~";
+                        const string scriptSeparatorEnd = "~~~~~~~~~~~~~~~~~  END  ~~~~~~~~~~~~~~~~~";
+                        var sb = new StringBuilder(payload.Length + scriptSeparatorBegin.Length +
+                            scriptSeparatorEnd.Length + 8);
+
+                        sb.AppendLine();
+                        sb.AppendLine(scriptSeparatorBegin);
+                        sb.AppendLine(payload);
+                        sb.Append(scriptSeparatorEnd);
+                        payload = sb.ToString();
+                    }
                     traceOutput.Write(data.TimeStampRelativeMSec, data.ProcessID, data.ThreadID,
-                        eventName, data.Payload); 
-                    /* FIXME better split the commands
-CommandInvocation(Set-StrictMode): "Set-StrictMode"
-ParameterBinding(Set-StrictMode): name="Off"; value="True"
-
-                or
-
-CommandInvocation(Out-Default): "Out-Default"
-ParameterBinding(Out-Default): name="InputObject"; value="books"
-ParameterBinding(Out-Default): name="InputObject"; value="debug-recipes"
-ParameterBinding(Out-Default): name="InputObject"; value="dev"
-ParameterBinding(Out-Default): name="InputObject"; value="diag"
-ParameterBinding(Out-Default): name="InputObject"; value="moje"
-ParameterBinding(Out-Default): name="InputObject"; value="mybooks"
-ParameterBinding(Out-Default): name="InputObject"; value="reference-docs"
-ParameterBinding(Out-Default): name="InputObject"; value="repos"
-ParameterBinding(Out-Default): name="InputObject"; value="research"
-ParameterBinding(Out-Default): name="InputObject"; value="research-archive"
-ParameterBinding(Out-Default): name="InputObject"; value="scripts"
-ParameterBinding(Out-Default): name="InputObject"; value="shortcuts"
-ParameterBinding(Out-Default): name="InputObject"; value="tools
- 
-                 */
-
+                        eventName, payload);
                 }
             }
         }
