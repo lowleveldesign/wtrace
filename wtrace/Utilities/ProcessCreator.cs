@@ -26,7 +26,8 @@ namespace LowLevelDesign.WinTrace.Utilities
                 hStdOutput = Kernel32.SafeObjectHandle.Null,
                 hStdError = Kernel32.SafeObjectHandle.Null 
             };
-            var processCreationFlags = Kernel32.CreateProcessFlags.CREATE_SUSPENDED;
+            var processCreationFlags = Kernel32.CreateProcessFlags.CREATE_SUSPENDED | 
+                                       Kernel32.CreateProcessFlags.CREATE_UNICODE_ENVIRONMENT;
             if (SpawnNewConsoleWindow) {
                 processCreationFlags |= Kernel32.CreateProcessFlags.CREATE_NEW_CONSOLE;
             }
