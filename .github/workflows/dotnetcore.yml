@@ -21,7 +21,7 @@ jobs:
       run: nuget restore wtrace.sln
     
     - name: Setup MSBuild.exe
-      uses: warrenbuckley/Setup-MSBuild@v1
+      uses: microsoft/setup-msbuild@v1.0.0
       
     - name: Prepare
       run: scripts\Update-AssemblyInfoVersionFiles.ps1
