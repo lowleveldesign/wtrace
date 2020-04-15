@@ -13,11 +13,19 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    
     - name: Setup nuget
       uses: warrenbuckley/Setup-Nuget@v1
+    
     - name: Restore packages
       run: nuget restore wtrace.sln
+    
     - name: Setup MSBuild.exe
       uses: warrenbuckley/Setup-MSBuild@v1
+      
+    - name: Prepare
+      run: scripts\Update-AssemblyInfoVersionFiles.ps1
+      shell: powershell
+    
     - name: Run with MSBuild
       run: msbuild wtrace.sln
