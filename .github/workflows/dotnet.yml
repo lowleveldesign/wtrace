@@ -28,7 +28,17 @@ jobs:
 #      shell: powershell
     
     - name: Build Debug using MSBuild
-      run: msbuild wtrace.sln /p:Configuration=Debug
+      run: msbuild wtrace.sln -m /p:Configuration=Debug
     
     - name: Build Release using MSBuild
-      run: msbuild wtrace.sln /p:Configuration=Release
+      run: msbuild wtrace.sln -m /p:Configuration=Release
+      
+    - uses: actions/upload-artifact@v2-preview
+      with:
+        name: Debug_binaries
+        path: bin\Debug\wtrace.exe
+     
+    - uses: actions/upload-artifact@v2-preview
+      with:
+        name: Release_binaries
+        path: bin\Release\wtrace.exe
