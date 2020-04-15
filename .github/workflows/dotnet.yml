@@ -28,7 +28,7 @@ jobs:
 #      shell: powershell
     
     - name: Build Debug using MSBuild
-      run: msbuild wtrace.sln /p:Configuration=Debug|x64
+      run: msbuild wtrace.sln /p:Configuration=Debug
     
     - name: Build Release using MSBuild
-      run: msbuild wtrace.sln /p:Configuration=Release|x64
+      run: msbuild wtrace.sln /p:Configuration=Release
