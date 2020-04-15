@@ -23,9 +23,12 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.0
       
-    - name: Prepare
-      run: scripts\Update-AssemblyInfoVersionFiles.ps1
-      shell: powershell
+#    - name: Prepare
+#      run: scripts\Update-AssemblyInfoVersionFiles.ps1
+#      shell: powershell
     
-    - name: Run with MSBuild
-      run: msbuild wtrace.sln
+    - name: Build Debug using MSBuild
+      run: msbuild wtrace.sln /p:Configuration=Debug|x64
+    
+    - name: Build Release using MSBuild
+      run: msbuild wtrace.sln /p:Configuration=Release|x64
