@@ -36,9 +36,9 @@ jobs:
     - uses: actions/upload-artifact@v2-preview
       with:
         name: Debug_binaries
-        path: bin\Debug\wtrace.exe
+        path: wtrace\bin\Debug\wtrace.exe
      
     - uses: actions/upload-artifact@v2-preview
       with:
         name: Release_binaries
-        path: bin\Release\wtrace.exe
+        path: wtrace\bin\Release\wtrace.exe
