@@ -1,6 +1,8 @@
 
 # wtrace
 
+![.NET](https://github.com/lowleveldesign/wtrace/workflows/.NET/badge.svg)
+
 This application will trace in real-time all File I/O, TCP IP, ALPC and RPC operations performed by a given process. It works on Windows 7+ and requires .NET 4.5.2+. Wtrace stops when the traced process exits, or if you issue Ctrl+C in its command line.
 
 Use pipeline to filter the events, e.g.: `wtrace notepad | findstr  "FileIO/Write"`
