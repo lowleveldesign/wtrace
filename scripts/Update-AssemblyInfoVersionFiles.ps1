@@ -1,11 +1,11 @@
 function Update-AssemblyInfoVersionFiles ([string]$versionIdentifier)
 {
-  $local:srcPath = $env:BUILD_SOURCESDIRECTORY
-  $local:buildNumber = $env:BUILD_BUILDNUMBER
+  $today = [DateTime]::Today
+  $local:buildNumber = "{0:yy}{1}.{2}" -f $today,$today.DayOfYear,($env:GITHUB_RUN_NUMBER % [int16]::MaxValue)
 
-  Write-Host "Executing Update-AssemblyInfoVersionFiles in path $srcPath for build $buildNumber"
+  Write-Host "Executing Update-AssemblyInfoVersionFiles in path $pwd for build $buildNumber"
 
-  foreach ($file in $(Get-ChildItem $srcPath AssemblyInfo.cs -recurse))
+  foreach ($file in $(Get-ChildItem $pwd AssemblyInfo.cs -recurse))
   {
     $local:r = [regex]"$versionIdentifier\(""([0-9]+\.[0-9]+)(\.([0-9]+|\*))+""\)"
     $local:assemblyVersion = "0.0.0.0"
