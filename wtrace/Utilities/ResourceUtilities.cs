@@ -1,13 +1,10 @@
-﻿using System;
-using System.Diagnostics;
-using System.Reflection;
+﻿using Microsoft.Diagnostics.Utilities;
 using System.IO;
-using Utilities;
-using Microsoft.Diagnostics.Utilities;
+using System.Reflection;
 
-namespace Utilities
+namespace PerfView
 {
-    class ResourceUtilities
+    public class ResourceUtilities
     {
         public static bool UnpackResourceAsFile(string resourceName, string targetFileName)
         {
@@ -17,7 +14,9 @@ namespace Utilities
         {
             Stream sourceStream = sourceAssembly.GetManifestResourceStream(resourceName);
             if (sourceStream == null)
+            {
                 return false;
+            }
 
             var dir = Path.GetDirectoryName(targetFileName);
             Directory.CreateDirectory(dir);     // Create directory if needed.  

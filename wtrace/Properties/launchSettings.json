@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "wtrace": {
+      "commandName": "Project",
+      "commandLineArgs": "-h"
+    }
+  }
+}

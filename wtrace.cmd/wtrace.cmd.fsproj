@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Sebastian Solnica</Authors>
+    <Company>Sebastian Solnica (lowleveldesign.org)</Company>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Commons\CommandLine.fs" />
+    <Compile Include="Commons\ResultBuilder.fs" />
+    <Compile Include="Commons\Globals.fs" />
+    <Compile Include="Commons\WinApi.fs" />
+    <Compile Include="Models\Events.fs" />
+    <Compile Include="Models\SystemObjects.fs" />
+    <Compile Include="Events\Commons.fs" />
+    <Compile Include="Events.ETW\Commons.fs" />
+    <Compile Include="Events.ETW\DotNetLoader.fs" />
+    <Compile Include="Events.ETW\FileIO.fs" />
+    <Compile Include="Events.ETW\ProcessThread.fs" />
+    <Compile Include="Events.ETW\Registry.fs" />
+    <Compile Include="Events.ETW\Rpc.fs" />
+    <Compile Include="Events.ETW\TcpIp.fs" />
+    <Compile Include="Tracing\Commons.fs" />
+    <Compile Include="Tracing\EventMetadata.fs" />
+    <Compile Include="Tracing\TraceData.fs" />
+    <Compile Include="Tracing\EventFilter.fs" />
+    <Compile Include="Tracing\EtwTraceSession.fs" />
+    <Compile Include="RealtimeEventSource.fs" />
+    <Compile Include="TraceStatistics.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Control.Reactive" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.160202" />
+    <PackageReference Include="PInvoke.Kernel32" Version="0.7.78" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\wtrace.imports\wtrace.imports.csproj" />
+  </ItemGroup>
+
+</Project>
+
