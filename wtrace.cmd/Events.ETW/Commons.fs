@@ -11,8 +11,6 @@ type NtKeywords = Microsoft.Diagnostics.Tracing.Parsers.KernelTraceEventParser.K
 
 type EventPredicate = EtwEvent -> bool
 
-type EventFieldDesc = (struct (int32 * string * string))
-
 type EtwEventProvider = {
     Id : Guid
     Name : string
@@ -29,10 +27,10 @@ type EtwEventHandler = {
     Providers : array<EtwEventProvider>
 
     // unique id of the handler in the session * observer for the handler messages
-    Initialize : int32 (* handler id *) * EventBroadcast (* broadcast API *) -> obj (* handler state *)
-    Subscribe : TraceEventSource (* ETW trace event source *) * bool (* isRundown *) *
+    Initialize : EventBroadcast (* broadcast API *) -> obj (* handler state *)
+    Subscribe : TraceEventSource (* ETW trace event source *) *
+                bool (* isRundown *) *
                 IdGenerator (* generates unique ids for events *) *
-                TimeStampAdjust (* adjusts event timestamp to the session start time *) *
                 obj(* handler state *) -> unit
 }
 
@@ -44,43 +42,32 @@ module DotNetCommons =
 
 [<AutoOpen>]
 module internal Commons =
-    
-    let publishHandlerMetadata metadata publish =
-        metadata |> Array.iter (fun m -> (publish m))
 
-    let handleEvent<'T, 'S when 'T :> EtwEvent> (idgen : IdGenerator) (tsadj : TimeStampAdjust) (state : 'S) handler (ev : 'T) : unit =
-        handler (idgen()) (tsadj (ev.TimeStampQPC)) state ev
+    let handleEvent<'T, 'S when 'T :> EtwEvent> (idgen : IdGenerator) (state : 'S) handler (ev : 'T) : unit =
+        handler (idgen()) state ev
 
-    let handleEventNoId<'T, 'S when 'T :> EtwEvent> (tsadj : TimeStampAdjust) (state : 'S) handler (ev : 'T) : unit =
-        handler (tsadj (ev.TimeStampQPC)) state ev
+    let handleEventNoId<'T, 'S when 'T :> EtwEvent> (state : 'S) handler (ev : 'T) : unit =
+        handler ev.TimeStamp state ev
 
-    let toEventField eventId struct (fieldId, _, fieldValue) =
+    let toEventField eventId struct (fieldName, fieldValue) =
         {
             EventId = eventId
-            FieldId =  fieldId
+            FieldName =  fieldName
             FieldValue = fieldValue
         }
 
-    let toEvent handlerId (ev : EtwEvent) eventId ts path details result =
+    let toEvent (ev : EtwEvent) eventId activityId path details result =
         {
             EventId = eventId
-            TimeStamp = Qpc ts
-            Duration = Qpc 0L
+            TimeStamp = ev.TimeStamp
+            ActivityId = activityId
+            Duration = TimeSpan.Zero
             ProcessId = ev.ProcessID
             ThreadId = ev.ThreadID
-            HandlerId = handlerId
-            ProviderId = ev.ProviderGuid
-            TaskId = int32 ev.Task
-            OpcodeId = int32 ev.Opcode
+            EventName = ev.EventName
             EventLevel = int32 ev.Level
             Path = path
             Details = details
             Result = result
         }
-
-    let publishEventFieldsMetadata<'f when 'f : enum<int32>> handlerId publish =
-        let names = Enum.GetNames(typedefof<'f>)
-        let values = Enum.GetValues(typedefof<'f>) :?> array<int32>
-        Debug.Assert(names.Length = values.Length, "[commons] names.Length = values.Length")
-        names |> Seq.iteri (fun i n -> publish (EventFieldMetadata (handlerId, values.[i], n)))
 

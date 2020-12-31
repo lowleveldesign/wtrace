@@ -1,15 +1,13 @@
 ﻿namespace LowLevelDesign.WTrace.Events
 
-open System
 open System.Collections.Generic
 open LowLevelDesign.WTrace
+open System
 
 type IdGenerator = unit -> int32
-type TimeStampAdjust = int64 -> int64
 
 type EventBroadcast = {
     publishTraceEvent : TraceEventWithFields -> unit
-    publishMetaEvent : MetadataEvent -> unit
 }
 
 type internal DataCache<'K, 'V when 'K : equality> (capacity : int32) =
@@ -47,8 +45,8 @@ type internal DataCache<'K, 'V when 'K : equality> (capacity : int32) =
 
 module FieldValues =
 
-    let inline getFieldValue fieldId fields =
-        (fields |> Array.find (fun fld -> fld.FieldId = fieldId)).FieldValue
+    let inline getFieldValue fieldName fields =
+        (fields |> Array.find (fun fld -> ordeq fld.FieldName fieldName)).FieldValue
 
     let inline i32db (n : int32) = sprintf "%d" n
 

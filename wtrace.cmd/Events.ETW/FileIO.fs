@@ -12,7 +12,6 @@ open LowLevelDesign.WTrace
 open LowLevelDesign.WTrace.WinApi
 
 type private FileIoHandlerState = {
-    HandlerId : int32
     Broadcast : EventBroadcast
     // a state to keep information about the pending IO requests
     PendingFileIo : DataCache<uint64, TraceEventWithFields>
@@ -20,38 +19,6 @@ type private FileIoHandlerState = {
     // but it removes the mapping too quickly (Cleanup, for example)
     FileIdToName : Dictionary<uint64, string>
 }
-
-let metadata = [|
-    EventProvider (kernelProviderId, "Kernel")
-    EventTask (kernelProviderId, 6, "FileIO")
-    EventOpcode (kernelProviderId, 6, 0, "Name")
-    EventOpcode (kernelProviderId, 6, 32, "FileCreate")
-    EventOpcode (kernelProviderId, 6, 35, "FileDelete")
-    EventOpcode (kernelProviderId, 6, 36, "FileRundown")
-    EventOpcode (kernelProviderId, 6, 37, "MapFile")
-    EventOpcode (kernelProviderId, 6, 38, "UnmapFile")
-    EventOpcode (kernelProviderId, 6, 64, "Create")
-    EventOpcode (kernelProviderId, 6, 65, "Cleanup")
-    EventOpcode (kernelProviderId, 6, 66, "Close")
-    EventOpcode (kernelProviderId, 6, 67, "Read")
-    EventOpcode (kernelProviderId, 6, 68, "Write")
-    EventOpcode (kernelProviderId, 6, 69, "SetInfo")
-    EventOpcode (kernelProviderId, 6, 70, "Delete")
-    EventOpcode (kernelProviderId, 6, 71, "Rename")
-    EventOpcode (kernelProviderId, 6, 72, "DirEnum")
-    EventOpcode (kernelProviderId, 6, 73, "Flush")
-    EventOpcode (kernelProviderId, 6, 74, "QueryInfo")
-    EventOpcode (kernelProviderId, 6, 75, "FSControl")
-    EventOpcode (kernelProviderId, 6, 76, "OperationEnd")
-    EventOpcode (kernelProviderId, 6, 77, "DirNotify")
-|]
-
-type FieldId =
-| CreateDisposition = 0 | CreateOptions = 1 | FileAttributes = 2
-| ShareAccess = 3 | FileName = 4 | FileIndex = 5 | Length = 6
-| InfoClass = 7 | Offset = 8 | IoSize = 9 | IoFlags = 10 | ExtraInfo = 12
-
-#nowarn "44" // disable the deprecation warning as we want to use TimeStampQPC
 
 [<AutoOpen>]
 module private H =
@@ -146,17 +113,14 @@ module private H =
         if opcode = 0 (* name *) || opcode = 36 (* rundown *) then
             mapFileNameToFileId state ev.FileKey ev.FileName
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, tsadj, state : obj) =
+    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
         let state = state :?> FileIoHandlerState
-        let handleEvent h = Action<_>(handleEvent idgen tsadj state h)
-        let handleEventNoId h = Action<_>(handleEventNoId tsadj state h)
+        let handleEvent h = Action<_>(handleEvent idgen state h)
+        let handleEventNoId h = Action<_>(handleEventNoId state h)
         let handle h = Action<_>(h state)
         if isRundown then
             source.Kernel.add_FileIOName(handle handleFileIoName)
             source.Kernel.add_FileIOFileRundown(handle handleFileIoName)
-
-            publishHandlerMetadata metadata state.Broadcast.publishMetaEvent
-            publishEventFieldsMetadata<FieldId> state.HandlerId state.Broadcast.publishMetaEvent
         else
             source.Kernel.add_FileIOCreate(handleEvent handleFileIoCreate)
             source.Kernel.add_FileIOCleanup(handleEvent handleFileIoSimpleOp)
@@ -180,8 +144,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.DiskFileIO ||| NtKeywords.DiskIO
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (id, broadcast) -> ({
-                HandlerId = id
+            fun (broadcast) -> ({
                 Broadcast = broadcast
                 PendingFileIo = DataCache<uint64, TraceEventWithFields>(256)
                 FileIdToName = Dictionary<uint64, string>()

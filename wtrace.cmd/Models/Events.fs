@@ -6,20 +6,18 @@ open System
 
 type TraceEventField = {
     EventId : int32
-    FieldId : int32
+    FieldName : string
     FieldValue : string
 }
 
 type TraceEvent = {
     EventId : int32
-    TimeStamp : Qpc
-    Duration : Qpc
+    TimeStamp : DateTime
+    Duration : TimeSpan
     ProcessId : int32
     ThreadId : int32
-    HandlerId : int32
-    ProviderId : Guid
-    TaskId : int32
-    OpcodeId : int32
+    ActivityId : string
+    EventName : string
     EventLevel : int32
     Path : string
     Details : string
@@ -27,13 +25,4 @@ type TraceEvent = {
 }
 
 type TraceEventWithFields = TraceEventWithFields of TraceEvent * array<TraceEventField>
-
-(**** Metadata events ****)
-
-type MetadataEvent =
-| EventFieldMetadata of HandlerId : int32 * FieldId : int32 * FieldName : string
-| EventProvider of Id : Guid * Name : string
-| EventTask of ProviderId : Guid * Id : int32 * Name : string
-| EventOpcode of ProviderId : Guid * TaskId : int32 * Id : int32 * Name : string
-| SessionConfig of StartTimeUtc : DateTime * StartTimeQpc : int64 * QpcFreq : int64
 

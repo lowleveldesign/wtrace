@@ -44,15 +44,13 @@ let checkElevated () =
     else Error "Must be elevated (Admin) to run this program."
 
 
-let onEvent (metadata : IEventMetadata) (tracedata : ITraceData) (TraceEventWithFields (ev, _)) =
+let onEvent (tracedata : ITraceData) (TraceEventWithFields (ev, _)) =
     let getPath v = if v = "" then "" else sprintf " '%s'" v
     let getDesc v = if v = "" then "" else sprintf " %s" v
-    let eventName = metadata.GetEventName struct (ev.ProviderId, ev.TaskId, ev.OpcodeId)
-    let timeStampInSeconds = (metadata.QpcToRelativeTimeInMs ev.TimeStamp) / 1000.0
     let result = if ev.Result = WinApi.eventStatusUndefined then ""
                  else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
-    printfn "%.4f (%d.%d) %s%s%s%s" timeStampInSeconds ev.ProcessId ev.ThreadId
-        eventName (getPath ev.Path) (getDesc ev.Details) result
+    printfn "%.4f (%d.%d) %s%s%s%s" ev.TimeStamp.TotalSeconds ev.ProcessId ev.ThreadId
+        ev.EventName (getPath ev.Path) (getDesc ev.Details) result
 
 let onError (ex : Exception) =
     printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
@@ -60,14 +58,14 @@ let onError (ex : Exception) =
 let startRealtime (source : RealtimeEventSource) stats (ct : CancellationToken) =
     let reg = ct.Register(fun () -> source.Stop()) :> IDisposable
 
-    let onEvent = onEvent source.Metadata source.TraceData
+    let onEvent = onEvent source.TraceData
     let eventSub = source
                    |> Observable.observeOn (new EventLoopScheduler())
                    |> Observable.subscribeWithCallbacks onEvent onError ignore
 
     let statSub = source
                   |> Observable.observeOn (new EventLoopScheduler())
-                  |> Observable.subscribe (TraceStatistics.processEvent source.Metadata stats)
+                  |> Observable.subscribe (TraceStatistics.processEvent stats)
 
     printf "Preparing the realtime trace session. Please wait..."
     source.Start()

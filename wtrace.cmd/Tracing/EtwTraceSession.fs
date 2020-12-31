@@ -79,7 +79,7 @@ module EtwTraceSession =
             // For the rundown session, all the event Ids will be 0. We do not save them
             // anywhere (at least we should not)
             handlersWithStates
-            |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, true, (fun _ -> 0), id, s))
+            |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, true, (fun _ -> 0), s))
 
             // Rundown session lasts few secs - make it longer, if required
             use timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3.0))
@@ -89,22 +89,11 @@ module EtwTraceSession =
             session.Source.Process() |> ignore
             logger.TraceInformation($"[{className}] Rundown session finished")
 
-        let publishSessionConfigEvent publishMetaEvent (traceSource : TraceEventSource) =
-            let t = traceSource.GetType()
-            let fld = t.GetProperty("QPCFreq", BindingFlags.Instance ||| BindingFlags.GetProperty ||| BindingFlags.NonPublic)
-            let qpcFreq = fld.GetValue(traceSource) :?> int64
-            
-            let fld = t.GetField("sessionStartTimeQPC", BindingFlags.Instance ||| BindingFlags.GetField ||| BindingFlags.NonPublic)
-            let sessionStartQpc = fld.GetValue(traceSource) :?> int64
-
-            publishMetaEvent (SessionConfig (traceSource.SessionStartTime, sessionStartQpc, qpcFreq))
-
     // This function starts the ETW session and initiates broadcasting trace events
-    let start settings publishStatus publishMetaEvent publishTraceEvent (ct : CancellationToken) =
+    let start settings publishStatus publishTraceEvent (ct : CancellationToken) =
 
         let handlersWithStates =
             let eventBroadcast = {
-                publishMetaEvent = publishMetaEvent
                 publishTraceEvent = fun evf -> if settings.TraceFilter evf then publishTraceEvent evf
             }
             [| FileIO.createEtwHandler(); (* Registry.createEtwHandler() ; *) Rpc.createEtwHandler();
@@ -126,9 +115,6 @@ module EtwTraceSession =
             use _ctr = ct.Register(fun () -> session.Stop() |> ignore)
 
             session.EnableKernelProvider(kernelFlags, kernelStackFlags) |> ignore
-            
-            // session started so we can retrieve the necessary information
-            publishSessionConfigEvent publishMetaEvent session.Source
 
             // Accessing the source enables kernel provider so must be run after the EnableKernelProvider call
             let eventSource = prepareKernelParser session.Source
@@ -143,7 +129,7 @@ module EtwTraceSession =
             let idgen () = eventId <- eventId + 1; eventId
 
             // Subscribe handlers to the trace session
-            handlersWithStates |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, false, idgen, id, s))
+            handlersWithStates |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, false, idgen, s))
 
             runRundownSession handlersWithStates ct
 

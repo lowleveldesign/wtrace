@@ -8,37 +8,12 @@ open Microsoft.Diagnostics.Tracing
 open Microsoft.Diagnostics.Tracing.Parsers.Kernel
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace
-open LowLevelDesign.WTrace.WinApi
 
 type private RegistryHandlerState = {
-    HandlerId : int32
     Broadcast : EventBroadcast
     // a state to keep a map of key handles (KCB) to actual key names
     KeyHandleToName : Dictionary<uint64, string>
 }
-
-let metadata = [|
-    EventProvider (kernelProviderId, "Kernel")
-    EventTask (kernelProviderId, 4, "Registry")
-    EventOpcode (kernelProviderId, 4, 10, "Create")
-    EventOpcode (kernelProviderId, 4, 11, "Open")
-    EventOpcode (kernelProviderId, 4, 12, "Delete")
-    EventOpcode (kernelProviderId, 4, 13, "Query")
-    EventOpcode (kernelProviderId, 4, 14, "SetValue")
-    EventOpcode (kernelProviderId, 4, 15, "DeleteValue")
-    EventOpcode (kernelProviderId, 4, 16, "QueryValue")
-    EventOpcode (kernelProviderId, 4, 17, "EnumerateKey")
-    EventOpcode (kernelProviderId, 4, 18, "EnumerateValueKey")
-    EventOpcode (kernelProviderId, 4, 19, "QueryMultipleValue")
-    EventOpcode (kernelProviderId, 4, 20, "SetInformation")
-    EventOpcode (kernelProviderId, 4, 21, "Flush")
-    EventOpcode (kernelProviderId, 4, 22, "KCBCreate")
-    EventOpcode (kernelProviderId, 4, 23, "KCBDelete")
-    EventOpcode (kernelProviderId, 4, 24, "KCBRundownBegin")
-    EventOpcode (kernelProviderId, 4, 25, "KCBRundowEnd")
-    EventOpcode (kernelProviderId, 4, 26, "Virtualize")
-    EventOpcode (kernelProviderId, 4, 27, "Close")
-|]
 
 [<AutoOpen>]
 module private H =
@@ -65,7 +40,7 @@ module private H =
     let handleKCBDeleteEvent state (ev : RegistryTraceData) =
         state.KeyHandleToName.Remove(ev.KeyHandle) |> ignore
 
-    let handleRegistryEvent id ts state (ev : RegistryTraceData) =
+    let handleRegistryEvent id state (ev : RegistryTraceData) =
         let path =
             if ev.KeyHandle = 0UL then
                 abbreviate ev.KeyName
@@ -76,18 +51,16 @@ module private H =
                     | (false, _) -> sprintf "<0x%X>" ev.KeyHandle
                 Path.Combine(baseKeyName, ev.KeyName)
 
-        let ev = toEvent state.HandlerId ev id ts path "" ev.Status
+        let ev = toEvent ev id "" path "" ev.Status
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, noFields))
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, tsadj, state : obj) =
+    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
         let state = state :?> RegistryHandlerState
-        let handleEvent h = Action<_>(handleEvent idgen tsadj state h)
+        let handleEvent h = Action<_>(handleEvent idgen state h)
         let handle h = Action<_>(h state)
         if isRundown then
             source.Kernel.add_RegistryKCBRundownBegin(handle handleKCBCreateEvent)
             source.Kernel.add_RegistryKCBRundownEnd(handle handleKCBCreateEvent)
-
-            publishHandlerMetadata metadata state.Broadcast.publishMetaEvent
         else
             source.Kernel.add_RegistryKCBCreate(handle handleKCBCreateEvent)
             source.Kernel.add_RegistryKCBDelete(handle handleKCBDeleteEvent)
@@ -116,8 +89,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.Registry
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (id, broadcast) -> ({
-                HandlerId = id
+            fun (broadcast) -> ({
                 Broadcast = broadcast
                 KeyHandleToName = Dictionary<uint64, string>()
             } :> obj)

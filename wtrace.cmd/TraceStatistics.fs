@@ -2,8 +2,6 @@
 
 open System
 open System.Collections.Generic
-open LowLevelDesign.WTrace.Tracing
-open LowLevelDesign.WTrace.Events.ETW
 
 type TraceStatistics = {
     FileReadBytes : Dictionary<string, int32>
@@ -50,22 +48,20 @@ module TraceStatistics =
         RpcCalls = Dictionary<string, int32>()
     }
 
-    let processEvent (metadata : IEventMetadata) stats (TraceEventWithFields (ev, fields)) =
-        let eventName = metadata.GetEventName(ev.ProviderId, ev.TaskId, ev.OpcodeId)
-        Debug.Assert(not (isNull eventName), sprintf "[stats] eventName is null, event: %d" ev.EventId)
-        if eventName === "FileIO/Read" then
-            updateCounter stats.FileReadBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 FileIO.FieldId.ExtraInfo))
-        elif eventName === "FileIO/Write" then
-            updateCounter stats.FileWrittenBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 FileIO.FieldId.ExtraInfo))
-        elif eventName === "TcpIp/Recv" then
-            updateCounter stats.NetworkReceivedBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 TcpIp.FieldId.Size))
-        elif eventName === "TcpIp/Send" then
-            updateCounter stats.NetworkSentBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 TcpIp.FieldId.Size))
-        elif eventName === "TcpIp/RecvIPv6" then
-            updateCounter stats.NetworkReceivedBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 TcpIp.FieldId.Size))
-        elif eventName === "TcpIp/SendIPv6" then
-            updateCounter stats.NetworkSentBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldId = int32 TcpIp.FieldId.Size))
-        elif eventName.StartsWith("RPC/", StringComparison.Ordinal) then
+    let processEvent stats (TraceEventWithFields (ev, fields)) =
+        if ev.EventName === "FileIO/Read" then
+            updateCounter stats.FileReadBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "ExtraInfo"))
+        elif ev.EventName === "FileIO/Write" then
+            updateCounter stats.FileWrittenBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "ExtraInfo"))
+        elif ev.EventName === "TcpIp/Recv" then
+            updateCounter stats.NetworkReceivedBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "size"))
+        elif ev.EventName === "TcpIp/Send" then
+            updateCounter stats.NetworkSentBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "size"))
+        elif ev.EventName === "TcpIp/RecvIPv6" then
+            updateCounter stats.NetworkReceivedBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "size"))
+        elif ev.EventName === "TcpIp/SendIPv6" then
+            updateCounter stats.NetworkSentBytes ev.Path (fields |> Array.tryFind (fun fld -> fld.FieldName === "size"))
+        elif ev.EventName.StartsWith("RPC/", StringComparison.Ordinal) then
             match stats.RpcCalls.TryGetValue(ev.Path) with
             | (true, n) -> stats.RpcCalls.[ev.Path] <- n + 1
             | (false, _) -> stats.RpcCalls.Add(ev.Path, 1)

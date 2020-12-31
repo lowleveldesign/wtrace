@@ -22,22 +22,6 @@ let invalidEventId = Int32.MinValue
 type Debug = System.Diagnostics.Debug
 type RxDisposable = System.Reactive.Disposables.Disposable
 
-(* Helper types *)
-
-[<Struct>]
-type Qpc = | Qpc of int64
-
-let QpcMin = Qpc Int64.MinValue
-let QpcMax = Qpc Int64.MaxValue
-
-let qpcToInt64 (Qpc i) = i
-
-let compareQpc t1 t2 =
-    match struct (qpcToInt64 t1, qpcToInt64 t2) with
-    | struct (t1, t2) when t1 < t2 -> -1
-    | struct (t1, t2) when t1 = t2 -> 0
-    | _ -> 1
-
 (* Class extensions *)
 
 type TraceSource with
@@ -85,6 +69,8 @@ let result = ResultBuilder()
 let (|?) lhs rhs = (if lhs = null then rhs else lhs)
 
 let (===) = LanguagePrimitives.PhysicalEquality
+
+let ordeq s1 s2 = String.Equals(s1, s2, StringComparison.Ordinal)
 
 (* Global loggers *)
 
