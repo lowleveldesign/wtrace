@@ -68,9 +68,7 @@ let result = ResultBuilder()
 
 let (|?) lhs rhs = (if lhs = null then rhs else lhs)
 
-let (===) = LanguagePrimitives.PhysicalEquality
-
-let ordeq s1 s2 = String.Equals(s1, s2, StringComparison.Ordinal)
+let (===) a b = String.Equals(a, b, StringComparison.Ordinal)
 
 (* Global loggers *)
 

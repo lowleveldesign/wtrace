@@ -110,7 +110,12 @@ module EtwTraceSession =
             logger.TraceInformation($"[{className}] Starting main ETW session")
             use session = new TraceEventSession("wtrace-rt")
 
-            use _ctr = ct.Register(fun () -> session.Stop() |> ignore)
+            let mutable eventsLost = 0
+            use _ctr = ct.Register(fun () ->
+                                        if session.IsActive then
+                                            // save lost events for statistics
+                                            eventsLost <- session.EventsLost
+                                        session.Stop() |> ignore)
 
             session.EnableKernelProvider(kernelFlags, kernelStackFlags) |> ignore
 
@@ -131,17 +136,11 @@ module EtwTraceSession =
 
             runRundownSession handlersWithStates ct
 
-            do
-                // send status message every second
-                use _status =
-                    Observable.interval (TimeSpan.FromSeconds(1.0))
-                    |> Observable.subscribe (
-                        fun _ ->
-                            if session.IsActive then publishStatus (SessionRunning session.EventsLost))
+            if (session.IsActive) then
+                publishStatus SessionRunning
+                session.Source.Process() |> ignore
 
-                if (session.IsActive) then
-                    session.Source.Process() |> ignore
-
+            publishStatus (SessionStopped eventsLost)
             logger.TraceInformation($"[{className}] Main ETW session completed")
         with
         | ex ->

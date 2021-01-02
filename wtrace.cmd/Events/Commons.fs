@@ -46,7 +46,7 @@ type internal DataCache<'K, 'V when 'K : equality> (capacity : int32) =
 module FieldValues =
 
     let inline getFieldValue fieldName fields =
-        (fields |> Array.find (fun fld -> ordeq fld.FieldName fieldName)).FieldValue
+        (fields |> Array.find (fun fld -> fld.FieldName === fieldName)).FieldValue
 
     let inline i32s (n : int32) = sprintf "%d" n
 

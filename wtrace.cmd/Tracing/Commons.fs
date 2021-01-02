@@ -7,7 +7,9 @@ type RealtimeTraceSessionSettings = {
     EnableStacks: bool
 } 
 
-type RealtimeSessionStatus = SessionRunning of EventsLost: int32
+type RealtimeSessionStatus =
+| SessionRunning
+| SessionStopped of EventsLost : int32
 
 [<AutoOpen>]
 module Commons =

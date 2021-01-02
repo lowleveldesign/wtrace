@@ -25,8 +25,8 @@
     <Compile Include="Tracing\Commons.fs" />
     <Compile Include="Tracing\EtwTraceSession.fs" />
     <Compile Include="Tracing\EventFilter.fs" />
-    <Compile Include="RealtimeEventSource.fs" />
     <Compile Include="TraceStatistics.fs" />
+    <Compile Include="TraceControl.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

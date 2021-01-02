@@ -4,9 +4,7 @@ module LowLevelDesign.WTrace.Program
 open System
 open System.Diagnostics
 open System.Reflection
-open System.Reactive.Concurrency
 open System.Threading
-open FSharp.Control.Reactive
 open LowLevelDesign.WTrace.Tracing
 open LowLevelDesign.WTrace
 
@@ -28,9 +26,9 @@ let showHelp () =
     printfn "Options:"
     printfn "-f, --filter=FILTER   Displays only events which names contain the given keyword"
     printfn "                      (case insensitive). Does not impact the summary."
-    // TODO: printfn "-s, --system          Collects only system statistics (DPC/ISR) - shown in the summary."
     printfn "-c, --children        Collects traces from the selected process and all its children."
     printfn "--newconsole          Starts the process in a new console window."
+    printfn "-s, --system          Collect system statistics (DPC/ISR) - shown in the summary."
     printfn "--nosummary           Prints only ETW events - no summary at the end."
     printfn "-v, --verbose         Shows wtrace diagnostics logs."
     printfn "-h, --help            Shows this message and exits."
@@ -42,107 +40,49 @@ let checkElevated () =
     if EtwTraceSession.isElevated () then Ok ()
     else Error "Must be elevated (Admin) to run this program."
 
-
-let onEvent (startTime : DateTime) (TraceEventWithFields (ev, _)) =
-    let getPath v = if v = "" then "" else $" '%s{v}'"
-    let getDesc v = if v = "" then "" else $" %s{v}"
-    let result = if ev.Result = WinApi.eventStatusUndefined then ""
-                 else $" -> %s{WinApi.getNtStatusDesc ev.Result}"
-    printfn "%.4f (%d.%d) %s%s%s%s" (ev.TimeStamp - startTime).TotalSeconds ev.ProcessId ev.ThreadId
-        ev.EventName (getPath ev.Path) (getDesc ev.Details) result
-
-let onError (ex : Exception) =
-    printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
-
-let startRealtime (source : RealtimeEventSource) stats (ct : CancellationToken) =
-    let reg = ct.Register(fun () -> source.Stop()) :> IDisposable
-
-    let onEvent = onEvent (DateTime.Now)
-    let eventSub = source
-                   |> Observable.observeOn (new EventLoopScheduler())
-                   |> Observable.subscribeWithCallbacks onEvent onError ignore
-
-    let statSub = source
-                  |> Observable.observeOn (new EventLoopScheduler())
-                  |> Observable.subscribe (TraceStatistics.processEvent stats)
-
-    printf "Preparing the realtime trace session. Please wait..."
-    source.Start()
-    printfn "done"
-
-    [| reg; eventSub; statSub|] |> Disposables.compose
-
-let rec waitForProcessExit (ct : CancellationToken) (proc : Diagnostics.Process) =
-    if (not ct.IsCancellationRequested) && (not (proc.WaitForExit(500))) then
-        waitForProcessExit ct proc
-    else false
-
 let start (args : Map<string, list<string>>) = result {
     let isFlagEnabled = isFlagEnabled args
     let isInteger (v : string) = 
         let r, _ = Int32.TryParse(v)
         r
 
+    do! checkElevated ()
+
     if [| "v"; "verbose" |] |> isFlagEnabled then
         Trace.AutoFlush <- true
         Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Out) ])
 
-
-    let filters =
-        args |> Map.tryFind "f" |> Option.toList
-        |> List.append (args |> Map.tryFind "filter" |> Option.toList)
-        |> List.collect (id)
-        |> List.map (fun s -> EventName ("Contains", s))
-        |> List.toArray
-
-    let filterSettings = { Filters = filters }
+    // FIXME: filters
 
     use cts = new CancellationTokenSource()
-    let stats = TraceStatistics.create ()
 
     Console.CancelKeyPress.Add(fun ev -> ev.Cancel <- true; cts.Cancel())
 
     match args |> Map.tryFind "" with 
+    | None when [| "s"; "system" |] |> isFlagEnabled ->
+        // FIXME trace system
+        ()
+
     | None ->
-        use source = new RealtimeEventSource(NoFilter, filterSettings)
-        use _sub = startRealtime source stats cts.Token
-        cts.Token.WaitHandle.WaitOne() |> ignore
-
-    | Some [ pid ] when isInteger pid ->
-        let pid = Int32.Parse(pid)
-        let processFilter = ProcessIdFilter (pid, [| "c"; "children" |] |> isFlagEnabled)
-        do! checkElevated ()
-
-        use proc = Process.GetProcessById(pid) // FIXME: this could throw exception ?
-
-        use source = new RealtimeEventSource(processFilter, filterSettings)
-        use _sub = startRealtime source stats cts.Token
-        
-        match (waitForProcessExit cts.Token proc) with
-        | false -> ()
-        | true -> source.Stop() // process stopped by itself - we need to close the session
+        TraceControl.traceEverything cts.Token
 
     | Some args ->
-        Debug.Assert(args.Length > 0, $"[%s{className}] invalid number of arguments")
-        let fileName = args.[0]
-        let options =
-            ProcessStartInfo(fileName,
-                             Arguments = (args |> Seq.skip 1 |> String.concat " "),
-                             CreateNoWindow = not ([| "newconsole" |] |> isFlagEnabled))
-        let proc = Process.Start(options) // FIXME: we should suspend it before we start the session
+        let newConsole = ([| "newconsole" |] |> isFlagEnabled)
+        let includeChildren = [| "c"; "children" |] |> isFlagEnabled
 
-        let processFilter = ProcessIdFilter (proc.Id, [| "c"; "children" |] |> isFlagEnabled)
-        do! checkElevated ()
+        match args with
+        | [ pid ] when isInteger pid -> do! TraceControl.traceRunningProcess cts.Token includeChildren (Int32.Parse(pid))
+        | args -> do! TraceControl.traceNewProcess cts.Token newConsole includeChildren args
 
-        use source = new RealtimeEventSource(processFilter, filterSettings)
-        use _sub = startRealtime source stats cts.Token
+    printfn "Closing the session to complete. Please wait..."
+    if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(2.0))) then
+        printfn "WARNING: the session did not finish in alotted time. Stop it manually: logman stop wtrace-rt -ets"
 
-        match (waitForProcessExit cts.Token proc) with
-        | false -> ()
-        | true -> source.Stop() // process stopped by itself - we need to close the session
+    if TraceControl.lostEventsCount > 0 then
+        printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
 
     if not ([| "nosummary" |] |> isFlagEnabled) then
-        TraceStatistics.dumpStatistics stats
+        TraceStatistics.dumpStatistics TraceControl.stats
 }
 
 let main (argv : array<string>) =

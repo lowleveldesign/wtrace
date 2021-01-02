@@ -25,8 +25,6 @@ module TraceStatistics =
             | (true, n) -> counter.[key] <- n + count
             | (false, _) -> counter.Add(key, count)
 
-        let (===) a b = String.Equals(a, b, StringComparison.Ordinal)
-
         let printTitle (title : string) =
             let separator = "--------------------------------"
             let space = Math.Max(0, (separator.Length - title.Length) / 2)
