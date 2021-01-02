@@ -1,7 +1,6 @@
 ﻿namespace LowLevelDesign.WTrace.Tracing
 
 open System
-open FSharp.Control.Reactive
 open System.Reflection
 open System.Threading
 open Microsoft.Diagnostics.Tracing

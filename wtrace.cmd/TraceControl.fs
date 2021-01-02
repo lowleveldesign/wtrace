@@ -87,15 +87,15 @@ let traceEverything ct =
 module private ProcessApi =
     // returns true if the process stopped by itself, false if the ct got cancelled
     let rec waitForProcessExit (ct : CancellationToken) hProcess =
-        result {
-            let! processFinished = WinApi.waitForProcessExit hProcess 500
+        match WinApi.waitForProcessExit hProcess 500 with
+        | Error err -> Error err
+        | Ok processFinished ->
             if processFinished then
-                return true
+                Ok true
             elif ct.IsCancellationRequested then
-                return false
+                Ok false
             else
-                return! waitForProcessExit ct hProcess
-        }
+                waitForProcessExit ct hProcess
 
     let traceProcess (pid, hProcess, hThread : WinApi.SHandle) includeChildren ct =
         result {
