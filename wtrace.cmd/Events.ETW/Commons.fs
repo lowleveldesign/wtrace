@@ -47,7 +47,7 @@ module internal Commons =
         handler (idgen()) state ev
 
     let handleEventNoId<'T, 'S when 'T :> EtwEvent> (state : 'S) handler (ev : 'T) : unit =
-        handler ev.TimeStamp state ev
+        handler state ev
 
     let toEventField eventId struct (fieldName, fieldValue) =
         {
@@ -63,6 +63,7 @@ module internal Commons =
             ActivityId = activityId
             Duration = TimeSpan.Zero
             ProcessId = ev.ProcessID
+            ProcessName = ev.ProcessName
             ThreadId = ev.ThreadID
             EventName = ev.EventName
             EventLevel = int32 ev.Level

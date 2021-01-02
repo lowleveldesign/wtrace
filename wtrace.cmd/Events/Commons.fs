@@ -48,31 +48,29 @@ module FieldValues =
     let inline getFieldValue fieldName fields =
         (fields |> Array.find (fun fld -> ordeq fld.FieldName fieldName)).FieldValue
 
-    let inline i32db (n : int32) = sprintf "%d" n
+    let inline i32s (n : int32) = sprintf "%d" n
 
-    let inline ui32db (n : uint32) = sprintf "%d" n
+    let inline ui32s (n : uint32) = sprintf "%d" n
 
-    let inline i64db (n : int64) = sprintf "%d" n
+    let inline i64s (n : int64) = sprintf "%d" n
 
-    let inline ui64db (n : uint64) = sprintf "%d" n
+    let inline ui64s (n : uint64) = sprintf "%d" n
 
-    let inline date2db (d : DateTime) = sprintf "%d" d.Ticks
+    let inline date2s (d : DateTime) = sprintf "%d" d.Ticks
 
-    let inline s2db (s : string) = s
+    let inline guid2s (g : Guid) = g.ToString()
 
-    let inline guid2db (g : Guid) = g.ToString()
+    let inline s2guid (b : string) = Guid(b)
 
-    let inline db2guid (b : string) = Guid(b)
-
-    let inline db2i32 b = Int32.Parse(b)
+    let inline s2i32 b = Int32.Parse(b)
     
-    let inline db2ui32 b = UInt32.Parse(b)
+    let inline s2ui32 b = UInt32.Parse(b)
 
-    let inline db2i64 b = Int64.Parse(b)
+    let inline s2i64 b = Int64.Parse(b)
 
-    let inline db2ui64 b = UInt64.Parse(b)
+    let inline s2ui64 b = UInt64.Parse(b)
 
-    let inline db2date b = DateTime(Int64.Parse(b))
+    let inline s2date b = DateTime(Int64.Parse(b))
 
-    let inline db2s b = b
+    let s2s = id
 

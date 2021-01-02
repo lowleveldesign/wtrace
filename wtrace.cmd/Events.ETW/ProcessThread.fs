@@ -20,15 +20,15 @@ module private H =
             let opcode = int32 ev.Opcode
             if opcode = 1 (* Start *) || opcode = 3 (* DCStart *) then eventStatusUndefined
             else ev.ExitStatus
-        
+
         let fields =
             [|
-                struct (nameof ev.ParentID, ev.ParentID |> i32db)
-                struct (nameof ev.CommandLine, ev.CommandLine |> s2db)
-                struct (nameof ev.SessionID, ev.SessionID |> i32db)
-                struct (nameof ev.ImageFileName, ev.ImageFileName |> s2db)
-                struct (nameof ev.PackageFullName, ev.PackageFullName |> s2db)
-                struct (nameof ev.ApplicationID, ev.ApplicationID |> s2db)
+                struct (nameof ev.ParentID, ev.ParentID |> i32s)
+                struct (nameof ev.CommandLine, ev.CommandLine |> s2s)
+                struct (nameof ev.SessionID, ev.SessionID |> i32s)
+                struct (nameof ev.ImageFileName, ev.ImageFileName |> s2s)
+                struct (nameof ev.PackageFullName, ev.PackageFullName |> s2s)
+                struct (nameof ev.ApplicationID, ev.ApplicationID |> s2s)
             |] |> Array.map (toEventField id)
 
         let details = sprintf "command line: '%s'" ev.CommandLine
@@ -40,14 +40,14 @@ module private H =
         let traceEvent =
             if (String.IsNullOrEmpty(threadName)) then
                 let fields = [|
-                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32db)
+                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32s)
                     |> toEventField id
                 |]
                 TraceEventWithFields (toEvent ev id "" "" "" eventStatusUndefined, fields)
             else
                 let fields = [|
-                    struct (nameof ev.ThreadName, threadName |> s2db)
-                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32db)
+                    struct (nameof ev.ThreadName, threadName |> s2s)
+                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32s)
                 |]
 
                 let details = sprintf "name: %s" threadName

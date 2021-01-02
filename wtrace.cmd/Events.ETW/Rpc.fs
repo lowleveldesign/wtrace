@@ -7,88 +7,77 @@ open Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Events.FieldValues
 open LowLevelDesign.WTrace
+open LowLevelDesign.WTrace.WinApi
 
 type private RpcHandlerState = {
     Broadcast : EventBroadcast
+    // a state to keep information about the pending RPC calls
+    PendingRpcCalls : DataCache<Guid, TraceEvent * array<struct (string * string)>>
 }
 
 type OpcodeId = | ClientCall = 1 | ServerCall = 2
 
 [<AutoOpen>]
 module private H =
-    let queuePendingEvent id state (ev : EtwEvent) path fields details = 
-        let rpcev = {
-            EventId = id
-            TimeStamp = Qpc ts
-            Duration = Qpc 0L
-            ProcessId = ev.ProcessID
-            ThreadId = ev.ThreadID
-            HandlerId = state.HandlerId
-            ProviderId = ev.ProviderGuid
-            TaskId = rpcTaskId
-            OpcodeId = 0
-            EventLevel = int32 ev.Level
-            Path = path
-            Details = details
-            Result = eventStatusUndefined
-        }
 
-        state.PendingRpcCalls.[ev.ActivityID] <- TraceEventWithFields (rpcev, fields |> Array.map (toEventField id))
-
-    let completeRpcEvent state activityId (opcodeId : OpcodeId) status =
+    let completeRpcEvent id ts state activityId eventName status =
         match state.PendingRpcCalls.TryGetValue(activityId) with
-        | true, (TraceEventWithFields (prevEvent, fields)) ->
+        | true, (prevEvent, fields) ->
             TraceEventWithFields ({
                 prevEvent with
-                    TaskId = rpcTaskId
-                    OpcodeId = int32 opcodeId
-                    Duration = Qpc (ts - (qpcToInt64 prevEvent.TimeStamp))
+                    EventId = id
+                    ActivityId = $"RPC#{activityId}"
+                    EventName = eventName
+                    Duration = ts - prevEvent.TimeStamp
                     Result = status
-            }, fields) |> state.Broadcast.publishTraceEvent
+            }, fields |> Array.map (toEventField id)) |> state.Broadcast.publishTraceEvent
         | false, _ -> () // this happens sporadically, but I don't think we should worry
 
     let handleRpcClientCallStart id state (ev : RpcClientCallStartArgs) =
-        let fields = [|
-            struct (nameof ev.Endpoint, ev.Endpoint |> s2db)
-            struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2db)
-            struct (nameof ev.ProcNum, ev.ProcNum |> i32db)
-            struct (nameof ev.Options, ev.Options |> s2db)
-            struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32db)
-            struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32db)
-            struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32db) |]
+        let fields =
+            [|
+                struct (nameof ev.Endpoint, ev.Endpoint |> s2s)
+                struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2s)
+                struct (nameof ev.ProcNum, ev.ProcNum |> i32s)
+                struct (nameof ev.Options, ev.Options |> s2s)
+                struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32s)
+                struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32s)
+                struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32s)
+            |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        TraceEventWithFields ({
-            prevEvent with
-                TaskId = rpcTaskId
-                OpcodeId = int32 opcodeId
-                Duration = Qpc (ts - (qpcToInt64 prevEvent.TimeStamp))
-                Result = status
-        }, fields) |> state.Broadcast.publishTraceEvent
+        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" eventStatusUndefined)
+        state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
-        queuePendingEvent id ts state ev path fields ""
+        TraceEventWithFields (
+            rpcev,
+            fields |> Array.map (toEventField id)
+        ) |> state.Broadcast.publishTraceEvent
 
-    let handleRpcClientCallStop ts state (ev : RpcCallStopArgs) =
-        completeRpcEvent ts state ev.ActivityID OpcodeId.ClientCall ev.Status
+    let handleRpcClientCallStop id state (ev : RpcCallStopArgs) =
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
 
-    let handleRpcClientCallError ts state (ev : RpcClientCallErrorArgs) =
-        completeRpcEvent ts state ev.ActivityID OpcodeId.ClientCall ev.Status
+    let handleRpcClientCallError id state (ev : RpcClientCallErrorArgs) =
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
 
     let handleRpcServerCallStart id state (ev : RpcServerCallStartArgs) =
-        let fields = [|
-            struct (nameof ev.Endpoint, ev.Endpoint |> s2db)
-            struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2db)
-            struct (nameof ev.ProcNum, ev.ProcNum |> i32db)
-            struct (nameof ev.Options, ev.Options |> s2db)
-            struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32db)
-            struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32db)
-            struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32db) |]
+        let fields =
+            [|
+                struct (nameof ev.Endpoint, ev.Endpoint |> s2s)
+                struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2s)
+                struct (nameof ev.ProcNum, ev.ProcNum |> i32s)
+                struct (nameof ev.Options, ev.Options |> s2s)
+                struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32s)
+                struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32s)
+                struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32s)
+            |] |> Array.map (toEventField id)
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        queuePendingEvent id state ev path fields ""
+        TraceEventWithFields ((toEvent ev id $"RPC#{ev.ActivityID}" path "" eventStatusUndefined), fields)
+        |> state.Broadcast.publishTraceEvent
 
-    let handleRpcServerCallStop ts state (ev : RpcCallStopArgs) =
-        completeRpcEvent ts state ev.ActivityID OpcodeId.ServerCall ev.Status
+    let handleRpcServerCallStop id state (ev : RpcCallStopArgs) =
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
 
     let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
         let state = state :?> RpcHandlerState
@@ -118,6 +107,7 @@ let createEtwHandler () =
         Initialize = 
             fun (broadcast) -> ({
                 Broadcast = broadcast
+                PendingRpcCalls = DataCache<Guid, TraceEvent * array<struct (string * string)>>(256)
             } :> obj)
         Subscribe = subscribe
     }

@@ -93,12 +93,10 @@ module EtwTraceSession =
     let start settings publishStatus publishTraceEvent (ct : CancellationToken) =
 
         let handlersWithStates =
-            let eventBroadcast = {
-                publishTraceEvent = fun evf -> if settings.TraceFilter evf then publishTraceEvent evf
-            }
-            [| FileIO.createEtwHandler(); (* Registry.createEtwHandler() ; *) Rpc.createEtwHandler();
+            let eventBroadcast = { publishTraceEvent = publishTraceEvent }
+            [| // FIXME FileIO.createEtwHandler(); Registry.createEtwHandler() ; Rpc.createEtwHandler();
                ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
-            |> Array.mapi (fun i h -> (h, h.Initialize (i, eventBroadcast)))
+            |> Array.map (fun h -> (h, h.Initialize eventBroadcast))
         let requiredKernelFlags = NtKeywords.Process ||| NtKeywords.Thread ||| NtKeywords.ImageLoad
         let kernelFlags = handlersWithStates |> Array.fold (fun f (h, _) -> f ||| h.KernelFlags) requiredKernelFlags
         let kernelStackFlags = if settings.EnableStacks then

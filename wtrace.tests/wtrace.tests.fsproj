@@ -17,8 +17,6 @@
   <ItemGroup>
     <Compile Include="CommonsTests.fs" />
     <Compile Include="EventFilterTests.fs" />
-    <Compile Include="MetadataTests.fs" />
-    <Compile Include="TraceDataTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

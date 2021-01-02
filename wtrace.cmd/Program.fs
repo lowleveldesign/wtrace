@@ -12,7 +12,7 @@ open LowLevelDesign.WTrace
 
 let className = "[main]"
 
-let flags = [| "s"; "system"; "c"; "children"; "newconsole"; "nosummary"; "withstacks"; "v"; "verbose"; "h"; "?"; "help" |]
+let flags = [| "s"; "system"; "c"; "children"; "newconsole"; "nosummary"; "v"; "verbose"; "h"; "?"; "help" |]
 
 let showHelp () =
     let appAssembly = Assembly.GetEntryAssembly();
@@ -23,7 +23,7 @@ let showHelp () =
     assert (customAttrs.Length > 0)
     printfn "Copyright (C) %d %s" DateTime.Today.Year (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
     printfn ""
-    printfn "Usage: %s [OPTIONS] tracefile|pid|imagename args" appName.Name
+    printfn "Usage: %s [OPTIONS] pid|imagename args" appName.Name
     printfn ""
     printfn "Options:"
     printfn "-f, --filter=FILTER   Displays only events which names contain the given keyword"
@@ -32,7 +32,6 @@ let showHelp () =
     printfn "-c, --children        Collects traces from the selected process and all its children."
     printfn "--newconsole          Starts the process in a new console window."
     printfn "--nosummary           Prints only ETW events - no summary at the end."
-    // TODO: printfn "--withstacks          Collects data required to resolve stacks (memory consumption is much higher)."
     printfn "-v, --verbose         Shows wtrace diagnostics logs."
     printfn "-h, --help            Shows this message and exits."
     printfn ""
@@ -44,12 +43,12 @@ let checkElevated () =
     else Error "Must be elevated (Admin) to run this program."
 
 
-let onEvent (tracedata : ITraceData) (TraceEventWithFields (ev, _)) =
-    let getPath v = if v = "" then "" else sprintf " '%s'" v
-    let getDesc v = if v = "" then "" else sprintf " %s" v
+let onEvent (startTime : DateTime) (TraceEventWithFields (ev, _)) =
+    let getPath v = if v = "" then "" else $" '%s{v}'"
+    let getDesc v = if v = "" then "" else $" %s{v}"
     let result = if ev.Result = WinApi.eventStatusUndefined then ""
-                 else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
-    printfn "%.4f (%d.%d) %s%s%s%s" ev.TimeStamp.TotalSeconds ev.ProcessId ev.ThreadId
+                 else $" -> %s{WinApi.getNtStatusDesc ev.Result}"
+    printfn "%.4f (%d.%d) %s%s%s%s" (ev.TimeStamp - startTime).TotalSeconds ev.ProcessId ev.ThreadId
         ev.EventName (getPath ev.Path) (getDesc ev.Details) result
 
 let onError (ex : Exception) =
@@ -58,7 +57,7 @@ let onError (ex : Exception) =
 let startRealtime (source : RealtimeEventSource) stats (ct : CancellationToken) =
     let reg = ct.Register(fun () -> source.Stop()) :> IDisposable
 
-    let onEvent = onEvent source.TraceData
+    let onEvent = onEvent (DateTime.Now)
     let eventSub = source
                    |> Observable.observeOn (new EventLoopScheduler())
                    |> Observable.subscribeWithCallbacks onEvent onError ignore
@@ -95,11 +94,8 @@ let start (args : Map<string, list<string>>) = result {
         |> List.collect (id)
         |> List.map (fun s -> EventName ("Contains", s))
         |> List.toArray
-    let filterSettings = {
-        Filters = filters
-        DropFilteredEvents = true
-    }
-    let withStacks = [| "withstacks" |] |> isFlagEnabled
+
+    let filterSettings = { Filters = filters }
 
     use cts = new CancellationTokenSource()
     let stats = TraceStatistics.create ()
@@ -133,7 +129,7 @@ let start (args : Map<string, list<string>>) = result {
             ProcessStartInfo(fileName,
                              Arguments = (args |> Seq.skip 1 |> String.concat " "),
                              CreateNoWindow = not ([| "newconsole" |] |> isFlagEnabled))
-        let proc = Process.Start(options)
+        let proc = Process.Start(options) // FIXME: we should suspend it before we start the session
 
         let processFilter = ProcessIdFilter (proc.Id, [| "c"; "children" |] |> isFlagEnabled)
         do! checkElevated ()

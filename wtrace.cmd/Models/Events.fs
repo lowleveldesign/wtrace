@@ -15,6 +15,7 @@ type TraceEvent = {
     TimeStamp : DateTime
     Duration : TimeSpan
     ProcessId : int32
+    ProcessName : string
     ThreadId : int32
     ActivityId : string
     EventName : string

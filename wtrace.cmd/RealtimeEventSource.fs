@@ -13,10 +13,8 @@ type RealtimeEventSource (processFilter, filterSettings) =
 
     let rundownWaitEvent = new ManualResetEvent(false)
 
-    let tracedata = TraceData.createMutable(processFilter)
-
     let filterEvent =
-        let filterEvent = EventFilter.buildFilterFunction tracedata filterSettings.Filters
+        let filterEvent = EventFilter.buildFilterFunction filterSettings.Filters
         fun (TraceEventWithFields (ev, _)) -> filterEvent ev
 
     let updateStatus s =
@@ -28,7 +26,6 @@ type RealtimeEventSource (processFilter, filterSettings) =
 
         let settings = {
             EnableStacks = false
-            TraceFilter = tracedata.HandleAndFilterSystemEvent
         }
 
         let sessionSubscribe (o : IObserver<TraceEventWithFields>) (ct : CancellationToken) =
@@ -46,10 +43,7 @@ type RealtimeEventSource (processFilter, filterSettings) =
     member _.Start() =
         rundownWaitEvent.Reset() |> ignore
 
-        subscription <-
-            [|
-                realtimeObservable.Connect()
-            |] |> Disposables.compose
+        subscription <- realtimeObservable.Connect()
         rundownWaitEvent.WaitOne() |> ignore
 
     member _.Stop () =
@@ -58,8 +52,6 @@ type RealtimeEventSource (processFilter, filterSettings) =
 
         // if the session was cancelled during rundown
         rundownWaitEvent.Set() |> ignore
-
-    member _.TraceData = tracedata
 
     interface IObservable<TraceEventWithFields> with
         member _.Subscribe (o : IObserver<TraceEventWithFields>) =
@@ -71,3 +63,4 @@ type RealtimeEventSource (processFilter, filterSettings) =
         member _.Dispose () =
             subscription.Dispose()
             subscription <- RxDisposable.Empty
+

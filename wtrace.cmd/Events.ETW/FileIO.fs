@@ -14,7 +14,7 @@ open LowLevelDesign.WTrace.WinApi
 type private FileIoHandlerState = {
     Broadcast : EventBroadcast
     // a state to keep information about the pending IO requests
-    PendingFileIo : DataCache<uint64, TraceEventWithFields>
+    PendingFileIo : DataCache<uint64, TraceEvent * array<struct (string * string)>>
     // we need to keep this map in our handler. KernelTraceEventParser has it too,
     // but it removes the mapping too quickly (Cleanup, for example)
     FileIdToName : Dictionary<uint64, string>
@@ -22,9 +22,9 @@ type private FileIoHandlerState = {
 
 [<AutoOpen>]
 module private H =
-    let queuePendingEvent id ts state (ev : EtwEvent) irpPtr fileName (fields : array<EventFieldDesc>) details = 
-        let ev = toEvent state.HandlerId ev id ts fileName details eventStatusUndefined
-        state.PendingFileIo.[irpPtr] <- TraceEventWithFields (ev, fields |> Array.map (toEventField id))
+    let queuePendingEvent state (ev : EtwEvent) irpPtr fileId fileName fields details = 
+        let ev = toEvent ev 0 $"File#%d{fileId}" fileName details eventStatusUndefined
+        state.PendingFileIo.[irpPtr] <- (ev, fields)
 
     let fileShareStr (fs : FileShare) =
         if (fs &&& FileShare.ReadWrite &&& FileShare.Delete <> FileShare.None) then "rwd"
@@ -46,60 +46,62 @@ module private H =
     let mapFileNameToFileId state fileId fileName =
         state.FileIdToName.[fileId] <- fileName
 
-    let handleFileIoCreate id ts state (ev : FileIOCreateTraceData) =
+    let handleFileIoCreate state (ev : FileIOCreateTraceData) =
         mapFileNameToFileId state ev.FileObject ev.FileName
         let createDisposition = sprintf "%A" ev.CreateDisposition
         let createOptions = sprintf "%A" ev.CreateOptions 
         let fields = [|
-            struct (int32 FieldId.CreateDisposition, nameof FieldId.CreateDisposition, createDisposition |> s2db)
-            struct (int32 FieldId.CreateOptions, nameof FieldId.CreateOptions, createOptions |> s2db)
-            struct (int32 FieldId.FileAttributes, nameof FieldId.FileAttributes, sprintf "%A" ev.FileAttributes |> s2db)
-            struct (int32 FieldId.ShareAccess, nameof FieldId.ShareAccess, fileShareStr ev.ShareAccess |> s2db) |]
+            struct (nameof ev.CreateDisposition, createDisposition |> s2s)
+            struct (nameof ev.CreateOptions, createOptions |> s2s)
+            struct (nameof ev.FileAttributes, sprintf "%A" ev.FileAttributes |> s2s)
+            struct (nameof ev.ShareAccess, fileShareStr ev.ShareAccess |> s2s) |]
 
         let details = sprintf "disposition: %s; options: %s" createDisposition createOptions
-        queuePendingEvent id ts state ev ev.IrpPtr ev.FileName fields details
+        queuePendingEvent state ev ev.IrpPtr ev.FileObject ev.FileName fields details
 
-    let handleFileIoDirEnum id ts state (ev : FileIODirEnumTraceData) =
+    let handleFileIoDirEnum state (ev : FileIODirEnumTraceData) =
         let fields = [|
-            struct (int32 FieldId.FileName, nameof FieldId.FileName, ev.FileName |> s2db)
-            struct (int32 FieldId.FileIndex, nameof FieldId.FileIndex, ev.FileIndex |> i32db)
-            struct (int32 FieldId.Length, nameof FieldId.Length, ev.Length |> i32db) |]
+            struct (nameof ev.FileName, ev.FileName |> s2s)
+            struct (nameof ev.FileIndex, ev.FileIndex |> i32s)
+            struct (nameof ev.Length, ev.Length |> i32s) |]
 
         let details = sprintf "name: %s; index: %d; length: %d" ev.FileName ev.FileIndex ev.Length
-        queuePendingEvent id ts state ev ev.IrpPtr ev.DirectoryName fields details
+        queuePendingEvent state ev ev.IrpPtr ev.FileObject ev.DirectoryName fields details
 
-    let handleFileIoInfo id ts state (ev : FileIOInfoTraceData) =
-        let fields = Array.singleton (struct (int32 FieldId.InfoClass, nameof FieldId.InfoClass, 
-                                              ev.InfoClass |> i32db))
+    let handleFileIoInfo state (ev : FileIOInfoTraceData) =
+        let fields = Array.singleton (struct (nameof ev.InfoClass, ev.InfoClass |> i32s))
 
         let fileName = struct (ev.FileKey, ev.FileObject) |> getFileNameByFileIds state
         let details = sprintf "class info: %d" ev.InfoClass
-        queuePendingEvent id ts state ev ev.IrpPtr fileName fields details
+        queuePendingEvent state ev ev.IrpPtr ev.FileObject fileName fields details
 
-    let handleFileIoReadWrite id ts state (ev : FileIOReadWriteTraceData) =
+    let handleFileIoReadWrite state (ev : FileIOReadWriteTraceData) =
         let fields = [|
-            struct (int32 FieldId.Offset, nameof FieldId.Offset, ev.Offset |> i64db)
-            struct (int32 FieldId.IoSize, nameof FieldId.IoSize, ev.IoSize |> i32db)
-            struct (int32 FieldId.IoFlags, nameof FieldId.IoFlags, ev.IoFlags |> i32db) |]
+            struct (nameof ev.Offset, ev.Offset |> i64s)
+            struct (nameof ev.IoSize, ev.IoSize |> i32s)
+            struct (nameof ev.IoFlags, ev.IoFlags |> i32s) |]
 
         let fileName = struct (ev.FileKey, ev.FileObject) |> getFileNameByFileIds state
         let details = sprintf "offset: %d; size: %d" ev.Offset ev.IoSize
-        queuePendingEvent id ts state ev ev.IrpPtr fileName fields details
+        queuePendingEvent state ev ev.IrpPtr ev.FileObject fileName fields details
 
-    let handleFileIoSimpleOp id ts state (ev : FileIOSimpleOpTraceData) =
+    let handleFileIoSimpleOp state (ev : FileIOSimpleOpTraceData) =
         let fileName = struct (ev.FileKey, ev.FileObject) |> getFileNameByFileIds state
-        queuePendingEvent id ts state ev ev.IrpPtr fileName Array.empty<EventFieldDesc> ""
+        queuePendingEvent state ev ev.IrpPtr ev.FileObject fileName [| |] ""
 
         if int32(ev.Opcode) = 66 (* close *) then
             [| ev.FileKey; ev.FileObject |] |> evictFileIds state
 
-    let handleFileIoOpEnd ts state (ev : FileIOOpEndTraceData) =
-        let completeWTraceEvent (TraceEventWithFields (ev, fields)) (completion : FileIOOpEndTraceData) =
-            let ev = { ev with Duration = Qpc (ts - (qpcToInt64 ev.TimeStamp))
+    let handleFileIoOpEnd id state (ev : FileIOOpEndTraceData) =
+        let completeWTraceEvent (ev, fields) (completion : FileIOOpEndTraceData) =
+            let ev = { ev with EventId = id
+                               Duration = completion.TimeStamp - ev.TimeStamp
                                Result = completion.NtStatus }
-            let field = struct (int32 FieldId.ExtraInfo, nameof FieldId.ExtraInfo, completion.ExtraInfo |> ui64db)
-                        |> toEventField ev.EventId
-            TraceEventWithFields (ev, [| field |] |> Array.append fields)
+            let fields =
+                fields
+                |> Array.append [| struct (nameof completion.ExtraInfo, completion.ExtraInfo |> ui64s) |]
+                |> Array.map (toEventField id)
+            TraceEventWithFields (ev, fields)
 
         let irp = ev.IrpPtr
         match state.PendingFileIo.TryGetValue(irp) with
@@ -122,19 +124,19 @@ module private H =
             source.Kernel.add_FileIOName(handle handleFileIoName)
             source.Kernel.add_FileIOFileRundown(handle handleFileIoName)
         else
-            source.Kernel.add_FileIOCreate(handleEvent handleFileIoCreate)
-            source.Kernel.add_FileIOCleanup(handleEvent handleFileIoSimpleOp)
-            source.Kernel.add_FileIOClose(handleEvent handleFileIoSimpleOp)
-            source.Kernel.add_FileIOFlush(handleEvent handleFileIoSimpleOp)
-            source.Kernel.add_FileIODelete(handleEvent handleFileIoInfo)
-            source.Kernel.add_FileIOFSControl(handleEvent handleFileIoInfo)
-            source.Kernel.add_FileIOQueryInfo(handleEvent handleFileIoInfo)
-            source.Kernel.add_FileIOSetInfo(handleEvent handleFileIoInfo)
-            source.Kernel.add_FileIORename(handleEvent handleFileIoInfo)
-            source.Kernel.add_FileIORead(handleEvent handleFileIoReadWrite)
-            source.Kernel.add_FileIOWrite(handleEvent handleFileIoReadWrite)
-            source.Kernel.add_FileIOOperationEnd(handleEventNoId handleFileIoOpEnd)
-            source.Kernel.add_FileIODirEnum(handleEvent handleFileIoDirEnum)
+            source.Kernel.add_FileIOCreate(handleEventNoId handleFileIoCreate)
+            source.Kernel.add_FileIOCleanup(handleEventNoId handleFileIoSimpleOp)
+            source.Kernel.add_FileIOClose(handleEventNoId handleFileIoSimpleOp)
+            source.Kernel.add_FileIOFlush(handleEventNoId handleFileIoSimpleOp)
+            source.Kernel.add_FileIODelete(handleEventNoId handleFileIoInfo)
+            source.Kernel.add_FileIOFSControl(handleEventNoId handleFileIoInfo)
+            source.Kernel.add_FileIOQueryInfo(handleEventNoId handleFileIoInfo)
+            source.Kernel.add_FileIOSetInfo(handleEventNoId handleFileIoInfo)
+            source.Kernel.add_FileIORename(handleEventNoId handleFileIoInfo)
+            source.Kernel.add_FileIORead(handleEventNoId handleFileIoReadWrite)
+            source.Kernel.add_FileIOWrite(handleEventNoId handleFileIoReadWrite)
+            source.Kernel.add_FileIOOperationEnd(handleEvent handleFileIoOpEnd)
+            source.Kernel.add_FileIODirEnum(handleEventNoId handleFileIoDirEnum)
 
 
 let createEtwHandler () =
@@ -146,7 +148,7 @@ let createEtwHandler () =
         Initialize = 
             fun (broadcast) -> ({
                 Broadcast = broadcast
-                PendingFileIo = DataCache<uint64, TraceEventWithFields>(256)
+                PendingFileIo = DataCache<uint64, TraceEvent * array<struct (string * string)>>(256)
                 FileIdToName = Dictionary<uint64, string>()
             } :> obj)
         Subscribe = subscribe

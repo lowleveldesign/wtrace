@@ -5,7 +5,6 @@ open LowLevelDesign.WTrace
 
 type RealtimeTraceSessionSettings = {
     EnableStacks: bool
-    TraceFilter : TraceEventWithFields -> bool
 } 
 
 type RealtimeSessionStatus = SessionRunning of EventsLost: int32

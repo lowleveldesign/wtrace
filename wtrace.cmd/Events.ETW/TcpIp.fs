@@ -17,70 +17,70 @@ module private H =
 
     let handleTcpIpConnect id state (ev : TcpIpConnectTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64db)
-            struct (nameof ev.seqnum, ev.seqnum |> i32db)
-            struct (nameof ev.mss, ev.mss |> i32db)
-            struct (nameof ev.size, ev.size |> i32db) |]
+            struct (nameof ev.connid, ev.connid |> ui64s)
+            struct (nameof ev.seqnum, ev.seqnum |> i32s)
+            struct (nameof ev.mss, ev.mss |> i32s)
+            struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Connect id state (ev : TcpIpV6ConnectTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64db)
-            struct (nameof ev.seqnum, ev.seqnum |> i32db)
-            struct (nameof ev.mss, ev.mss |> i32db)
-            struct (nameof ev.size, ev.size |> i32db) |]
+            struct (nameof ev.connid, ev.connid |> ui64s)
+            struct (nameof ev.seqnum, ev.seqnum |> i32s)
+            struct (nameof ev.mss, ev.mss |> i32s)
+            struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpData id state (ev : TcpIpTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64db)
-            struct (nameof ev.seqnum, ev.seqnum |> i32db)
-            struct (nameof ev.size, ev.size |> i32db) |]
+            struct (nameof ev.connid, ev.connid |> ui64s)
+            struct (nameof ev.seqnum, ev.seqnum |> i32s)
+            struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Data id state (ev : TcpIpV6TraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64db)
-            struct (nameof ev.seqnum, ev.seqnum |> i32db)
-            struct (nameof ev.size, ev.size |> i32db) |]
+            struct (nameof ev.connid, ev.connid |> ui64s)
+            struct (nameof ev.seqnum, ev.seqnum |> i32s)
+            struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpSend id state (ev : TcpIpSendTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64db)
-            struct (nameof ev.seqnum, ev.seqnum |> i32db)
-            struct (nameof ev.size, ev.size |> i32db) |]
+            struct (nameof ev.connid, ev.connid |> ui64s)
+            struct (nameof ev.seqnum, ev.seqnum |> i32s)
+            struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Send id state (ev : TcpIpV6SendTraceData) =
         let fields = [|
-                struct (nameof ev.connid, ev.connid |> ui64db)
-                struct (nameof ev.seqnum, ev.seqnum |> i32db)
-                struct (nameof ev.size, ev.size |> i32db) |]
+                struct (nameof ev.connid, ev.connid |> ui64s)
+                struct (nameof ev.seqnum, ev.seqnum |> i32s)
+                struct (nameof ev.size, ev.size |> i32s) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id ts path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
