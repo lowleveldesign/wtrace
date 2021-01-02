@@ -18,6 +18,7 @@
     <Compile Include="Events\Commons.fs" />
     <Compile Include="Events.ETW\Commons.fs" />
     <Compile Include="Events.ETW\FileIO.fs" />
+    <Compile Include="Events.ETW\IsrDpc.fs" />
     <Compile Include="Events.ETW\ProcessThread.fs" />
     <Compile Include="Events.ETW\Registry.fs" />
     <Compile Include="Events.ETW\Rpc.fs" />

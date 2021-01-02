@@ -17,7 +17,7 @@ module private H =
 
     let handleImageLoad id state (ev : ImageLoadTraceData) =
         if ev.ProcessID = 0 then // system process
-            d
+            ()
 
     let handleDpc id state (ev : DPCTraceData) =
         ()
