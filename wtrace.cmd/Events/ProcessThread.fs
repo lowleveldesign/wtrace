@@ -1,12 +1,11 @@
-﻿module LowLevelDesign.WTrace.Events.ETW.ProcessThread
+﻿module LowLevelDesign.WTrace.Events.ProcessThread
 
 open System
 open Microsoft.Diagnostics.Tracing
 open Microsoft.Diagnostics.Tracing.Parsers.Kernel
 open LowLevelDesign.WTrace
-open LowLevelDesign.WTrace.WinApi
 open LowLevelDesign.WTrace.Events
-open LowLevelDesign.WTrace.Events.FieldValues
+open LowLevelDesign.WTrace.Events.HandlerCommons
 
 type private ProcessThreadHandlerState = {
     Broadcast : EventBroadcast
@@ -18,17 +17,17 @@ module private H =
     let handleProcessEvent id state (ev : ProcessTraceData) =
         let status = 
             let opcode = int32 ev.Opcode
-            if opcode = 1 (* Start *) || opcode = 3 (* DCStart *) then eventStatusUndefined
+            if opcode = 1 (* Start *) || opcode = 3 (* DCStart *) then WinApi.eventStatusUndefined
             else ev.ExitStatus
 
         let fields =
             [|
-                struct (nameof ev.ParentID, ev.ParentID |> i32s)
-                struct (nameof ev.CommandLine, ev.CommandLine |> s2s)
-                struct (nameof ev.SessionID, ev.SessionID |> i32s)
-                struct (nameof ev.ImageFileName, ev.ImageFileName |> s2s)
-                struct (nameof ev.PackageFullName, ev.PackageFullName |> s2s)
-                struct (nameof ev.ApplicationID, ev.ApplicationID |> s2s)
+                struct (nameof ev.ParentID, FI32 ev.ParentID)
+                struct (nameof ev.CommandLine, FText ev.CommandLine)
+                struct (nameof ev.SessionID, FI32 ev.SessionID)
+                struct (nameof ev.ImageFileName, FText ev.ImageFileName)
+                struct (nameof ev.PackageFullName, FText ev.PackageFullName)
+                struct (nameof ev.ApplicationID, FText ev.ApplicationID)
             |] |> Array.map (toEventField id)
 
         let details = sprintf "command line: '%s'" ev.CommandLine
@@ -40,18 +39,18 @@ module private H =
         let traceEvent =
             if (String.IsNullOrEmpty(threadName)) then
                 let fields = [|
-                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32s)
+                    struct (nameof ev.ThreadFlags, FI32 ev.ThreadFlags)
                     |> toEventField id
                 |]
-                TraceEventWithFields (toEvent ev id "" "" "" eventStatusUndefined, fields)
+                TraceEventWithFields (toEvent ev id "" "" "" WinApi.eventStatusUndefined, fields)
             else
                 let fields = [|
-                    struct (nameof ev.ThreadName, threadName |> s2s)
-                    struct (nameof ev.ThreadFlags, ev.ThreadFlags |> i32s)
+                    struct (nameof ev.ThreadName, FText threadName)
+                    struct (nameof ev.ThreadFlags, FI32 ev.ThreadFlags)
                 |]
 
                 let details = sprintf "name: %s" threadName
-                TraceEventWithFields (toEvent ev id "" "" details eventStatusUndefined, fields |> Array.map (toEventField id))
+                TraceEventWithFields (toEvent ev id "" "" details WinApi.eventStatusUndefined, fields |> Array.map (toEventField id))
 
         state.Broadcast.publishTraceEvent traceEvent
  
@@ -74,7 +73,7 @@ let createEtwHandler () =
     {
         KernelFlags = NtKeywords.Process ||| NtKeywords.Thread
         KernelStackFlags = NtKeywords.Process ||| NtKeywords.Thread
-        KernelRundownFlags = NtKeywords.None
+        KernelRundownFlags = NtKeywords.Process
         Providers = Array.empty<EtwEventProvider>
         Initialize = fun (broadcast) -> { Broadcast = broadcast } :> obj
         Subscribe = subscribe

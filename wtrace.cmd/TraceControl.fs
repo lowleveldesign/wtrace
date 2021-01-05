@@ -13,8 +13,6 @@ open LowLevelDesign.WTrace.Tracing
 let mutable lostEventsCount = 0
 let sessionWaitEvent = new ManualResetEvent(false)
 
-let stats = TraceStatistics.create ()
-
 [<AutoOpen>]
 module private H =
     let rundownWaitEvent = new ManualResetEvent(false)
@@ -27,11 +25,7 @@ module private H =
             rundownWaitEvent.Set() |> ignore
             sessionWaitEvent.Set() |> ignore
 
-    let createEtwObservable () =
-        let settings = {
-            EnableStacks = false
-        }
-
+    let createEtwObservable settings =
         let sessionSubscribe (o : IObserver<TraceEventWithFields>) (ct : CancellationToken) =
             async {
                 // the ct token when cancelled should stop the trace session gracefully
@@ -39,9 +33,7 @@ module private H =
                 return RxDisposable.Empty
             } |> Async.StartAsTask
 
-        // we will keep last N events in the buffer
         Observable.Create(sessionSubscribe)
-        // FIXME: process - child filter should be here
         |> Observable.publish
 
     let initiateEtwSession (etwObservable : IConnectableObservable<'a>) (ct : CancellationToken) =
@@ -51,6 +43,9 @@ module private H =
         printf "Preparing the realtime trace session. Please wait..."
         rundownWaitEvent.WaitOne() |> ignore
         printfn "done"
+
+        printfn ""
+        printfn "Tracing session started. Press Ctrl + C to stop it."
 
         Disposable.compose etwsub reg
 
@@ -66,22 +61,37 @@ module private H =
         printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
 
 let traceSystemOnly ct =
-    // FIXME
-    ()
+    let settings = {
+        Handlers = [| ProcessThread.createEtwHandler(); IsrDpc.createEtwHandler() |]
+        EnableStacks = false
+    }
+    let etwObservable = createEtwObservable settings
+
+    etwObservable
+    |> Observable.subscribe TraceStatistics.processEvent
+    |> ignore
+
+    use sub = initiateEtwSession etwObservable ct
+    ct.WaitHandle.WaitOne() |> ignore
 
 let traceEverything ct =
-    let etwObservable = createEtwObservable ()
+    let settings = {
+        Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler() ; Rpc.createEtwHandler();
+                      ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+        EnableStacks = false
+    }
+    let etwObservable = createEtwObservable settings
 
     etwObservable
     |> Observable.subscribeWithCallbacks (onEvent (DateTime.Now)) onError ignore
     |> ignore
 
     etwObservable
-    |> Observable.subscribe (TraceStatistics.processEvent stats)
+    |> Observable.subscribe TraceStatistics.processEvent
     |> ignore
 
     use sub = initiateEtwSession etwObservable ct
-    ()
+    ct.WaitHandle.WaitOne() |> ignore
 
 
 module private ProcessApi =
@@ -99,7 +109,13 @@ module private ProcessApi =
 
     let traceProcess (pid, hProcess, hThread : WinApi.SHandle) includeChildren ct =
         result {
-            let etwObservable = createEtwObservable ()
+            let settings = {
+                Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler() ; Rpc.createEtwHandler();
+                              ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+                EnableStacks = false
+            }
+
+            let etwObservable = createEtwObservable settings
 
             // collection for children processes
             let processIds = HashSet<int32>()
@@ -108,7 +124,7 @@ module private ProcessApi =
             let handleProcessStart evf =
                 let (TraceEventWithFields (ev, flds)) = evf
                 if ev.EventName === "Process/Start" then
-                    let parentPid = Int32.Parse(FieldValues.getFieldValue "ParentID" flds)
+                    let parentPid = FieldValues.getI32FieldValue flds "ParentID"
                     if processIds.Contains(parentPid) then
                         processIds.Add(ev.ProcessId) |> ignore
 
@@ -130,7 +146,7 @@ module private ProcessApi =
             |> ignore
 
             filteredObservable
-            |> Observable.subscribe (TraceStatistics.processEvent stats)
+            |> Observable.subscribe TraceStatistics.processEvent
             |> ignore
 
             if includeChildren then

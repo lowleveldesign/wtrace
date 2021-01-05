@@ -78,12 +78,11 @@ module Logger =
     let Tracing = TraceSource("WTrace.Tracing")
     let EtwTracing = TraceSource("WTrace.ETW.Tracing")
     let EtwEvents = TraceSource("WTrace.ETW.Events")
-    let EventPipeTracing = TraceSource("WTrace.NET.Tracing")
 
 
     module private H =
 
-        let all = [| Main; Tracing; EtwTracing; EtwEvents; EventPipeTracing |]
+        let all = [| Main; Tracing; EtwTracing; EtwEvents |]
 
     do
         // remove the default logger - it's heavy

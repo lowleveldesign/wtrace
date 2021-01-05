@@ -1,4 +1,4 @@
-﻿module LowLevelDesign.WTrace.Events.ETW.Registry
+﻿module LowLevelDesign.WTrace.Events.Registry
 
 open System
 open System.Collections.Generic
@@ -6,8 +6,8 @@ open System.IO
 open System.Security.Principal
 open Microsoft.Diagnostics.Tracing
 open Microsoft.Diagnostics.Tracing.Parsers.Kernel
-open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace
+open LowLevelDesign.WTrace.Events.HandlerCommons
 
 type private RegistryHandlerState = {
     Broadcast : EventBroadcast

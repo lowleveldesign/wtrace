@@ -9,7 +9,6 @@ open Microsoft.Diagnostics.Tracing.Parsers
 open Microsoft.FSharp.Linq
 open LowLevelDesign.WTrace
 open LowLevelDesign.WTrace.Events
-open LowLevelDesign.WTrace.Events.ETW
 
 module EtwTraceSession =
 
@@ -93,9 +92,7 @@ module EtwTraceSession =
 
         let handlersWithStates =
             let eventBroadcast = { publishTraceEvent = publishTraceEvent }
-            [| // FIXME FileIO.createEtwHandler(); Registry.createEtwHandler() ; Rpc.createEtwHandler();
-               ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
-            |> Array.map (fun h -> (h, h.Initialize eventBroadcast))
+            settings.Handlers |> Array.map (fun h -> (h, h.Initialize eventBroadcast))
         let requiredKernelFlags = NtKeywords.Process ||| NtKeywords.Thread ||| NtKeywords.ImageLoad
         let kernelFlags = handlersWithStates |> Array.fold (fun f (h, _) -> f ||| h.KernelFlags) requiredKernelFlags
         let kernelStackFlags = if settings.EnableStacks then

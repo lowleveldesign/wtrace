@@ -2,7 +2,7 @@
   "profiles": {
     "wtrace": {
       "commandName": "Project",
-      "commandLineArgs": "-f \"Process/\" -c notepad.exe"
+      "commandLineArgs": "-s"
     }
   }
 }

@@ -4,10 +4,19 @@ open System
 
 (**** Classes describing trace events ****)
 
+type TraceEventFieldValue =
+| FText of string
+| FI32 of int32
+| FUI32 of uint32
+| FI64 of int64
+| FUI64 of uint64
+| FF64 of float
+| FGuid of Guid
+
 type TraceEventField = {
     EventId : int32
     FieldName : string
-    FieldValue : string
+    FieldValue : TraceEventFieldValue
 }
 
 type TraceEvent = {

@@ -1,12 +1,11 @@
-﻿module LowLevelDesign.WTrace.Events.ETW.TcpIp
+﻿module LowLevelDesign.WTrace.Events.TcpIp
 
 open System
-open Microsoft.Diagnostics.Tracing.Parsers.Kernel
-open LowLevelDesign.WTrace.WinApi
-open LowLevelDesign.WTrace.Events
-open LowLevelDesign.WTrace.Events.FieldValues
-open LowLevelDesign.WTrace
 open Microsoft.Diagnostics.Tracing
+open Microsoft.Diagnostics.Tracing.Parsers.Kernel
+open LowLevelDesign.WTrace
+open LowLevelDesign.WTrace.Events
+open LowLevelDesign.WTrace.Events.HandlerCommons
 
 type private TcpIpHandlerState = {
     Broadcast : EventBroadcast
@@ -17,70 +16,70 @@ module private H =
 
     let handleTcpIpConnect id state (ev : TcpIpConnectTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64s)
-            struct (nameof ev.seqnum, ev.seqnum |> i32s)
-            struct (nameof ev.mss, ev.mss |> i32s)
-            struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.mss, FI32 ev.mss)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Connect id state (ev : TcpIpV6ConnectTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64s)
-            struct (nameof ev.seqnum, ev.seqnum |> i32s)
-            struct (nameof ev.mss, ev.mss |> i32s)
-            struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.mss, FI32 ev.mss)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpData id state (ev : TcpIpTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64s)
-            struct (nameof ev.seqnum, ev.seqnum |> i32s)
-            struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Data id state (ev : TcpIpV6TraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64s)
-            struct (nameof ev.seqnum, ev.seqnum |> i32s)
-            struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpSend id state (ev : TcpIpSendTraceData) =
         let fields = [|
-            struct (nameof ev.connid, ev.connid |> ui64s)
-            struct (nameof ev.seqnum, ev.seqnum |> i32s)
-            struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Send id state (ev : TcpIpV6SendTraceData) =
         let fields = [|
-                struct (nameof ev.connid, ev.connid |> ui64s)
-                struct (nameof ev.seqnum, ev.seqnum |> i32s)
-                struct (nameof ev.size, ev.size |> i32s) |]
+            struct (nameof ev.connid, FUI64 ev.connid)
+            struct (nameof ev.seqnum, FI32 ev.seqnum)
+            struct (nameof ev.size, FI32 ev.size) |]
 
         let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details eventStatusUndefined
+        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =

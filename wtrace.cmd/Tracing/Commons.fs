@@ -2,8 +2,10 @@ namespace LowLevelDesign.WTrace.Tracing
 
 open System
 open LowLevelDesign.WTrace
+open LowLevelDesign.WTrace.Events
 
 type RealtimeTraceSessionSettings = {
+    Handlers : array<EtwEventHandler>
     EnableStacks: bool
 } 
 

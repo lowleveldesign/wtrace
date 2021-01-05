@@ -60,8 +60,7 @@ let start (args : Map<string, list<string>>) = result {
 
     match args |> Map.tryFind "" with 
     | None when [| "s"; "system" |] |> isFlagEnabled ->
-        // FIXME trace system
-        ()
+        TraceControl.traceSystemOnly cts.Token
 
     | None ->
         TraceControl.traceEverything cts.Token
@@ -74,7 +73,7 @@ let start (args : Map<string, list<string>>) = result {
         | [ pid ] when isInteger pid -> do! TraceControl.traceRunningProcess cts.Token includeChildren (Int32.Parse(pid))
         | args -> do! TraceControl.traceNewProcess cts.Token newConsole includeChildren args
 
-    printfn "Closing the session to complete. Please wait..."
+    printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(2.0))) then
         printfn "WARNING: the session did not finish in alotted time. Stop it manually: logman stop wtrace-rt -ets"
 
@@ -82,7 +81,7 @@ let start (args : Map<string, list<string>>) = result {
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
 
     if not ([| "nosummary" |] |> isFlagEnabled) then
-        TraceStatistics.dumpStatistics TraceControl.stats
+        TraceStatistics.dumpStatistics ()
 }
 
 let main (argv : array<string>) =

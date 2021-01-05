@@ -1,18 +1,17 @@
-﻿module LowLevelDesign.WTrace.Events.ETW.Rpc
+﻿module LowLevelDesign.WTrace.Events.Rpc
 
 open System
 open Microsoft.Diagnostics.Tracing
 open Microsoft.Diagnostics.Tracing.Parsers
 open Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsRPC
-open LowLevelDesign.WTrace.Events
-open LowLevelDesign.WTrace.Events.FieldValues
 open LowLevelDesign.WTrace
-open LowLevelDesign.WTrace.WinApi
+open LowLevelDesign.WTrace.Events
+open LowLevelDesign.WTrace.Events.HandlerCommons
 
 type private RpcHandlerState = {
     Broadcast : EventBroadcast
     // a state to keep information about the pending RPC calls
-    PendingRpcCalls : DataCache<Guid, TraceEvent * array<struct (string * string)>>
+    PendingRpcCalls : DataCache<Guid, TraceEvent * array<struct (string * TraceEventFieldValue)>>
 }
 
 type OpcodeId = | ClientCall = 1 | ServerCall = 2
@@ -36,17 +35,17 @@ module private H =
     let handleRpcClientCallStart id state (ev : RpcClientCallStartArgs) =
         let fields =
             [|
-                struct (nameof ev.Endpoint, ev.Endpoint |> s2s)
-                struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2s)
-                struct (nameof ev.ProcNum, ev.ProcNum |> i32s)
-                struct (nameof ev.Options, ev.Options |> s2s)
-                struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32s)
-                struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32s)
-                struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32s)
+                struct (nameof ev.Endpoint, FText ev.Endpoint)
+                struct (nameof ev.InterfaceUuid, FGuid ev.InterfaceUuid)
+                struct (nameof ev.ProcNum, FI32 ev.ProcNum)
+                struct (nameof ev.Options, FText ev.Options)
+                struct (nameof ev.AuthenticationLevel, FI32 ev.AuthenticationLevel)
+                struct (nameof ev.AuthenticationService, FI32 (int32 ev.AuthenticationService))
+                struct (nameof ev.ImpersonationLevel, FI32 (int32 ev.ImpersonationLevel))
             |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" eventStatusUndefined)
+        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
         TraceEventWithFields (
@@ -63,18 +62,23 @@ module private H =
     let handleRpcServerCallStart id state (ev : RpcServerCallStartArgs) =
         let fields =
             [|
-                struct (nameof ev.Endpoint, ev.Endpoint |> s2s)
-                struct (nameof ev.InterfaceUuid, ev.InterfaceUuid |> guid2s)
-                struct (nameof ev.ProcNum, ev.ProcNum |> i32s)
-                struct (nameof ev.Options, ev.Options |> s2s)
-                struct (nameof ev.AuthenticationLevel, ev.AuthenticationLevel |> i32s)
-                struct (nameof ev.AuthenticationService, int32 ev.AuthenticationService |> i32s)
-                struct (nameof ev.ImpersonationLevel, int32 ev.ImpersonationLevel |> i32s)
-            |] |> Array.map (toEventField id)
+                struct (nameof ev.Endpoint, FText ev.Endpoint)
+                struct (nameof ev.InterfaceUuid, FGuid ev.InterfaceUuid)
+                struct (nameof ev.ProcNum, FI32 ev.ProcNum)
+                struct (nameof ev.Options, FText ev.Options)
+                struct (nameof ev.AuthenticationLevel, FI32 ev.AuthenticationLevel)
+                struct (nameof ev.AuthenticationService, FI32 (int32 ev.AuthenticationService))
+                struct (nameof ev.ImpersonationLevel, FI32 (int32 ev.ImpersonationLevel))
+            |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        TraceEventWithFields ((toEvent ev id $"RPC#{ev.ActivityID}" path "" eventStatusUndefined), fields)
-        |> state.Broadcast.publishTraceEvent
+        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
+        state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
+
+        TraceEventWithFields (
+            rpcev,
+            fields |> Array.map (toEventField id)
+        ) |> state.Broadcast.publishTraceEvent
 
     let handleRpcServerCallStop id state (ev : RpcCallStopArgs) =
         completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
@@ -107,7 +111,7 @@ let createEtwHandler () =
         Initialize = 
             fun (broadcast) -> ({
                 Broadcast = broadcast
-                PendingRpcCalls = DataCache<Guid, TraceEvent * array<struct (string * string)>>(256)
+                PendingRpcCalls = DataCache<Guid, TraceEvent * array<struct (string * TraceEventFieldValue)>>(256)
             } :> obj)
         Subscribe = subscribe
     }
