@@ -9,8 +9,8 @@ open LowLevelDesign.WTrace.Events.HandlerCommons
 
 type private AlpcHandlerState = {
     Broadcast : EventBroadcast
-    // a state to keep information about the pending RPC calls
-    PendingAlpcCalls : DataCache<int32, string * DateTime * int32 * string * int32>
+    // a state to keep information about the pending ALPC calls
+    PendingAlpcCalls : DataCacheWithCount<int32, string * DateTime * int32 * string * int32>
 }
 
 [<AutoOpen>]
@@ -71,7 +71,7 @@ let createEtwHandler () =
         Initialize = 
             fun (broadcast) -> ({
                 Broadcast = broadcast
-                PendingAlpcCalls = DataCache<int32, string * DateTime * int32 * string * int32>(2000)
+                PendingAlpcCalls = DataCacheWithCount<int32, string * DateTime * int32 * string * int32>(2000)
             } :> obj)
         Subscribe = subscribe
     }

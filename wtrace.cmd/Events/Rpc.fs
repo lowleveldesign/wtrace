@@ -20,6 +20,7 @@ module private H =
     let completeRpcEvent id ts state activityId eventName status =
         match state.PendingRpcCalls.TryGetValue(activityId) with
         | true, (prevEvent, fields) ->
+            state.PendingRpcCalls.Remove(activityId) |> ignore
             TraceEventWithFields ({
                 prevEvent with
                     EventId = id

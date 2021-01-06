@@ -131,3 +131,37 @@ type internal DataCache<'K, 'V when 'K : equality> (capacity : int32) =
             else
                 this.Add(k, v)
 
+
+type internal DataCacheWithCount<'K, 'V when 'K : equality> (capacity : int32) =
+
+    let cache = DataCache<'K, 'V>(capacity)
+    let counts = Dictionary<'K, int32>(capacity)
+
+    member _.Add(k, v) =
+        cache.Add(k, v)
+        counts.Add(k, 1)
+
+    member _.Remove k =
+        match counts.TryGetValue(k) with
+        | true, cnt when cnt = 1 ->
+            cache.Remove(k) |> ignore
+            counts.Remove(k) |> ignore
+        | true, cnt ->
+            counts.[k] <- cnt - 1
+        | false, _ -> ()
+
+    member _.ContainsKey = cache.ContainsKey
+
+    member _.TryGetValue = cache.TryGetValue
+
+    member this.Item
+        with get k =
+            cache.[k]
+        and set k v =
+            match counts.TryGetValue(k) with
+            | true, cnt ->
+                cache.[k] <- v
+                counts.[k] <- cnt + 1
+            | false, _ ->
+                this.Add(k, v)
+

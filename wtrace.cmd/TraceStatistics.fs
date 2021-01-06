@@ -2,7 +2,6 @@
 
 open System
 open System.Collections.Generic
-open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Events.FieldValues
 
 module TraceStatistics =
