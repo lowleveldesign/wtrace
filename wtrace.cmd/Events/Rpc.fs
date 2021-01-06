@@ -14,8 +14,6 @@ type private RpcHandlerState = {
     PendingRpcCalls : DataCache<Guid, TraceEvent * array<struct (string * TraceEventFieldValue)>>
 }
 
-type OpcodeId = | ClientCall = 1 | ServerCall = 2
-
 [<AutoOpen>]
 module private H =
 

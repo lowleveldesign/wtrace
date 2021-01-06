@@ -166,7 +166,7 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', total: {time}ms ({count} event(s))")
+                            printfn $"'{img.FileName}', total: {time} ms ({count} event(s))")
 
         if isrCalls.Count > 0 then
             printTitle "ISR"
@@ -176,5 +176,5 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', total: {time}ms ({count} event(s))")
+                            printfn $"'{img.FileName}', total: {time} ms ({count} event(s))")
 

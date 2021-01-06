@@ -40,21 +40,20 @@ module private H =
         let etwsub = etwObservable.Connect()
         let reg = ct.Register(fun () -> etwsub.Dispose())
 
-        printf "Preparing the realtime trace session. Please wait..."
+        printfn "Preparing the realtime trace session. Please wait..."
         rundownWaitEvent.WaitOne() |> ignore
-        printfn "done"
 
         printfn ""
         printfn "Tracing session started. Press Ctrl + C to stop it."
 
         Disposable.compose etwsub reg
 
-    let onEvent (startTime : DateTime) (TraceEventWithFields (ev, _)) =
+    let onEvent (TraceEventWithFields (ev, _)) =
         let getPath v = if v = "" then "" else $" '%s{v}'"
         let getDesc v = if v = "" then "" else $" %s{v}"
         let result = if ev.Result = WinApi.eventStatusUndefined then ""
                      else $" -> %s{WinApi.getNtStatusDesc ev.Result}"
-        printfn "%.4f (%d.%d) %s%s%s%s" (ev.TimeStamp - startTime).TotalSeconds ev.ProcessId ev.ThreadId
+        printfn "%s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessId ev.ThreadId
             ev.EventName (getPath ev.Path) (getDesc ev.Details) result
 
     let onError (ex : Exception) =
@@ -83,7 +82,7 @@ let traceEverything ct =
     let etwObservable = createEtwObservable settings
 
     etwObservable
-    |> Observable.subscribeWithCallbacks (onEvent (DateTime.Now)) onError ignore
+    |> Observable.subscribeWithCallbacks onEvent onError ignore
     |> ignore
 
     etwObservable
@@ -110,7 +109,8 @@ module private ProcessApi =
     let traceProcess (pid, hProcess, hThread : WinApi.SHandle) includeChildren ct =
         result {
             let settings = {
-                Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler() ; Rpc.createEtwHandler();
+                Handlers = [| //FileIO.createEtwHandler(); Registry.createEtwHandler();
+                              Rpc.createEtwHandler(); Alpc.createEtwHandler();
                               ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
                 EnableStacks = false
             }
@@ -142,7 +142,7 @@ module private ProcessApi =
             let filteredObservable = etwObservable |> Observable.filter processFilter
 
             filteredObservable
-            |> Observable.subscribeWithCallbacks (onEvent (DateTime.Now)) onError ignore
+            |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
             filteredObservable

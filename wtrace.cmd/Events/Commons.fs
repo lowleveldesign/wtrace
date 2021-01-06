@@ -107,11 +107,8 @@ type internal DataCache<'K, 'V when 'K : equality> (capacity : int32) =
     let mutable currentIndex = 0
     let cache = Dictionary<'K, 'V>(capacity)
 
-    do
-        Debug.Assert(capacity > 0 && (capacity &&& (capacity - 1)) = 0, "[Cache] capacity must be power of 2 and must be greater than 0")
-
     member _.Add(k, v) =
-        currentIndex <- (currentIndex + 1) &&& (capacity - 1)
+        currentIndex <- (currentIndex + 1) % capacity
         let previousKey = buffer.[currentIndex]
         if previousKey <> Unchecked.defaultof<'K> then
             cache.Remove(previousKey) |> ignore
