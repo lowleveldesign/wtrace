@@ -75,9 +75,8 @@ let traceSystemOnly ct =
 
 let traceEverything ct =
     let settings = {
-        Handlers = [| //FIXME: FileIO.createEtwHandler(); Registry.createEtwHandler();
-                      Rpc.createEtwHandler(); Alpc.createEtwHandler();
-                      ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+        Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler();
+                      Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
         EnableStacks = false
     }
     let etwObservable = createEtwObservable settings
@@ -110,9 +109,8 @@ module private ProcessApi =
     let traceProcess (pid, hProcess, hThread : WinApi.SHandle) includeChildren ct =
         result {
             let settings = {
-                Handlers = [| //FIXME: FileIO.createEtwHandler(); Registry.createEtwHandler();
-                              Rpc.createEtwHandler(); Alpc.createEtwHandler();
-                              ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+                Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler();
+                              Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
                 EnableStacks = false
             }
 

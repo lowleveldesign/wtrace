@@ -107,7 +107,7 @@ module private H =
         | true, prevEvent ->
             state.PendingFileIo.Remove(irp) |> ignore
             state.Broadcast.publishTraceEvent (completeWTraceEvent prevEvent ev)
-        | false, _ -> () // FIXME: this happens sporadically - I'm not yet sure why
+        | false, _ -> ()
 
     let handleFileIoName state (ev : FileIONameTraceData) =
         let opcode = int32 ev.Opcode
