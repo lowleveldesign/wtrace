@@ -62,6 +62,12 @@ module EtwTraceSession =
 
             use session = new TraceEventSession(sessionName)
 
+            // Rundown session lasts few secs - make it longer, if required
+            use timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3.0))
+            use cts = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, ct)
+            use _r = cts.Token.Register(fun _ -> if (session.IsActive) then
+                                                     session.Stop() |> ignore)
+
             let kernelRundownFlags = handlersWithStates |> Array.fold (fun f (h, _) -> f ||| h.KernelRundownFlags) NtKeywords.None
             session.EnableKernelProvider(kernelRundownFlags, NtKeywords.None) |> ignore
 
@@ -79,12 +85,8 @@ module EtwTraceSession =
             handlersWithStates
             |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, true, (fun _ -> 0), s))
 
-            // Rundown session lasts few secs - make it longer, if required
-            use timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3.0))
-            use cts = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, ct)
-            use _r = cts.Token.Register(fun _ -> session.Stop() |> ignore)
-
-            session.Source.Process() |> ignore
+            if session.IsActive then
+                session.Source.Process() |> ignore
             logger.TraceInformation($"[{className}] Rundown session finished")
 
     // This function starts the ETW session and initiates broadcasting trace events
