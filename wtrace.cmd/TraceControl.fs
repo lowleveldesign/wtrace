@@ -3,6 +3,7 @@ module LowLevelDesign.WTrace.TraceControl
 
 open System
 open System.Collections.Generic
+open System.Diagnostics
 open System.Reactive.Linq
 open System.Reactive.Subjects
 open System.Threading
@@ -48,6 +49,8 @@ module private H =
 
         Disposable.compose etwsub reg
 
+    let isRundown ev = ev.EventName === "Process/DCStart"
+
     let onEvent (TraceEventWithFields (ev, _)) =
         let getPath v = if v = "" then "" else $" '%s{v}'"
         let getDesc v = if v = "" then "" else $" %s{v}"
@@ -58,6 +61,7 @@ module private H =
 
     let onError (ex : Exception) =
         printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
+
 
 let traceSystemOnly ct =
     let settings = {
@@ -73,19 +77,26 @@ let traceSystemOnly ct =
     use sub = initiateEtwSession etwObservable ct
     ct.WaitHandle.WaitOne() |> ignore
 
-let traceEverything ct =
+let traceEverything ct filter =
     let settings = {
-        Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler();
+        Handlers = [| FileIO.createEtwHandler();
                       Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
         EnableStacks = false
     }
+
+    let currentProcessPid = Process.GetCurrentProcess().Id
+
     let etwObservable = createEtwObservable settings
 
     etwObservable
+    |> Observable.filter (fun (TraceEventWithFields (ev, _)) ->
+                              (not (isRundown ev)) && ev.ProcessId <> currentProcessPid && filter ev)
     |> Observable.subscribeWithCallbacks onEvent onError ignore
     |> ignore
 
+
     etwObservable
+    |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
     |> Observable.subscribe TraceStatistics.processEvent
     |> ignore
 
@@ -106,10 +117,10 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess (pid, hProcess, hThread : WinApi.SHandle) includeChildren ct =
+    let traceProcess ct filter includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
         result {
             let settings = {
-                Handlers = [| FileIO.createEtwHandler(); Registry.createEtwHandler();
+                Handlers = [| FileIO.createEtwHandler(); // FIXME: Registry.createEtwHandler();
                               Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
                 EnableStacks = false
             }
@@ -137,10 +148,13 @@ module private ProcessApi =
                 |> Observable.subscribe handleProcessStart
                 |> ignore
 
-            let processFilter = function | TraceEventWithFields (ev, _) -> processIds.Contains(ev.ProcessId)
-            let filteredObservable = etwObservable |> Observable.filter processFilter
+            let filteredObservable =
+                etwObservable
+                |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> processIds.Contains(ev.ProcessId))
 
             filteredObservable
+            |> Observable.filter (fun (TraceEventWithFields (ev, _)) ->
+                                      (not (isRundown ev)) && filter ev)
             |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
@@ -167,17 +181,17 @@ module private ProcessApi =
         }
 
 
-let traceNewProcess ct newConsole includeChildren (args : list<string>) =
+let traceNewProcess ct filter newConsole includeChildren (args : list<string>) =
     result {
         Debug.Assert(args.Length > 0, $"[TraceControl] invalid number of arguments")
         let! (pid, hProcess, hThread) = WinApi.startProcessSuspended args newConsole
 
-        do! ProcessApi.traceProcess (pid, hProcess, hThread) includeChildren ct
+        do! ProcessApi.traceProcess ct filter includeChildren (pid, hProcess, hThread) 
     }
 
-let traceRunningProcess ct includeChildren pid =
+let traceRunningProcess ct filter includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
 
-        do! ProcessApi.traceProcess (pid, hProcess, WinApi.SHandle.Invalid) includeChildren ct
+        do! ProcessApi.traceProcess ct filter includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
     }

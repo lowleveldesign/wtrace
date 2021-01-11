@@ -58,10 +58,7 @@ module private H =
         let state = state :?> ProcessThreadHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if isRundown then
-            let h (ev : ProcessTraceData) =
-                handleProcessEvent (idgen()) state ev
-
-            source.Kernel.add_ProcessDCStart(Action<_>(h))
+            source.Kernel.add_ProcessDCStart(handleEvent handleProcessEvent)
         else
             source.Kernel.add_ProcessStart(handleEvent handleProcessEvent)
             source.Kernel.add_ProcessStop(handleEvent handleProcessEvent)
@@ -78,5 +75,4 @@ let createEtwHandler () =
         Initialize = fun (broadcast) -> { Broadcast = broadcast } :> obj
         Subscribe = subscribe
     }
-
 

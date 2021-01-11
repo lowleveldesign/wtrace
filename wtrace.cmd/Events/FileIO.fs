@@ -93,6 +93,8 @@ module private H =
 
     let handleFileIoOpEnd id state (ev : FileIOOpEndTraceData) =
         let completeWTraceEvent (ev, fields) (completion : FileIOOpEndTraceData) =
+            // we leave the timestamp of the original event, as IO operations
+            // should be fast so it should not look that bad in the output
             let ev = { ev with EventId = id
                                Duration = completion.TimeStamp - ev.TimeStamp
                                Result = completion.NtStatus }

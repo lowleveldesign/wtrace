@@ -16,25 +16,56 @@ let showHelp () =
     let appAssembly = Assembly.GetEntryAssembly();
     let appName = appAssembly.GetName();
 
-    printfn "%s v%s - collects process traces" appName.Name (appName.Version.ToString())
+    printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
     let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);
     assert (customAttrs.Length > 0)
     printfn "Copyright (C) %d %s" DateTime.Today.Year (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
     printfn ""
     printfn "Usage: %s [OPTIONS] pid|imagename args" appName.Name
-    printfn ""
-    printfn "Options:"
-    printfn "-f, --filter=FILTER   Displays only events which names contain the given keyword"
-    printfn "                      (case insensitive). Does not impact the summary."
-    printfn "-c, --children        Collects traces from the selected process and all its children."
-    printfn "--newconsole          Starts the process in a new console window."
-    printfn "-s, --system          Collect system statistics (DPC/ISR) - shown in the summary."
-    printfn "--nosummary           Prints only ETW events - no summary at the end."
-    printfn "-v, --verbose         Shows wtrace diagnostics logs."
-    printfn "-h, --help            Shows this message and exits."
-    printfn ""
+    printfn @"
+Options:
+  -f, --filter=FILTER   Displays only events which satisfy a given FILTER.
+                        (Does not impact the summary)
+  -c, --children        Collects traces from the selected process and all its
+                        children.
+  --newconsole          Starts the process in a new console window.
+  -s, --system          Collect only system statistics (Processes and DPC/ISR)
+                        - shown in the summary.
+  --nosummary           Prints only ETW events - no summary at the end.
+  -v, --verbose         Shows wtrace diagnostics logs.
+  -h, --help            Shows this message and exits.
+
+
+  Each FILTER is built from a keyword, an operator and a value. You may
+  define multiple events (filters with the same keywords are OR-ed).
+
+  Keywords include: 
+  - pid     - filtering on the proces ID
+  - pname   - filtering on on the process name
+  - name    - filtering on the event name
+  - level   - filtering on the event level (0 [critical] - 5 [debug])
+  - path    - filtering on the event path
+  - details - filtering on the event details
+
+  Operators include: =, <=, >=, ~ (contains), <> (does not equal)
+
+  Example filters: -f 'pid = 1234', -f 'name ~ FileIO', -f 'level <= 4'
+"
 
 let isFlagEnabled args flags = flags |> Seq.exists (fun f -> args |> Map.containsKey f)
+
+let parseFilters args =
+    match args |> Map.tryFind "f" with
+    | None -> Ok [| |]
+    | Some filters ->
+        try
+            let parsedFilters = 
+                filters
+                |> List.map EventFilter.parseFilter
+                |> List.toArray
+            Ok parsedFilters
+        with
+        | :? ArgumentException as ex -> Error (ex.Message)
 
 let checkElevated () = 
     if EtwTraceSession.isElevated () then Ok ()
@@ -52,7 +83,8 @@ let start (args : Map<string, list<string>>) = result {
         Trace.AutoFlush <- true
         Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Out) ])
 
-    // FIXME: filters
+    let! filters = parseFilters args
+    let filterEvents = EventFilter.buildFilterFunction filters
 
     use cts = new CancellationTokenSource()
 
@@ -63,18 +95,18 @@ let start (args : Map<string, list<string>>) = result {
         TraceControl.traceSystemOnly cts.Token
 
     | None ->
-        TraceControl.traceEverything cts.Token
+        TraceControl.traceEverything cts.Token filterEvents
 
     | Some args ->
         let newConsole = ([| "newconsole" |] |> isFlagEnabled)
         let includeChildren = [| "c"; "children" |] |> isFlagEnabled
 
         match args with
-        | [ pid ] when isInteger pid -> do! TraceControl.traceRunningProcess cts.Token includeChildren (Int32.Parse(pid))
-        | args -> do! TraceControl.traceNewProcess cts.Token newConsole includeChildren args
+        | [ pid ] when isInteger pid -> do! TraceControl.traceRunningProcess cts.Token filterEvents includeChildren (Int32.Parse(pid))
+        | args -> do! TraceControl.traceNewProcess cts.Token filterEvents newConsole includeChildren args
 
     printfn "Closing the trace session. Please wait..."
-    if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(2.0))) then
+    if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
         printfn "WARNING: the session did not finish in alotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then

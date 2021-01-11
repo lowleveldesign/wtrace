@@ -15,15 +15,15 @@ module TraceStatistics =
             FileName : string
         }
 
-        let fileReadBytes = Dictionary<string, int32>()
-        let fileWrittenBytes = Dictionary<string, int32>()
-        let networkReceivedBytes = Dictionary<string, int32>()
-        let networkSentBytes = Dictionary<string, int32>()
+        let fileReadBytes = Dictionary<string, uint64>()
+        let fileWrittenBytes = Dictionary<string, uint64>()
+        let networkReceivedBytes = Dictionary<string, uint64>()
+        let networkSentBytes = Dictionary<string, uint64>()
         let rpcCalls = Dictionary<string, int32>()
         let dpcCalls = Dictionary<uint64, int32 * float>()
         let isrCalls = Dictionary<uint64, int32 * float>()
 
-        let updateCounter (counter : Dictionary<string, int32>) key count =
+        let updateCounter (counter : Dictionary<string, uint64>) key count =
             match counter.TryGetValue(key) with
             | (true, n) -> counter.[key] <- n + count
             | (false, _) -> counter.Add(key, count)
@@ -43,10 +43,10 @@ module TraceStatistics =
             printfn "%s%s" (" " |> String.replicate space) title
             printfn "%s" separator
 
-        let getCounterValue (counter : Dictionary<string, int32>) key =
+        let getCounterValue (counter : Dictionary<string, uint64>) key =
             match counter.TryGetValue(key) with
             | (true, n) -> n
-            | _ -> 0
+            | _ -> 0UL
 
     module private SystemImages =
 
@@ -94,17 +94,17 @@ module TraceStatistics =
 
     let processEvent (TraceEventWithFields (ev, fields)) =
         if ev.EventName === "FileIO/Read" then
-            updateCounter fileReadBytes ev.Path (getI32FieldValue fields "ExtraInfo")
+            updateCounter fileReadBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
         elif ev.EventName === "FileIO/Write" then
-            updateCounter fileWrittenBytes ev.Path (getI32FieldValue fields "ExtraInfo")
+            updateCounter fileWrittenBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
         elif ev.EventName === "TcpIp/Recv" then
-            updateCounter networkReceivedBytes ev.Path (getI32FieldValue fields "size")
+            updateCounter networkReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/Send" then
-            updateCounter networkSentBytes ev.Path (getI32FieldValue fields "size")
+            updateCounter networkSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/RecvIPv6" then
-            updateCounter networkReceivedBytes ev.Path (getI32FieldValue fields "size")
+            updateCounter networkReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/SendIPv6" then
-            updateCounter networkSentBytes ev.Path (getI32FieldValue fields "size")
+            updateCounter networkSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName.StartsWith("RPC/", StringComparison.Ordinal) then
             match rpcCalls.TryGetValue(ev.Path) with
             | (true, n) -> rpcCalls.[ev.Path] <- n + 1
