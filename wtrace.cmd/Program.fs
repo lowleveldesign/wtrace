@@ -5,27 +5,33 @@ open System
 open System.Diagnostics
 open System.Reflection
 open System.Threading
-open LowLevelDesign.WTrace.Tracing
 open LowLevelDesign.WTrace
+open LowLevelDesign.WTrace.Events
+open LowLevelDesign.WTrace.Tracing
 
 let className = "[main]"
 
-let flags = [| "s"; "system"; "c"; "children"; "newconsole"; "nosummary"; "v"; "verbose"; "h"; "?"; "help" |]
+let appAssembly = Assembly.GetEntryAssembly()
+let appName = appAssembly.GetName()
+
+let showCopyright () =
+    printfn ""
+    let version = appName.Version
+    printfn "%s v%d.%d.%d - collects process or system traces" appName.Name 
+        version.Major version.MajorRevision version.Minor
+    let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);  
+    assert (customAttrs.Length > 0)
+    printfn "Copyright (C) %d %s" 2021 (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
+    printfn "Visit https://wtrace.net to learn more"
+    printfn ""
 
 let showHelp () =
-    let appAssembly = Assembly.GetEntryAssembly();
-    let appName = appAssembly.GetName();
-
-    printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
-    let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);
-    assert (customAttrs.Length > 0)
-    printfn "Copyright (C) %d %s" DateTime.Today.Year (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
-    printfn ""
     printfn "Usage: %s [OPTIONS] pid|imagename args" appName.Name
     printfn @"
 Options:
   -f, --filter=FILTER   Displays only events which satisfy a given FILTER.
                         (Does not impact the summary)
+  --handlers=HANDLERS   Displays only events coming from the specified HANDLERS.
   -c, --children        Collects traces from the selected process and all its
                         children.
   --newconsole          Starts the process in a new console window.
@@ -35,37 +41,76 @@ Options:
   -v, --verbose         Shows wtrace diagnostics logs.
   -h, --help            Shows this message and exits.
 
+  The HANDLERS parameter is a list of handler names, separated with a comma.
+
+  Accepted handlers include:
+    process   - to receive Process/Thread events
+    file      - to receive File I/O events
+    registry  - to receive Registry events (voluminous, disabled by default)
+    rpc       - to receive RPC events
+    tcp       - to receive TCP/IP events
+
+  Example: --handlers 'tcp,file,registry'
 
   Each FILTER is built from a keyword, an operator and a value. You may
   define multiple events (filters with the same keywords are OR-ed).
 
   Keywords include: 
-  - pid     - filtering on the proces ID
-  - pname   - filtering on on the process name
-  - name    - filtering on the event name
-  - level   - filtering on the event level (0 [critical] - 5 [debug])
-  - path    - filtering on the event path
-  - details - filtering on the event details
+    pid     - filtering on the proces ID
+    pname   - filtering on on the process name
+    name    - filtering on the event name
+    level   - filtering on the event level (0 [critical] - 5 [debug])
+    path    - filtering on the event path
+    details - filtering on the event details
 
-  Operators include: =, <=, >=, ~ (contains), <> (does not equal)
+  Operators include:
+    =, <> (does not equal), <= (ends with), >= (starts with), ~ (contains)
 
-  Example filters: -f 'pid = 1234', -f 'name ~ FileIO', -f 'level <= 4'
+  Example: -f 'pid = 1234', -f 'name ~ FileIO', -f 'level <= 4'
 "
 
 let isFlagEnabled args flags = flags |> Seq.exists (fun f -> args |> Map.containsKey f)
 
+let isSystemTrace args = [| "s"; "system" |] |> isFlagEnabled args
+
+let parseHandlers args =
+    let createHandlers (handler : string) =
+        let createHandler (name : string) =
+            let name = name.Trim()
+            if name >=< "process" then ProcessThread.createEtwHandler ()
+            elif name >=< "file" then FileIO.createEtwHandler ()
+            elif name >=< "registry" then Registry.createEtwHandler ()
+            elif name >=< "rpc" then Rpc.createEtwHandler ()
+            elif name >=< "tcp" then TcpIp.createEtwHandler ()
+            else failwith $"Invalid handler name: '{name}'"
+
+        try
+            let handlers =
+                handler.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map createHandler
+            Ok handlers
+        with
+        | Failure msg -> Error msg
+
+    match args |> Map.tryFind "handlers" with
+    | None -> createHandlers "process,file,rpc,tcp"
+    | Some [ handler ] ->
+        if isSystemTrace args then
+            Error ("Handlers are not allowed in the system trace.")
+        else createHandlers handler
+    | _ -> Error ("Handlers can be specified only once.")
+
 let parseFilters args =
     match args |> Map.tryFind "f" with
-    | None -> Ok [| |]
+    | None -> Ok [ ]
     | Some filters ->
-        try
-            let parsedFilters = 
-                filters
-                |> List.map EventFilter.parseFilter
-                |> List.toArray
-            Ok parsedFilters
-        with
-        | :? ArgumentException as ex -> Error (ex.Message)
+        if isSystemTrace args then
+            Error ("Filters are not allowed in the system trace.")
+        else
+            try
+                Ok (filters |> List.map EventFilter.parseFilter)
+            with
+            | EventFilter.ParseError msg -> Error msg
 
 let checkElevated () = 
     if EtwTraceSession.isElevated () then Ok ()
@@ -84,26 +129,35 @@ let start (args : Map<string, list<string>>) = result {
         Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Out) ])
 
     let! filters = parseFilters args
+    if not (isSystemTrace args) then
+        printfn "FILTERS"
+        if filters |> List.isEmpty then printfn "  [none]"
+        else EventFilter.printFilters filters
+        printfn ""
     let filterEvents = EventFilter.buildFilterFunction filters
+
+    let! handlers = parseHandlers args
 
     use cts = new CancellationTokenSource()
 
     Console.CancelKeyPress.Add(fun ev -> ev.Cancel <- true; cts.Cancel())
 
     match args |> Map.tryFind "" with 
-    | None when [| "s"; "system" |] |> isFlagEnabled ->
+    | None when isSystemTrace args ->
         TraceControl.traceSystemOnly cts.Token
 
     | None ->
-        TraceControl.traceEverything cts.Token filterEvents
+        TraceControl.traceEverything cts.Token handlers filterEvents
 
     | Some args ->
         let newConsole = ([| "newconsole" |] |> isFlagEnabled)
         let includeChildren = [| "c"; "children" |] |> isFlagEnabled
 
         match args with
-        | [ pid ] when isInteger pid -> do! TraceControl.traceRunningProcess cts.Token filterEvents includeChildren (Int32.Parse(pid))
-        | args -> do! TraceControl.traceNewProcess cts.Token filterEvents newConsole includeChildren args
+        | [ pid ] when isInteger pid ->
+            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents includeChildren (Int32.Parse(pid))
+        | args ->
+            do! TraceControl.traceNewProcess cts.Token handlers filterEvents newConsole includeChildren args
 
     printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
@@ -117,7 +171,10 @@ let start (args : Map<string, list<string>>) = result {
 }
 
 let main (argv : array<string>) =
+    let flags = [| "s"; "system"; "c"; "children"; "newconsole"; "nosummary"; "v"; "verbose"; "h"; "?"; "help" |]
     let args = argv |> CommandLine.parseArgs flags
+
+    showCopyright ()
 
     if [| "h"; "help"; "?" |] |> isFlagEnabled args then
         showHelp ()

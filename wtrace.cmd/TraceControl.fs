@@ -77,10 +77,9 @@ let traceSystemOnly ct =
     use sub = initiateEtwSession etwObservable ct
     ct.WaitHandle.WaitOne() |> ignore
 
-let traceEverything ct filter =
+let traceEverything ct handlers filter =
     let settings = {
-        Handlers = [| FileIO.createEtwHandler();
-                      Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+        Handlers = handlers
         EnableStacks = false
     }
 
@@ -117,17 +116,13 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct filter includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
+    let traceProcess ct handlers filter includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
         result {
             let settings = {
-                Handlers = [| FileIO.createEtwHandler(); // FIXME: Registry.createEtwHandler();
-                              Rpc.createEtwHandler(); ProcessThread.createEtwHandler(); TcpIp.createEtwHandler() |]
+                Handlers = handlers
                 EnableStacks = false
             }
 
-            let etwObservable = createEtwObservable settings
-
-            // collection for children processes
             let processIds = HashSet<int32>()
             processIds.Add(pid) |> ignore
 
@@ -142,6 +137,8 @@ module private ProcessApi =
                 let (TraceEventWithFields (ev, _)) = evf
                 if ev.EventName === "Process/Stop" then
                     processIds.Remove(ev.ProcessId) |> ignore
+
+            let etwObservable = createEtwObservable settings
 
             if includeChildren then
                 etwObservable
@@ -181,17 +178,17 @@ module private ProcessApi =
         }
 
 
-let traceNewProcess ct filter newConsole includeChildren (args : list<string>) =
+let traceNewProcess ct handlers filter newConsole includeChildren (args : list<string>) =
     result {
         Debug.Assert(args.Length > 0, $"[TraceControl] invalid number of arguments")
         let! (pid, hProcess, hThread) = WinApi.startProcessSuspended args newConsole
 
-        do! ProcessApi.traceProcess ct filter includeChildren (pid, hProcess, hThread) 
+        do! ProcessApi.traceProcess ct handlers filter includeChildren (pid, hProcess, hThread) 
     }
 
-let traceRunningProcess ct filter includeChildren pid =
+let traceRunningProcess ct handlers filter includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
 
-        do! ProcessApi.traceProcess ct filter includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
+        do! ProcessApi.traceProcess ct handlers filter includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
     }

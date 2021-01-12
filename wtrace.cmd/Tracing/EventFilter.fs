@@ -61,22 +61,20 @@ module EventFilter =
                 let check = createCheckString op
                 ("details", fun ev -> check ev.Details s)
 
-        let iceq a b = String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
-
         let tryParseLevel v (n : outref<int32>) =
             if Int32.TryParse(v, &n) then true
-            elif iceq v "debug" || iceq v "verbose" then n <- 5; true
-            elif iceq v "info" then n <- 4; true
-            elif iceq v "warning" then n <- 3; true
-            elif iceq v "error" then n <- 2; true
-            elif iceq v "critical" then n <- 1; true
+            elif v >=< "debug" || v >=< "verbose" then n <- 5; true
+            elif v >=< "info" then n <- 4; true
+            elif v >=< "warning" then n <- 3; true
+            elif v >=< "error" then n <- 2; true
+            elif v >=< "critical" then n <- 1; true
             else n <- 0; false
 
 
     let buildFilterFunction filters =
         let filterGroups =
             filters
-            |> Seq.map (fun f -> buildFilterFunction f)
+            |> Seq.map buildFilterFunction
             |> Seq.groupBy (fun (category, _) -> category)
             |> Seq.map (fun (_, s) -> s |> Seq.map (fun (c, f) -> f) |> Seq.toArray)
             |> Seq.toArray
@@ -84,6 +82,9 @@ module EventFilter =
         fun ev ->
             filterGroups
             |> Array.forall (fun filterGroup -> filterGroup |> Array.exists (fun f -> f ev))
+
+
+    exception ParseError of string
 
     let parseFilter (filterStr : string) =
         let operators = [| "<>"; ">="; "<="; "~"; "=" |]
@@ -97,20 +98,40 @@ module EventFilter =
             let mutable n = 0
             let filterName = filterName.Trim()
             let filterValue = filterValue.Trim()
-            if iceq filterName "pid" && Int32.TryParse(filterValue, &n) then
+            if filterName >=< "pid" && Int32.TryParse(filterValue, &n) then
                 ProcessId (operator, n)
-            elif iceq filterName "level" && tryParseLevel filterValue &n then
+            elif filterName >=< "level" && tryParseLevel filterValue &n then
                 EventLevel (operator, n)
-            elif iceq filterName "pname" then
+            elif filterName >=< "pname" then
                 ProcessName (operator, filterValue)
-            elif iceq filterName "name" then
+            elif filterName >=< "name" then
                 EventName (operator, filterValue)
-            elif iceq filterName "path" then
+            elif filterName >=< "path" then
                 Path (operator, filterValue)
-            elif iceq filterName "details" then
+            elif filterName >=< "details" then
                 Details (operator, filterValue)
-            else invalidArg "filter" $"Invalid filter: '{filterName}'"
+            else raise (ParseError $"Invalid filter: '{filterName}'")
 
         | [| eventName |] -> EventName ("~", eventName.Trim())
-        | _ -> invalidArg "filter" $"Invalid filter definition: '{filterStr}'"
+        | _ -> raise (ParseError $"Invalid filter definition: '{filterStr}'")
+
+    let printFilters filters =
+        let buildFilterDescription filter =
+            match filter with
+            | ProcessId (op, n) -> ("Process ID", $"{op} {n}")
+            | ProcessName (op, s) -> ("Process name", $"{op} '{s}'")
+            | EventName (op , s) -> ("Event name", $"{op} '{s}'")
+            | EventLevel (op , n) -> ("Event level", $"{op} {n}")
+            | Path (op, s) -> ("Path", $"{op} '{s}'")
+            | Details (op, s) -> ("Details", $"{op} '{s}'")
+
+        let printFiltersGroup name defs =
+            printfn $"  %s{name}"
+            printfn "    %s" (defs |> String.concat " OR ")
+
+        filters
+        |> Seq.map buildFilterDescription
+        |> Seq.groupBy (fun (name, _) -> name)
+        |> Seq.iter (fun (name, s) -> s |> Seq.map (fun (_, f) -> f)
+                                        |> printFiltersGroup name)
 
