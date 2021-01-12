@@ -76,7 +76,6 @@ let isSystemTrace args = [| "s"; "system" |] |> isFlagEnabled args
 let parseHandlers args =
     let createHandlers (handler : string) =
         let createHandler (name : string) =
-            let name = name.Trim()
             if name >=< "process" then ProcessThread.createEtwHandler ()
             elif name >=< "file" then FileIO.createEtwHandler ()
             elif name >=< "registry" then Registry.createEtwHandler ()
@@ -85,9 +84,15 @@ let parseHandlers args =
             else failwith $"Invalid handler name: '{name}'"
 
         try
-            let handlers =
+            let handlerNames = 
                 handler.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries)
-                |> Array.map createHandler
+                |> Array.map (fun name -> name.Trim().ToLower())
+            let handlers = handlerNames |> Array.map createHandler
+
+            printfn "HANDLERS"
+            printfn "  %s" (handlerNames |> String.concat ", ")
+            printfn ""
+
             Ok handlers
         with
         | Failure msg -> Error msg
@@ -102,13 +107,19 @@ let parseHandlers args =
 
 let parseFilters args =
     match args |> Map.tryFind "f" with
-    | None -> Ok [ ]
+    | None -> Ok (fun _ -> true)
     | Some filters ->
         if isSystemTrace args then
             Error ("Filters are not allowed in the system trace.")
         else
             try
-                Ok (filters |> List.map EventFilter.parseFilter)
+                let filters =
+                    filters |> List.map EventFilter.parseFilter
+                printfn "FILTERS"
+                if filters |> List.isEmpty then printfn "  [none]"
+                else EventFilter.printFilters filters
+                printfn ""
+                Ok (EventFilter.buildFilterFunction filters)
             with
             | EventFilter.ParseError msg -> Error msg
 
@@ -128,14 +139,7 @@ let start (args : Map<string, list<string>>) = result {
         Trace.AutoFlush <- true
         Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Out) ])
 
-    let! filters = parseFilters args
-    if not (isSystemTrace args) then
-        printfn "FILTERS"
-        if filters |> List.isEmpty then printfn "  [none]"
-        else EventFilter.printFilters filters
-        printfn ""
-    let filterEvents = EventFilter.buildFilterFunction filters
-
+    let! filterEvents = parseFilters args
     let! handlers = parseHandlers args
 
     use cts = new CancellationTokenSource()

@@ -137,7 +137,7 @@ module TraceStatistics =
                            let (written, read) = (getCounterValue fileWrittenBytes p, getCounterValue fileReadBytes p)
                            (p, read + written, written, read))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, written, read) -> printfn $"'%s{path}' T: %d{total} b, W: %d{written} b, R: %d{read} b")
+            |> Seq.iter (fun (path, total, written, read) -> printfn $"'%s{path}' Total: %d{total} B, Writes: %d{written} B, Reads: %d{read} B")
 
         if networkReceivedBytes.Count > 0 || networkSentBytes.Count > 0 then
             printTitle "TCP/IP"
@@ -148,7 +148,7 @@ module TraceStatistics =
                            let (sent, received) = (getCounterValue networkSentBytes p, getCounterValue networkReceivedBytes p)
                            (p, received + sent, sent, received))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, sent, received) -> printfn $"%s{path} T: %d{total} b, S: %d{sent} b, R: %d{received} b")
+            |> Seq.iter (fun (path, total, sent, received) -> printfn $"%s{path} Total: %d{total} B, Sent: %d{sent} B, Received: %d{received} B")
 
         if rpcCalls.Count > 0 then
             printTitle "RPC"
@@ -165,7 +165,7 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', total: {time} ms ({count} event(s))")
+                            printfn $"'{img.FileName}', Total: {time} ms ({count} event(s))")
 
         if isrCalls.Count > 0 then
             printTitle "ISR"
@@ -175,5 +175,5 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', total: {time} ms ({count} event(s))")
+                            printfn $"'{img.FileName}', Total: {time} ms ({count} event(s))")
 
