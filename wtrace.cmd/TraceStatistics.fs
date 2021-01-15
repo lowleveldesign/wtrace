@@ -6,6 +6,134 @@ open LowLevelDesign.WTrace.Events.FieldValues
 
 module TraceStatistics =
 
+    module private ProcessTree =
+
+        [<AutoOpen>]
+        module private H =
+            type ProcessRecord = {
+                UniqueProcessId : int32
+                UniqueParentId : option<int32>
+                SystemProcessId : int32
+                SystemParentId : int32
+                ProcessName : string
+                CommandLine : string
+                StartTime : DateTime
+                ExitTime : DateTime
+            }
+
+            type ProcessNode = { 
+                Id : int32
+                Children : Dictionary<int32, ProcessNode>
+            }
+
+            let processes = Dictionary<int32, array<ProcessRecord>>()
+            let mutable lastUniqueId = 0
+
+            let findProcessUniqueId pid timeStamp =
+                let mutable procs = null
+                if processes.TryGetValue(pid, &procs) then
+                    let p = procs
+                            |> Array.find (fun p -> p.StartTime <= timeStamp)
+                    Some p.UniqueProcessId
+                else None
+
+            let getProcessName (imageFileName: string) =
+                Debug.Assert(not (String.IsNullOrEmpty(imageFileName)), "[tracedata] imageFileName is empty")
+
+                let separator =
+                    imageFileName.LastIndexOfAny([| '/'; '\\' |])
+
+                let extension = imageFileName.LastIndexOf('.')
+                match struct (separator, extension) with
+                | struct (-1, -1) -> imageFileName
+                | struct (-1, x) -> imageFileName.Substring(0, x)
+                | struct (s, -1) -> imageFileName.Substring(s + 1)
+                | struct (s, x) when x > s + 1 -> imageFileName.Substring(s + 1, x - s - 1)
+                | _ -> imageFileName
+
+            let updateTree processMap (tree : Dictionary<int32, ProcessNode>) id =
+                let rec findOrCreateProcessNode id =
+                    match processMap |> Map.find id with
+                    | { UniqueParentId = Some parentId } ->
+                        let parentNode = findOrCreateProcessNode parentId
+                        if not (parentNode.Children.ContainsKey(id)) then
+                            let node = { Id = id; Children = Dictionary<_, _>() }
+                            parentNode.Children.Add(id, node)
+                            node
+                        else
+                            parentNode.Children.[id]
+                    | _ ->
+                        match tree.TryGetValue(id) with
+                        | (true, node) -> node
+                        | _ ->
+                            let node = { Id = id; Children = Dictionary<_, _>() }
+                            tree.Add(id, node)
+                            node
+                findOrCreateProcessNode id |> ignore
+                tree
+
+
+        let handleProcessStart ev fields =
+            let imageFileName = getTextFieldValue fields "ImageFileName"
+            let parentId = getI32FieldValue fields "ParentID"
+            lastUniqueId <- lastUniqueId + 1
+            let proc = {
+                SystemProcessId = ev.ProcessId
+                SystemParentId = parentId
+                UniqueProcessId = lastUniqueId
+                UniqueParentId = findProcessUniqueId parentId ev.TimeStamp
+                ProcessName = getProcessName imageFileName
+                StartTime = if ev.EventName === "Process/Start" then ev.TimeStamp else DateTime.MinValue
+                CommandLine = getTextFieldValue fields "CommandLine"
+                ExitTime = DateTime.MaxValue
+            }
+
+            match processes.TryGetValue(proc.SystemProcessId) with
+            | (true, procs) ->
+                Debug.Assert(procs.Length > 0, "[SystemEvents] there should be always at least one process in the list")
+                // It may happen that a session started after creating the main session and before the rundown 
+                // session started. We can safely skip this process.
+                if procs.[0].ExitTime < DateTime.MaxValue then
+                    processes.[proc.SystemProcessId] <- procs |> Array.append [| proc |]
+            | (false, _) ->
+                processes.Add(proc.SystemProcessId, [| proc |])
+
+        let handleProcessExit ev =
+            match processes.TryGetValue(ev.ProcessId) with
+            | (true, procs) ->
+                match procs with
+                | [| |] -> Debug.Assert(false, "[SystemEvents] there should be always at least one process in the list")
+                | arr -> arr.[0] <- { arr.[0] with ExitTime = ev.TimeStamp } // the first one is always the running one
+            | (false, _) -> Logger.Tracing.TraceWarning(sprintf "Trying to record exit of a non-existing process: %d" ev.ProcessId)
+
+        let isEmpty () = processes.Count = 0
+
+        let printProcessTree () =
+            let processMap =
+                processes
+                |> Seq.map (|KeyValue|)
+                |> Seq.collect (fun (k, v) -> v)
+                |> Seq.map (fun p -> (p.UniqueProcessId, p))
+                |> Map.ofSeq
+
+            let tree =
+                processMap
+                |> Map.toSeq
+                |> Seq.map fst
+                |> Seq.fold (updateTree processMap) (Dictionary<int32, ProcessNode>())
+
+            let rec printChildren depth node =
+                let proc = processMap |> Map.find node.Id
+                let exitTime =
+                    if proc.ExitTime <> DateTime.MaxValue then sprintf "finished at %s" (proc.ExitTime.ToString("HH:mm:ss.ffff"))
+                    else ""
+                printfn "%s├─ %s [%d] %s" ("│ " |> String.replicate depth) proc.ProcessName proc.SystemProcessId exitTime
+                node.Children.Values |> Seq.iter (printChildren (depth + 1))
+
+            for n in tree.Values do
+                printChildren 0 n
+
+
     [<AutoOpen>]
     module private H =
 
@@ -93,7 +221,11 @@ module TraceStatistics =
 
 
     let processEvent (TraceEventWithFields (ev, fields)) =
-        if ev.EventName === "FileIO/Read" then
+        if ev.EventName === "Process/Start" || ev.EventName === "Process/DCStart" then
+            ProcessTree.handleProcessStart ev fields
+        elif ev.EventName === "Process/Stop" then
+            ProcessTree.handleProcessExit ev
+        elif ev.EventName === "FileIO/Read" then
             updateCounter fileReadBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
         elif ev.EventName === "FileIO/Write" then
             updateCounter fileWrittenBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
@@ -128,6 +260,10 @@ module TraceStatistics =
                 Logger.EtwTracing.TraceWarning $"Possibly missing ImageLoad events. Address: 0x{routine:X}"
 
     let dumpStatistics () =
+        if not (ProcessTree.isEmpty ()) then
+            printTitle "Processes"
+            ProcessTree.printProcessTree ()
+
         if fileReadBytes.Count > 0 || fileWrittenBytes.Count > 0 then
             printTitle "File I/O"
             fileReadBytes.Keys
@@ -137,7 +273,7 @@ module TraceStatistics =
                            let (written, read) = (getCounterValue fileWrittenBytes p, getCounterValue fileReadBytes p)
                            (p, read + written, written, read))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, written, read) -> printfn $"'%s{path}' Total: %d{total} B, Writes: %d{written} B, Reads: %d{read} B")
+            |> Seq.iter (fun (path, total, written, read) -> printfn $"'%s{path}' Total: %d{total}B, Writes: %d{written}B, Reads: %d{read}B")
 
         if networkReceivedBytes.Count > 0 || networkSentBytes.Count > 0 then
             printTitle "TCP/IP"
@@ -148,7 +284,7 @@ module TraceStatistics =
                            let (sent, received) = (getCounterValue networkSentBytes p, getCounterValue networkReceivedBytes p)
                            (p, received + sent, sent, received))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, sent, received) -> printfn $"%s{path} Total: %d{total} B, Sent: %d{sent} B, Received: %d{received} B")
+            |> Seq.iter (fun (path, total, sent, received) -> printfn $"%s{path} Total: %d{total}B, Sent: %d{sent}B, Received: %d{received}B")
 
         if rpcCalls.Count > 0 then
             printTitle "RPC"

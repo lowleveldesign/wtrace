@@ -14,7 +14,6 @@
     <Compile Include="Commons\Globals.fs" />
     <Compile Include="Commons\WinApi.fs" />
     <Compile Include="Models\Events.fs" />
-    <Compile Include="Models\SystemObjects.fs" />
     <Compile Include="Events\Commons.fs" />
     <Compile Include="Events\ProcessThread.fs" />
     <Compile Include="Events\FileIO.fs" />
