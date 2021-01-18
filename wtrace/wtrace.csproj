@@ -27,12 +27,70 @@
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\OSExtensions.dll">
+      <LogicalName>.\OSExtensions.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Runtime.CompilerServices.Unsafe.dll">
+      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\TraceReloggerLib.dll">
+      <LogicalName>.\TraceReloggerLib.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Core.dll">
+      <LogicalName>.\FSharp.Core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Control.Reactive.dll">
+      <LogicalName>.\FSharp.Control.Reactive.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\PInvoke.Kernel32.dll">
+      <LogicalName>.\PInvoke.Kernel32.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\PInvoke.Windows.Core.dll">
+      <LogicalName>.\PInvoke.Windows.Core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Buffers.dll">
+      <LogicalName>.\System.Buffers.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Memory.dll">
+      <LogicalName>.\System.Memory.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Numerics.Vectors.dll">
+      <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reactive.dll">
+      <LogicalName>.\System.Reactive.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Security.Principal.Windows.dll">
+      <LogicalName>.\System.Security.Principal.Windows.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Threading.Tasks.Extensions.dll">
+      <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.cmd.dll">
+      <LogicalName>.\wtrace.cmd.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.imports.dll">
+      <LogicalName>.\wtrace.imports.dll</LogicalName>
+    </EmbeddedResource>
+    
+    
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\KernelTraceControl.dll">
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\msdia140.dll">
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\msvcp140.dll">
+      <LogicalName>.\amd64\msvcp140.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\vcruntime140.dll">
+      <LogicalName>.\amd64\vcruntime140.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\vcruntime140_1.dll">
+      <LogicalName>.\amd64\vcruntime140_1.dll</LogicalName>
+    </EmbeddedResource>
+    
+    
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\KernelTraceControl.dll">
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
@@ -42,24 +100,13 @@
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\msdia140.dll">
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\OSExtensions.dll">
-      <LogicalName>.\OSExtensions.dll</LogicalName>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\msvcp140.dll">
+      <LogicalName>.\x86\msvcp140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Runtime.CompilerServices.Unsafe.dll"
-                      Condition="'$(TargetFramework)' == 'net472'">
-      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\vcruntime140.dll">
+      <LogicalName>.\x86\vcruntime140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\TraceReloggerLib.dll">
-      <LogicalName>.\TraceReloggerLib.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Core.dll">
-      <LogicalName>.\FSharp.Core.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.cmd.dll">
-      <LogicalName>.\wtrace.cmd.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.imports.dll">
-      <LogicalName>.\wtrace.parsers.dll</LogicalName>
-    </EmbeddedResource>
+    
+    
   </ItemGroup>
 </Project>

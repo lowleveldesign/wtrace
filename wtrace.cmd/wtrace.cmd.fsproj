@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Control.Reactive" Version="4.5.0" />
-    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.160202" />
     <PackageReference Include="PInvoke.Kernel32" Version="0.7.78" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />

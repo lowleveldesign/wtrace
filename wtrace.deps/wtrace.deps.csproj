@@ -5,6 +5,7 @@
     <TargetFrameworks>net472</TargetFrameworks>
     <OutputPath>..\bin\deps</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>
