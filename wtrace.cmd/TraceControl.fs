@@ -56,8 +56,8 @@ module private H =
         let getDesc v = if v = "" then "" else $" %s{v}"
         let result = if ev.Result = WinApi.eventStatusUndefined then ""
                      else $" -> %s{WinApi.getNtStatusDesc ev.Result}"
-        printfn "%s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessId ev.ThreadId
-            ev.EventName (getPath ev.Path) (getDesc ev.Details) result
+        printfn "%s %s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessName ev.ProcessId
+            ev.ThreadId ev.EventName (getPath ev.Path) (getDesc ev.Details) result
 
     let onError (ex : Exception) =
         printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
