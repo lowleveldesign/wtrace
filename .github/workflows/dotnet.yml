@@ -33,4 +33,4 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: wtrace
-        path: wtrace\bin\Release\wtrace.exe
+        path: bin\wtrace\net472\wtrace.exe
