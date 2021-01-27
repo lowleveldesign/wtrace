@@ -52,14 +52,14 @@ Options:
 
   Example: --handlers 'tcp,file,registry'
 
-  Each FILTER is built from a keyword, an operator and a value. You may
+  Each FILTER is built from a keyword, an operator, and a value. You may
   define multiple events (filters with the same keywords are OR-ed).
 
   Keywords include: 
     pid     - filtering on the proces ID
     pname   - filtering on on the process name
     name    - filtering on the event name
-    level   - filtering on the event level (0 [critical] - 5 [debug])
+    level   - filtering on the event level (1 [critical] - 5 [debug])
     path    - filtering on the event path
     details - filtering on the event details
 
@@ -169,7 +169,7 @@ let start (args : Map<string, list<string>>) = result {
 
     printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
-        printfn "WARNING: the session did not finish in alotted time. Stop it manually: logman stop wtrace-rt -ets"
+        printfn "WARNING: the session did not finish in allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount

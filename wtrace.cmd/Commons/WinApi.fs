@@ -22,15 +22,15 @@ let getNtStatusDesc (n : int32) =
     | None -> sprintf "0x%X" n
     | Some s -> s
 
-let CheckResultBool b = 
-    if b then Ok () else Error (Win32Exception().Message)
+let CheckResultBool s b = 
+    if b then Ok () else Error (sprintf "[%s] %s" s (Win32Exception().Message))
 
-let CheckResultHandle h =
-    if h = Kernel32.INVALID_HANDLE_VALUE then Error (Win32Exception().Message)
+let CheckResultHandle s h =
+    if h = Kernel32.INVALID_HANDLE_VALUE then Error (sprintf "[%s] %s" s (Win32Exception().Message))
     else Ok h
 
-let CheckResultSafeHandle (h : SHandle) =
-    if h.IsInvalid then Error (Win32Exception().Message)
+let CheckResultSafeHandle s (h : SHandle) =
+    if h.IsInvalid then Error (sprintf "[%s] %s" s (Win32Exception().Message))
     else Ok h
 
 let Win32ErrorMessage (err : int) = 
@@ -55,25 +55,25 @@ let startProcessSuspended (args : seq<string>) spawnNewConsole =
                     Kernel32.CreateProcessFlags.CREATE_UNICODE_ENVIRONMENT
 
         do! Kernel32.CreateProcess(null, String.Join(" ", args), IntPtr.Zero, IntPtr.Zero, false,
-                flags, IntPtr.Zero, null, &si, &pi) |> CheckResultBool
+                flags, IntPtr.Zero, null, &si, &pi) |> CheckResultBool "CreateProcess"
 
         return (pi.dwProcessId, new SHandle(pi.hProcess), new SHandle(pi.hThread))
     }
 
 let openRunningProcess pid =
     Kernel32.OpenProcess(Kernel32.ACCESS_MASK(uint32 Kernel32.ACCESS_MASK.StandardRight.SYNCHRONIZE), false, pid)
-    |> CheckResultSafeHandle
+    |> CheckResultSafeHandle "OpenProcess"
 
 let resumeThread hThread =
     if Kernel32.ResumeThread(hThread) = -1 then
-        Error (Win32Exception().Message)
+        Error (sprintf "[ResumeThread] %s" (Win32Exception().Message))
     else Ok ()
 
 let waitForProcessExit hProcess timeoutMs =
     match Kernel32.WaitForSingleObject(hProcess, timeoutMs) with
     | Kernel32.WaitForSingleObjectResult.WAIT_OBJECT_0 -> Ok true
     | Kernel32.WaitForSingleObjectResult.WAIT_TIMEOUT -> Ok false
-    | Kernel32.WaitForSingleObjectResult.WAIT_ABANDONED -> Error "waitForProcessExit: mutex abandoned"
+    | Kernel32.WaitForSingleObjectResult.WAIT_ABANDONED -> Error "[WaitForSingleObject] mutex abandoned"
     | Kernel32.WaitForSingleObjectResult.WAIT_FAILED
-    | _ -> Error (Win32Exception().Message)
+    | _ -> Error (sprintf "[WaitForSingleObject] %s" (Win32Exception().Message))
 
