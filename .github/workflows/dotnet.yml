@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Setup nuget
-      uses: warrenbuckley/Setup-Nuget@v1
+      uses: nuget/setup-nuget@v1
     
     - name: Restore packages
       run: nuget restore wtrace.sln
