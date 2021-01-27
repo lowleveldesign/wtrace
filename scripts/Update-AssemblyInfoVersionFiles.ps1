@@ -10,6 +10,7 @@ function Update-AssemblyInfoVersionFiles ([string]$versionIdentifier)
   {
     $local:r = [regex]"<$versionIdentifier>([0-9]+\.[0-9]+)(\.([0-9]+|\*))+"
     $local:assemblyVersion = "0.0.0.0"
+    Write-Host "Processing '$($file.FullName)'"
     #version replacements
     (Get-Content -Encoding utf8 $file.FullName) | % {
       $m = $r.Matches($_)

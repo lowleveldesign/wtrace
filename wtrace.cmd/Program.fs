@@ -16,9 +16,7 @@ let appName = appAssembly.GetName()
 
 let showCopyright () =
     printfn ""
-    let version = appName.Version
-    printfn "%s v%d.%d.%d - collects process or system traces" appName.Name 
-        version.Major version.MajorRevision version.Minor
+    printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
     let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);  
     assert (customAttrs.Length > 0)
     printfn "Copyright (C) %d %s" 2021 (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
