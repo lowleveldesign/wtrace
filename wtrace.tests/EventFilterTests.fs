@@ -69,7 +69,7 @@ let TestFilterParsing () =
         v |> should equal "Test"
     | _ -> Assert.Fail()
 
-    (fun () -> EventFilter.parseFilter "pid >= str" |> ignore) |> should throw typeof<ArgumentException>
+    (fun () -> EventFilter.parseFilter "pid >= str" |> ignore) |> should throw typeof<EventFilter.ParseError>
 
     match EventFilter.parseFilter "pid >= 10" with
     | ProcessId (op, v) ->
