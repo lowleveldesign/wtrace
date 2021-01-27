@@ -48,14 +48,14 @@ module private H =
     let handleFileIoCreate state (ev : FileIOCreateTraceData) =
         mapFileNameToFileId state ev.FileObject ev.FileName
         let createDisposition = sprintf "%A" ev.CreateDisposition
-        let createOptions = sprintf "%A" ev.CreateOptions 
+        let createOptions = int32 ev.CreateOptions 
         let fields = [|
             struct (nameof ev.CreateDisposition, FText createDisposition)
-            struct (nameof ev.CreateOptions, FText createOptions)
+            struct (nameof ev.CreateOptions, FI32 createOptions)
             struct (nameof ev.FileAttributes, FText (sprintf "%A" ev.FileAttributes))
             struct (nameof ev.ShareAccess, FText (fileShareStr ev.ShareAccess)) |]
 
-        let details = sprintf "disposition: %s; options: %s" createDisposition createOptions
+        let details = sprintf "disposition: %s, options: 0x%X" createDisposition createOptions
         queuePendingEvent state ev ev.IrpPtr ev.FileObject ev.FileName fields details
 
     let handleFileIoDirEnum state (ev : FileIODirEnumTraceData) =
@@ -64,14 +64,14 @@ module private H =
             struct (nameof ev.FileIndex, FI32 ev.FileIndex)
             struct (nameof ev.Length, FI32 ev.Length) |]
 
-        let details = sprintf "name: %s; index: %d; length: %d" ev.FileName ev.FileIndex ev.Length
+        let details = sprintf "name: '%s', index: %d, length: %d" ev.FileName ev.FileIndex ev.Length
         queuePendingEvent state ev ev.IrpPtr ev.FileObject ev.DirectoryName fields details
 
     let handleFileIoInfo state (ev : FileIOInfoTraceData) =
         let fields = Array.singleton (struct (nameof ev.InfoClass, FI32 ev.InfoClass))
 
         let fileName = struct (ev.FileKey, ev.FileObject) |> getFileNameByFileIds state
-        let details = sprintf "class info: %d" ev.InfoClass
+        let details = sprintf "class info: 0x%X" ev.InfoClass
         queuePendingEvent state ev ev.IrpPtr ev.FileObject fileName fields details
 
     let handleFileIoReadWrite state (ev : FileIOReadWriteTraceData) =
@@ -81,7 +81,7 @@ module private H =
             struct (nameof ev.IoFlags, FI32 ev.IoFlags) |]
 
         let fileName = struct (ev.FileKey, ev.FileObject) |> getFileNameByFileIds state
-        let details = sprintf "offset: %d; size: %d" ev.Offset ev.IoSize
+        let details = sprintf "offset: %d, size: %d" ev.Offset ev.IoSize
         queuePendingEvent state ev ev.IrpPtr ev.FileObject fileName fields details
 
     let handleFileIoSimpleOp state (ev : FileIOSimpleOpTraceData) =

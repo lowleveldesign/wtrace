@@ -77,7 +77,7 @@ let traceSystemOnly ct =
     use sub = initiateEtwSession etwObservable ct
     ct.WaitHandle.WaitOne() |> ignore
 
-let traceEverything ct handlers filter =
+let traceEverything ct handlers filter showSummary =
     let settings = {
         Handlers = handlers
         EnableStacks = false
@@ -94,10 +94,11 @@ let traceEverything ct handlers filter =
     |> ignore
 
 
-    etwObservable
-    |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
-    |> Observable.subscribe TraceStatistics.processEvent
-    |> ignore
+    if showSummary then
+        etwObservable
+        |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
+        |> Observable.subscribe TraceStatistics.processEvent
+        |> ignore
 
     use sub = initiateEtwSession etwObservable ct
     ct.WaitHandle.WaitOne() |> ignore
@@ -116,7 +117,7 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct handlers filter includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
+    let traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
         result {
             let settings = {
                 Handlers = handlers
@@ -155,9 +156,10 @@ module private ProcessApi =
             |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
-            filteredObservable
-            |> Observable.subscribe TraceStatistics.processEvent
-            |> ignore
+            if showSummary then
+                filteredObservable
+                |> Observable.subscribe TraceStatistics.processEvent
+                |> ignore
 
             if includeChildren then
                 etwObservable
@@ -178,17 +180,17 @@ module private ProcessApi =
         }
 
 
-let traceNewProcess ct handlers filter newConsole includeChildren (args : list<string>) =
+let traceNewProcess ct handlers filter showSummary newConsole includeChildren (args : list<string>) =
     result {
         Debug.Assert(args.Length > 0, $"[TraceControl] invalid number of arguments")
         let! (pid, hProcess, hThread) = WinApi.startProcessSuspended args newConsole
 
-        do! ProcessApi.traceProcess ct handlers filter includeChildren (pid, hProcess, hThread) 
+        do! ProcessApi.traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, hThread) 
     }
 
-let traceRunningProcess ct handlers filter includeChildren pid =
+let traceRunningProcess ct handlers filter showSummary includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
 
-        do! ProcessApi.traceProcess ct handlers filter includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
+        do! ProcessApi.traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
     }

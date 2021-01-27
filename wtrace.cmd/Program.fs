@@ -26,7 +26,7 @@ let showCopyright () =
     printfn ""
 
 let showHelp () =
-    printfn "Usage: %s [OPTIONS] pid|imagename args" appName.Name
+    printfn "Usage: %s [OPTIONS] [pid|imagename args]" appName.Name
     printfn @"
 Options:
   -f, --filter=FILTER   Displays only events which satisfy a given FILTER.
@@ -146,12 +146,16 @@ let start (args : Map<string, list<string>>) = result {
 
     Console.CancelKeyPress.Add(fun ev -> ev.Cancel <- true; cts.Cancel())
 
+    let showSummary = not ([| "nosummary" |] |> isFlagEnabled)
+
     match args |> Map.tryFind "" with 
     | None when isSystemTrace args ->
+        if not showSummary then
+            printfn "WARNING: --nosummary does not take any effect in the system-only trace."
         TraceControl.traceSystemOnly cts.Token
 
     | None ->
-        TraceControl.traceEverything cts.Token handlers filterEvents
+        TraceControl.traceEverything cts.Token handlers filterEvents showSummary
 
     | Some args ->
         let newConsole = ([| "newconsole" |] |> isFlagEnabled)
@@ -159,9 +163,9 @@ let start (args : Map<string, list<string>>) = result {
 
         match args with
         | [ pid ] when isInteger pid ->
-            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents includeChildren (Int32.Parse(pid))
+            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents showSummary includeChildren (Int32.Parse(pid))
         | args ->
-            do! TraceControl.traceNewProcess cts.Token handlers filterEvents newConsole includeChildren args
+            do! TraceControl.traceNewProcess cts.Token handlers filterEvents showSummary newConsole includeChildren args
 
     printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
@@ -170,8 +174,7 @@ let start (args : Map<string, list<string>>) = result {
     if TraceControl.lostEventsCount > 0 then
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
 
-    if not ([| "nosummary" |] |> isFlagEnabled) then
-        TraceStatistics.dumpStatistics ()
+    TraceStatistics.dumpStatistics ()
 }
 
 let main (argv : array<string>) =

@@ -17,6 +17,22 @@ type private RpcHandlerState = {
 [<AutoOpen>]
 module private H =
 
+    let toEvent (ev : EtwEvent) eventId eventName activityId path details result =
+        {
+            EventId = eventId
+            TimeStamp = ev.TimeStamp
+            ActivityId = activityId
+            Duration = TimeSpan.Zero
+            ProcessId = ev.ProcessID
+            ProcessName = ev.ProcessName
+            ThreadId = ev.ThreadID
+            EventName = eventName
+            EventLevel = int32 ev.Level
+            Path = path
+            Details = details
+            Result = result
+        }
+
     let completeRpcEvent id ts state activityId eventName status =
         match state.PendingRpcCalls.TryGetValue(activityId) with
         | true, (prevEvent, fields) ->
@@ -44,7 +60,7 @@ module private H =
             |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
+        let rpcev = (toEvent ev id "RPC/ClientCallStart" $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
         TraceEventWithFields (
@@ -53,10 +69,10 @@ module private H =
         ) |> state.Broadcast.publishTraceEvent
 
     let handleRpcClientCallStop id state (ev : RpcCallStopArgs) =
-        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID "RPC/ClientCallEnd" ev.Status
 
     let handleRpcClientCallError id state (ev : RpcClientCallErrorArgs) =
-        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID "RPC/ClientCallError" ev.Status
 
     let handleRpcServerCallStart id state (ev : RpcServerCallStartArgs) =
         let fields =
@@ -71,7 +87,7 @@ module private H =
             |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        let rpcev = (toEvent ev id $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
+        let rpcev = (toEvent ev id "RPC/ServerCallStart" $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
         TraceEventWithFields (
@@ -80,7 +96,7 @@ module private H =
         ) |> state.Broadcast.publishTraceEvent
 
     let handleRpcServerCallStop id state (ev : RpcCallStopArgs) =
-        completeRpcEvent id ev.TimeStamp state ev.ActivityID ev.EventName ev.Status
+        completeRpcEvent id ev.TimeStamp state ev.ActivityID "RPC/ServerCallEnd" ev.Status
 
     let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
         let state = state :?> RpcHandlerState

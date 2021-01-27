@@ -21,7 +21,7 @@ module private H =
             struct (nameof ev.mss, FI32 ev.mss)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
+        let details = sprintf "conn: %d, seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
@@ -33,7 +33,7 @@ module private H =
             struct (nameof ev.mss, FI32 ev.mss)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d" ev.connid ev.seqnum
+        let details = sprintf "conn: %d, seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
@@ -44,7 +44,7 @@ module private H =
             struct (nameof ev.seqnum, FI32 ev.seqnum)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
+        let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
@@ -55,7 +55,7 @@ module private H =
             struct (nameof ev.seqnum, FI32 ev.seqnum)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
+        let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
@@ -66,7 +66,7 @@ module private H =
             struct (nameof ev.seqnum, FI32 ev.seqnum)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
+        let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
@@ -77,7 +77,7 @@ module private H =
             struct (nameof ev.seqnum, FI32 ev.seqnum)
             struct (nameof ev.size, FI32 ev.size) |]
 
-        let details = sprintf "conn: %d; seq: %d; size: %d" ev.connid ev.seqnum ev.size
+        let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
         let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
