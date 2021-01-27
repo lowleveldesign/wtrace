@@ -23,7 +23,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Connect id state (ev : TcpIpV6ConnectTraceData) =
@@ -35,7 +36,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d" ev.connid ev.seqnum
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpData id state (ev : TcpIpTraceData) =
@@ -46,7 +48,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Data id state (ev : TcpIpV6TraceData) =
@@ -57,7 +60,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIpSend id state (ev : TcpIpSendTraceData) =
@@ -68,7 +72,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let handleTcpIp6Send id state (ev : TcpIpV6SendTraceData) =
@@ -79,7 +84,8 @@ module private H =
 
         let details = sprintf "conn: %d, seq: %d, size: %d" ev.connid ev.seqnum ev.size
         let path = sprintf "%s:%d -> %s:%d" (ev.saddr.ToString()) ev.sport (ev.daddr.ToString()) ev.dport
-        let ev = toEvent ev id $"conn#%d{ev.connid}" path details WinApi.eventStatusUndefined
+        let activityId = sprintf "conn#%d" ev.connid
+        let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
     let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =

@@ -81,7 +81,7 @@ let parseHandlers args =
             elif name >=< "registry" then Registry.createEtwHandler ()
             elif name >=< "rpc" then Rpc.createEtwHandler ()
             elif name >=< "tcp" then TcpIp.createEtwHandler ()
-            else failwith $"Invalid handler name: '{name}'"
+            else failwith (sprintf "Invalid handler name: '%s'" name)
 
         try
             let handlerNames = 

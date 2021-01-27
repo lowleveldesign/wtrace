@@ -40,7 +40,7 @@ module private H =
             TraceEventWithFields ({
                 prevEvent with
                     EventId = id
-                    ActivityId = $"RPC#{activityId}"
+                    ActivityId = sprintf "RPC#%s" (activityId.ToString())
                     EventName = eventName
                     Duration = ts - prevEvent.TimeStamp
                     Result = status
@@ -60,7 +60,8 @@ module private H =
             |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        let rpcev = (toEvent ev id "RPC/ClientCallStart" $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
+        let activityId = sprintf "RPC#%s" (ev.ActivityID.ToString())
+        let rpcev = (toEvent ev id "RPC/ClientCallStart" activityId path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
         TraceEventWithFields (
@@ -87,7 +88,8 @@ module private H =
             |]
 
         let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
-        let rpcev = (toEvent ev id "RPC/ServerCallStart" $"RPC#{ev.ActivityID}" path "" WinApi.eventStatusUndefined)
+        let activityId = sprintf "RPC#%s" (ev.ActivityID.ToString())
+        let rpcev = (toEvent ev id "RPC/ServerCallStart" activityId path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
 
         TraceEventWithFields (

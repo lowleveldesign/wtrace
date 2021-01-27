@@ -21,6 +21,10 @@ module private H =
     let updateStatus s =
         match s with
         | SessionRunning -> rundownWaitEvent.Set() |> ignore
+        | SessionError msg ->
+            printfn "ERROR: Error when starting the trace session\n%s" msg
+            rundownWaitEvent.Set() |> ignore
+            sessionWaitEvent.Set() |> ignore
         | SessionStopped n ->
             lostEventsCount <- n
             rundownWaitEvent.Set() |> ignore
@@ -52,10 +56,10 @@ module private H =
     let isRundown ev = ev.EventName === "Process/DCStart"
 
     let onEvent (TraceEventWithFields (ev, _)) =
-        let getPath v = if v = "" then "" else $" '%s{v}'"
-        let getDesc v = if v = "" then "" else $" %s{v}"
+        let getPath v = if v = "" then "" else sprintf " '%s'" v
+        let getDesc v = if v = "" then "" else sprintf " %s" v
         let result = if ev.Result = WinApi.eventStatusUndefined then ""
-                     else $" -> %s{WinApi.getNtStatusDesc ev.Result}"
+                     else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
         printfn "%s %s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessName ev.ProcessId
             ev.ThreadId ev.EventName (getPath ev.Path) (getDesc ev.Details) result
 
@@ -75,7 +79,7 @@ let traceSystemOnly ct =
     |> ignore
 
     use sub = initiateEtwSession etwObservable ct
-    ct.WaitHandle.WaitOne() |> ignore
+    WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
 
 let traceEverything ct handlers filter showSummary =
     let settings = {
@@ -101,7 +105,7 @@ let traceEverything ct handlers filter showSummary =
         |> ignore
 
     use sub = initiateEtwSession etwObservable ct
-    ct.WaitHandle.WaitOne() |> ignore
+    WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
 
 
 module private ProcessApi =
@@ -113,6 +117,8 @@ module private ProcessApi =
             if processFinished then
                 Ok true
             elif ct.IsCancellationRequested then
+                Ok false
+            elif sessionWaitEvent.WaitOne(0) then
                 Ok false
             else
                 waitForProcessExit ct hProcess
@@ -182,7 +188,7 @@ module private ProcessApi =
 
 let traceNewProcess ct handlers filter showSummary newConsole includeChildren (args : list<string>) =
     result {
-        Debug.Assert(args.Length > 0, $"[TraceControl] invalid number of arguments")
+        Debug.Assert(args.Length > 0, "[TraceControl] invalid number of arguments")
         let! (pid, hProcess, hThread) = WinApi.startProcessSuspended args newConsole
 
         do! ProcessApi.traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, hThread) 

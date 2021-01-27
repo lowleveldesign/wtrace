@@ -12,6 +12,7 @@ type RealtimeTraceSessionSettings = {
 type RealtimeSessionStatus =
 | SessionRunning
 | SessionStopped of EventsLost : int32
+| SessionError of Messge : string
 
 [<AutoOpen>]
 module Commons =

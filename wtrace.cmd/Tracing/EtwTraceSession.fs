@@ -87,7 +87,7 @@ module EtwTraceSession =
 
             if session.IsActive then
                 session.Source.Process() |> ignore
-            logger.TraceInformation($"[{className}] Rundown session finished")
+            logger.TraceInformation(sprintf "[%s] Rundown session finished" className)
 
     // This function starts the ETW session and initiates broadcasting trace events
     let start settings publishStatus publishTraceEvent (ct : CancellationToken) =
@@ -105,7 +105,7 @@ module EtwTraceSession =
             handlersWithStates |> Array.fold providerFolder Map.empty<Guid, EtwEventProvider>
 
         try
-            logger.TraceInformation($"[{className}] Starting main ETW session")
+            logger.TraceInformation(sprintf "[%s] Starting main ETW session" className)
             use session = new TraceEventSession("wtrace-rt")
 
             let mutable eventsLost = 0
@@ -139,9 +139,10 @@ module EtwTraceSession =
                 session.Source.Process() |> ignore
 
             publishStatus (SessionStopped eventsLost)
-            logger.TraceInformation($"[{className}] Main ETW session completed")
+            logger.TraceInformation(sprintf "[%s] Main ETW session completed" className)
         with
         | ex ->
+            publishStatus (SessionError (ex.ToString()))
             logger.TraceError(ex)
 
     let isElevated () = TraceEventSession.IsElevated() ?= true

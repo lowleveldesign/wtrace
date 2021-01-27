@@ -26,7 +26,7 @@ module EventFilter =
             | ">=" -> ( >= )
             | "<=" -> ( <= )
             | _ ->
-                Debug.Assert(false, $"Invalid filter operator '{op}' for filter")
+                Debug.Assert(false, sprintf "Invalid filter operator '%s' for filter" op)
                 ( = )
 
         let createCheckString op =
@@ -37,7 +37,7 @@ module EventFilter =
             | "<=" -> fun a b -> a.EndsWith(b, StringComparison.OrdinalIgnoreCase)
             | "~" -> fun a b -> a.IndexOf(b, StringComparison.OrdinalIgnoreCase) <> -1
             | _ -> 
-                Debug.Assert(false, $"Invalid filter operator '{op}' for filter")
+                Debug.Assert(false, sprintf "Invalid filter operator '%s' for filter" op)
                 ( = )
 
         let buildFilterFunction filter =
@@ -110,23 +110,23 @@ module EventFilter =
                 Path (operator, filterValue)
             elif filterName >=< "details" then
                 Details (operator, filterValue)
-            else raise (ParseError $"Invalid filter: '{filterName}'")
+            else raise (ParseError (sprintf "Invalid filter: '%s'" filterName))
 
         | [| eventName |] -> EventName ("~", eventName.Trim())
-        | _ -> raise (ParseError $"Invalid filter definition: '{filterStr}'")
+        | _ -> raise (ParseError (sprintf "Invalid filter definition: '%s'" filterStr))
 
     let printFilters filters =
         let buildFilterDescription filter =
             match filter with
-            | ProcessId (op, n) -> ("Process ID", $"{op} {n}")
-            | ProcessName (op, s) -> ("Process name", $"{op} '{s}'")
-            | EventName (op , s) -> ("Event name", $"{op} '{s}'")
-            | EventLevel (op , n) -> ("Event level", $"{op} {n}")
-            | Path (op, s) -> ("Path", $"{op} '{s}'")
-            | Details (op, s) -> ("Details", $"{op} '{s}'")
+            | ProcessId (op, n) -> ("Process ID", sprintf "%s '%d'" op n)
+            | ProcessName (op, s) -> ("Process name", sprintf "%s '%s'" op s)
+            | EventName (op , s) -> ("Event name", sprintf "%s '%s'" op s)
+            | EventLevel (op , n) -> ("Event level", sprintf "%s '%d'" op n)
+            | Path (op, s) -> ("Path", sprintf "%s '%s'" op s)
+            | Details (op, s) -> ("Details", sprintf "%s '%s'" op s)
 
         let printFiltersGroup name defs =
-            printfn $"  %s{name}"
+            printfn "  %s" name
             printfn "    %s" (defs |> String.concat " OR ")
 
         filters

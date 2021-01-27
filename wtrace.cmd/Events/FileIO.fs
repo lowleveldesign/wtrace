@@ -22,7 +22,7 @@ type private FileIoHandlerState = {
 [<AutoOpen>]
 module private H =
     let queuePendingEvent state (ev : EtwEvent) irpPtr fileId fileName fields details = 
-        let ev = toEvent ev 0 $"File#%d{fileId}" fileName details WinApi.eventStatusUndefined
+        let ev = toEvent ev 0 (sprintf "File#%d" fileId) fileName details WinApi.eventStatusUndefined
         state.PendingFileIo.[irpPtr] <- (ev, fields)
 
     let fileShareStr (fs : FileShare) =

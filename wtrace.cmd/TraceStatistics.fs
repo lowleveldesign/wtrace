@@ -190,7 +190,7 @@ module TraceStatistics =
                 baseAddresses.Insert(~~~ind, image.BaseAddress)
                 loadedImages.Add(image.BaseAddress, image)
             else
-                Logger.Tracing.TraceWarning $"Problem when adding image data: 0x{image.BaseAddress:X} - it is already added."
+                Logger.Tracing.TraceWarning (sprintf "Problem when adding image data: 0x%x - it is already added." image.BaseAddress)
 
         let removeImage baseAddress =
             let ind = baseAddresses.BinarySearch(baseAddress)
@@ -198,7 +198,7 @@ module TraceStatistics =
                 baseAddresses.RemoveAt(ind)
                 loadedImages.Remove(baseAddress) |> ignore
             else
-                Logger.Tracing.TraceWarning $"Problem when disposing image data: the image 0x{baseAddress:X} could not be found."
+                Logger.Tracing.TraceWarning (sprintf "Problem when disposing image data: the image 0x%x could not be found." baseAddress)
 
         let findImage address =
             let tryFindingModule address =
@@ -215,7 +215,7 @@ module TraceStatistics =
                 let baseAddress = baseAddresses.[ind]
                 match loadedImages.TryGetValue(baseAddress) with
                 | (false, _) ->
-                    Debug.Assert(false, $"Missing address in the loadedImages dictionary (0x{baseAddress:X})")
+                    Debug.Assert(false, sprintf "Missing address in the loadedImages dictionary (0x%x)" baseAddress)
                     ValueNone
                 | (true, image) ->
                     if address - baseAddress > uint64 image.ImageSize then
@@ -260,7 +260,7 @@ module TraceStatistics =
                 let counters = if ev.EventName === "PerfInfo/DPC" then dpcCalls else isrCalls
                 updateCounterAndElapsedTime counters img.BaseAddress 1 elapsedTime
             | ValueNone ->
-                Logger.EtwTracing.TraceWarning $"Possibly missing ImageLoad events. Address: 0x{routine:X}"
+                Logger.EtwTracing.TraceWarning (sprintf "Possibly missing ImageLoad events. Address: 0x%x" routine)
 
     let dumpStatistics () =
         if not (ProcessTree.isEmpty ()) then
@@ -276,7 +276,8 @@ module TraceStatistics =
                            let (written, read) = (getCounterValue fileWrittenBytes p, getCounterValue fileReadBytes p)
                            (p, read + written, written, read))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, written, read) -> printfn $"'%s{path}' Total: %d{total}B, Writes: %d{written}B, Reads: %d{read}B")
+            |> Seq.iter (fun (path, total, written, read) ->
+                            printfn "'%s' Total: %dB, Writes: %dB, Reads: %dB" path total written read)
 
         if networkReceivedBytes.Count > 0 || networkSentBytes.Count > 0 then
             printTitle "TCP/IP"
@@ -287,14 +288,15 @@ module TraceStatistics =
                            let (sent, received) = (getCounterValue networkSentBytes p, getCounterValue networkReceivedBytes p)
                            (p, received + sent, sent, received))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, sent, received) -> printfn $"%s{path} Total: %d{total}B, Sent: %d{sent}B, Received: %d{received}B")
+            |> Seq.iter (fun (path, total, sent, received) ->
+                            printfn "%s Total: %dB, Sent: %dB, Received: %dB" path total sent received)
 
         if rpcCalls.Count > 0 then
             printTitle "RPC"
             rpcCalls
             |> Seq.map (|KeyValue|)
             |> Seq.sortByDescending (fun (_, total) -> total)
-            |> Seq.iter (fun (path, total) -> printfn $"%s{path} calls: %d{total}")
+            |> Seq.iter (fun (path, total) -> printfn "%s calls: %d" path total)
 
         if dpcCalls.Count > 0 then
             printTitle "DPC"
@@ -304,7 +306,7 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', Total: {time} ms ({count} event(s))")
+                            printfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
 
         if isrCalls.Count > 0 then
             printTitle "ISR"
@@ -314,5 +316,5 @@ module TraceStatistics =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = SystemImages.loadedImages.[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn $"'{img.FileName}', Total: {time} ms ({count} event(s))")
+                            printfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
 
