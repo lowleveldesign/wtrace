@@ -124,10 +124,13 @@ module TraceStatistics =
 
             let rec printChildren depth node =
                 let proc = processMap |> Map.find node.Id
+                let startTime =
+                    if proc.StartTime <> DateTime.MinValue then sprintf "started at %s" (proc.StartTime.ToString("HH:mm:ss.ffff"))
+                    else ""
                 let exitTime =
                     if proc.ExitTime <> DateTime.MaxValue then sprintf "finished at %s" (proc.ExitTime.ToString("HH:mm:ss.ffff"))
                     else ""
-                printfn "%s├─ %s [%d] %s" ("│ " |> String.replicate depth) proc.ProcessName proc.SystemProcessId exitTime
+                printfn "%s├─ %s [%d] %s  %s" ("│ " |> String.replicate depth) proc.ProcessName proc.SystemProcessId startTime exitTime
                 node.Children.Values |> Seq.iter (printChildren (depth + 1))
 
             for n in tree.Values do

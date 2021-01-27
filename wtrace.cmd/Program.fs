@@ -169,7 +169,7 @@ let start (args : Map<string, list<string>>) = result {
 
     printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
-        printfn "WARNING: the session did not finish in allotted time. Stop it manually: logman stop wtrace-rt -ets"
+        printfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
