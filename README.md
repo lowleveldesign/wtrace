@@ -1,15 +1,17 @@
 
-# wtrace (<https://wtrace.net>)
+# wtrace
 
 ![.NET](https://github.com/lowleveldesign/wtrace/workflows/.NET/badge.svg)
 
-Wtrace [*spelled: wɪtreɪs*] is a command-line tool for recording trace events from the Operating System or a group of processes. Wtrace may collect, among others, **File I/O** and **Registry** operations, **TPC/IP** connections, and **RPC** calls. Its purpose is to give you some insights into what is happening in the system.
+**The project homepage is at <https://wtrace.net>.**
+
+Wtrace [spelled: *wɪtreɪs*] is a command-line tool for recording trace events from the Operating System or a group of processes. Wtrace may collect, among others, **File I/O** and **Registry** operations, **TPC/IP** connections, and **RPC** calls. Its purpose is to give you some insights into what is happening in the system.
 
 Additionally, it has various **filtering capabilities** and may also dump statistics at the end of the trace session. As it's just a standard command-line tool, you may pipe its output to another tool for further processing.
 
-It works on Windows 8.1+ and requires .NET 4.7.2+.
+It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the [release page](https://github.com/lowleveldesign/wtrace/releases).
 
-The available options are listed below. Please check the [wtrace documentation page](https://wtrace.net/docs/wtrace) to learn the details of the available options.
+The available options are listed below. Please check the [wtrace documentation page](https://wtrace.net/documentation/wtrace) to learn details about them with some usage examples.
 
 ```
 Usage: wtrace [OPTIONS] [pid|imagename args]
