@@ -60,9 +60,6 @@
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reactive.dll">
       <LogicalName>.\System.Reactive.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Security.Principal.Windows.dll">
-      <LogicalName>.\System.Security.Principal.Windows.dll</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Threading.Tasks.Extensions.dll">
       <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
     </EmbeddedResource>
