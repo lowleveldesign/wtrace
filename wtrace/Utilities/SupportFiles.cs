@@ -1,12 +1,10 @@
-﻿using System;
+﻿using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
-using Microsoft.Diagnostics.Utilities;
-using Utilities;
 
 namespace Utilities
 {
@@ -46,7 +44,7 @@ namespace Utilities
     /// zero.  You have to write your own '/uninstall' or 'Cleanup' that deletes SupportFileDir
     /// if you want this.  
     /// </summary>
-    static class SupportFiles
+    internal static class SupportFiles
     {
         /// <summary>
         /// Unpacks any resource that beginning with a .\ (so it looks like a relative path name)
@@ -73,25 +71,34 @@ namespace Utilities
             }
 
             // Register a Assembly resolve event handler so that we find our support dlls in the support dir.
-            AppDomain.CurrentDomain.AssemblyResolve += delegate(object sender, ResolveEventArgs args)
+            AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
             {
                 var simpleName = args.Name;
                 var commaIdx = simpleName.IndexOf(',');
                 if (0 <= commaIdx)
+                {
                     simpleName = simpleName.Substring(0, commaIdx);
+                }
+
                 string fileName = Path.Combine(SupportFileDir, simpleName + ".dll");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // Also look in processor specific location
-                fileName = Path.Combine(SupportFileDir, ProcessArch, simpleName + ".dll");
+                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // And look for an exe (we need this for HeapDump.exe)
-                fileName = Path.Combine(SupportFileDir, ProcessArch, simpleName + ".exe");
+                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // If asked, look in other locations as well. 
                 if (s_managedDllSearchPaths != null)
@@ -100,7 +107,9 @@ namespace Utilities
                     {
                         fileName = Path.Combine(dir, simpleName + ".dll");
                         if (File.Exists(fileName))
+                        {
                             return System.Reflection.Assembly.LoadFrom(fileName);
+                        }
                     }
                 }
                 return null;
@@ -110,10 +119,12 @@ namespace Utilities
             // Note we do this AFTER setting up the Assemble Resolve event because we use FileUtiltities that
             // may not be in the EXE itself.  
             if (unpacked || File.Exists(Path.Combine(SupportFileDirBase, "CleanupNeeded")))
-                Cleanup(); 
-            
+            {
+                Cleanup();
+            }
+
             return unpacked;
-        }   
+        }
         /// <summary>
         /// SupportFileDir is a directory that is reserved for CURRENT VERSION of the software (if a later version is installed)
         /// It gets its own directory).   This is the directory where files in the EXE get unpacked to.  
@@ -123,7 +134,7 @@ namespace Utilities
             get
             {
                 {
-                    var exeLastWriteTime = File.GetLastWriteTime(ExePath);
+                    var exeLastWriteTime = File.GetLastWriteTime(MainAssemblyPath);
                     var version = exeLastWriteTime.ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff");
                     s_supportFileDir = Path.Combine(SupportFileDirBase, version);
                 }
@@ -143,14 +154,16 @@ namespace Utilities
             {
                 if (s_supportFileDirBase == null)
                 {
-                    string appName = Path.GetFileNameWithoutExtension(ExePath);
+                    string appName = Path.GetFileNameWithoutExtension(MainAssemblyPath);
 
                     string appData = Environment.GetEnvironmentVariable(appName + "_APPDATA");
                     if (appData == null)
                     {
-                        appData = Environment.GetEnvironmentVariable("APPDATA");
+                        appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                         if (appData == null)
-                            appData = Path.GetFileName(ExePath);
+                        {
+                            appData = Path.GetFileName(MainAssemblyPath);
+                        }
                     }
                     s_supportFileDirBase = Path.Combine(appData, appName);
                 }
@@ -159,7 +172,24 @@ namespace Utilities
             set { s_supportFileDirBase = value; }
         }
         /// <summary>
-        /// The path to the executable.   You should not be writing here! that is what SupportFileDir is for.  
+        /// The path to the assembly containing <see cref="SupportFiles"/>. You should not be writing here! that is what
+        /// <see cref="SupportFileDir"/> is for.
+        /// </summary>
+        public static string MainAssemblyPath
+        {
+            get
+            {
+                if (s_mainAssemblyPath == null)
+                {
+                    var mainAssembly = Assembly.GetExecutingAssembly();
+                    s_mainAssemblyPath = mainAssembly.ManifestModule.FullyQualifiedName;
+                }
+
+                return s_mainAssemblyPath;
+            }
+        }
+        /// <summary>
+        /// The path to the entry executable.
         /// </summary>
         public static string ExePath
         {
@@ -167,30 +197,47 @@ namespace Utilities
             {
                 if (s_exePath == null)
                 {
-                    // We used to use GetEntryAssembly, but that means you can use the EXE as a component 
-                    // of some other EXE.   This means that SupportFiles.cs needs to be in the main exe.  
-                    var exeAssembly = Assembly.GetExecutingAssembly();
-                    s_exePath = exeAssembly.ManifestModule.FullyQualifiedName;
+                    s_exePath = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
                 }
+
                 return s_exePath;
             }
         }
+
         /// <summary>
         /// Get the name of the architecture of the current process
         /// </summary>
-        public static string ProcessArch
+        public static ProcessorArchitecture ProcessArch
         {
             get
             {
-                if (s_ProcessArch == null)
+                if (s_ProcessArch == ProcessorArchitecture.None)
                 {
-                    s_ProcessArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                    // This should not be needed, but when I run PerfView under VS from an extension on an X64 machine
-                    // the environment variable is wrong.  
-                    if (s_ProcessArch == "AMD64" && System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 4)
-                        s_ProcessArch = "x86";
+                    var processorArchitecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+                    if (!Enum.TryParse(processorArchitecture, ignoreCase: true, result: out s_ProcessArch))
+                    {
+                        s_ProcessArch = Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
+                    }
                 }
+
                 return s_ProcessArch;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
+        /// currently executing process.
+        /// </summary>
+        public static string ProcessArchitectureDirectory
+        {
+            get
+            {
+                if (s_ProcessArchDirectory == null)
+                {
+                    s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
+                }
+
+                return s_ProcessArchDirectory;
             }
         }
 
@@ -201,18 +248,20 @@ namespace Utilities
         /// <param name="relativePath"></param>
         public static void LoadNative(string relativePath)
         {
-            var archPath = Path.Combine(ProcessArch, relativePath);
+            var archPath = Path.Combine(ProcessArchitectureDirectory, relativePath);
             var fullPath = Path.Combine(SupportFileDir, archPath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)
             {
                 if (!File.Exists(fullPath))
                 {
-                    if (ProcessArch != "x86")
+                    if (ProcessArch != ProcessorArchitecture.X86)
                     {
-                        var x86FullPath = Path.Combine(SupportFileDir, Path.Combine("x86", relativePath));
+                        var x86FullPath = Path.Combine(SupportFileDir, "x86", relativePath);
                         if (File.Exists(x86FullPath))
+                        {
                             throw new ApplicationException("This operation is not supported for the " + ProcessArch + " architecture.");
+                        }
                     }
                     throw new ApplicationException("Could not find DLL " + archPath + " in distribution.  Application Error.");
                 }
@@ -227,13 +276,19 @@ namespace Utilities
         {
             Debug.Assert(Directory.Exists(directory));
             if (s_managedDllSearchPaths == null)
+            {
                 s_managedDllSearchPaths = new List<string>();
+            }
+
             if (s_managedDllSearchPaths.Contains(directory))
+            {
                 return;
+            }
+
             s_managedDllSearchPaths.Add(directory);
         }
 
-#region private
+        #region private
         private static void UnpackResources()
         {
             // We don't unpack into the final directory so we can be transactional (all or nothing).  
@@ -245,20 +300,21 @@ namespace Utilities
             // problematic.   Instead use GetExecutingAssembly, which means that you have to put SupportFiles.cs
             // in your main program 
             var resourceAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            var archPrefix = @".\" + ProcessArch;
             foreach (var resourceName in resourceAssembly.GetManifestResourceNames())
             {
-                if (resourceName.StartsWith(@".\"))
+                if (resourceName.StartsWith(@".\") || resourceName.StartsWith(@"./"))
                 {
                     // Unpack everything, inefficient, but insures ldr64 works.  
                     string targetPath = Path.Combine(prepDir, resourceName);
                     if (!ResourceUtilities.UnpackResourceAsFile(resourceName, targetPath, resourceAssembly))
+                    {
                         throw new ApplicationException("Could not unpack support file " + resourceName);
+                    }
                 }
             }
 
             // Commit the unpack, we try several times since antiviruses often lock the directory
-            for (int retries = 0; ;retries++)
+            for (int retries = 0; ; retries++)
             {
                 try
                 {
@@ -268,15 +324,18 @@ namespace Utilities
                 catch (Exception)
                 {
                     if (retries > 5)
+                    {
                         throw;
+                    }
                 }
                 System.Threading.Thread.Sleep(100);
             }
         }
-        static void Cleanup()
+
+        private static void Cleanup()
         {
             string cleanupMarkerFile = Path.Combine(SupportFileDirBase, "CleanupNeeded");
-            var dirs = Directory.GetDirectories(SupportFileDirBase, "VER.*");  
+            var dirs = Directory.GetDirectories(SupportFileDirBase, "VER.*");
             if (dirs.Length > 1)
             {
                 // We will assume we should come and check again on our next launch.  
@@ -285,7 +344,9 @@ namespace Utilities
                 {
                     // Don't clean up myself
                     if (string.Compare(dir, s_supportFileDir, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         continue;
+                    }
 
                     // We first try to move the directory and only delete it if that succeeds.  
                     // That way directories that are in use don't get cleaned up.    
@@ -293,11 +354,16 @@ namespace Utilities
                     {
                         var deletingName = dir + ".deleting";
                         if (dir.EndsWith(".deleting"))
+                        {
                             deletingName = dir;
-                        else 
+                        }
+                        else
+                        {
                             Directory.Move(dir, deletingName);
+                        }
+
                         DirectoryUtilities.Clean(deletingName);
-                    }   
+                    }
                     catch (Exception) { }
                 }
             }
@@ -316,13 +382,15 @@ namespace Utilities
         private static extern IntPtr LoadLibrary(string lpFileName);
 
 
-        private static string s_ProcessArch;
+        private static ProcessorArchitecture s_ProcessArch;
+        private static string s_ProcessArchDirectory;
 
 
         private static string s_supportFileDir;
         private static string s_supportFileDirBase;
-        internal static string s_exePath;
+        private static string s_mainAssemblyPath;
+        private static string s_exePath;
         private static List<string> s_managedDllSearchPaths;
-#endregion
+        #endregion
     }
 }

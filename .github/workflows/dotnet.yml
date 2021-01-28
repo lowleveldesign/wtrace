@@ -15,30 +15,22 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Setup nuget
-      uses: warrenbuckley/Setup-Nuget@v1
+      uses: nuget/setup-nuget@v1
     
     - name: Restore packages
       run: nuget restore wtrace.sln
     
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.0.0
+      uses: microsoft/setup-msbuild@v1.0.2
       
     - name: Prepare
       run: scripts\Update-AssemblyInfoVersionFiles.ps1
       shell: powershell
     
-    - name: Build Debug using MSBuild
-      run: msbuild wtrace.sln -m /p:Configuration=Debug
-    
     - name: Build Release using MSBuild
       run: msbuild wtrace.sln -m /p:Configuration=Release
-      
-    - uses: actions/upload-artifact@v2-preview
-      with:
-        name: wtrace-debug
-        path: wtrace\bin\Debug\wtrace.exe
      
-    - uses: actions/upload-artifact@v2-preview
+    - uses: actions/upload-artifact@v2
       with:
         name: wtrace
-        path: wtrace\bin\Release\wtrace.exe
+        path: bin\wtrace\net472\wtrace.exe

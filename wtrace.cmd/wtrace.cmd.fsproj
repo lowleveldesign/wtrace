@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net472</TargetFrameworks>
+    <Authors>Sebastian Solnica</Authors>
+    <Company>Sebastian Solnica (lowleveldesign.org)</Company>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Commons\CommandLine.fs" />
+    <Compile Include="Commons\ResultBuilder.fs" />
+    <Compile Include="Commons\Globals.fs" />
+    <Compile Include="Commons\WinApi.fs" />
+    <Compile Include="Models\Events.fs" />
+    <Compile Include="Events\Commons.fs" />
+    <Compile Include="Events\ProcessThread.fs" />
+    <Compile Include="Events\FileIO.fs" />
+    <Compile Include="Events\Registry.fs" />
+    <Compile Include="Events\IsrDpc.fs" />
+    <Compile Include="Events\Rpc.fs" />
+    <Compile Include="Events\TcpIp.fs" />
+    <Compile Include="Tracing\Commons.fs" />
+    <Compile Include="Tracing\EtwTraceSession.fs" />
+    <Compile Include="Tracing\EventFilter.fs" />
+    <Compile Include="TraceStatistics.fs" />
+    <Compile Include="TraceControl.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Control.Reactive" Version="4.5.0" />
+    <PackageReference Include="PInvoke.Kernel32" Version="0.7.78" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\wtrace.imports\wtrace.imports.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.2" />
+  </ItemGroup>
+
+</Project>
+

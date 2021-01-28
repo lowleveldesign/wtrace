@@ -1,192 +1,109 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8F08EFD6-1DCA-454D-B8CD-7BCC0735F655}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LowLevelDesign.WinTrace</RootNamespace>
-    <AssemblyName>wtrace</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <TargetFrameworks>net472</TargetFrameworks>
+    <RootNamespace>LowLevelDesign.WTrace</RootNamespace>
+    <Authors>Sebastian Solnica</Authors>
+    <Company>Sebastian Solnica (lowleveldesign.org)</Company>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <OutputPath>..\bin\wtrace</OutputPath>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>default</LangVersion>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;ALLEVENTS</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>default</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Microsoft.Diagnostics.Tracing.TraceEvent, Version=1.0.41.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\lib\net40\Microsoft.Diagnostics.Tracing.TraceEvent.dll</HintPath>
-    </Reference>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="PInvoke.Kernel32, Version=0.2.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
-      <HintPath>..\packages\PInvoke.Kernel32.0.2.1\lib\net40\PInvoke.Kernel32.dll</HintPath>
-    </Reference>
-    <Reference Include="PInvoke.Windows.Core, Version=0.2.0.0, Culture=neutral, PublicKeyToken=9e300f9f87f04a7a, processorArchitecture=MSIL">
-      <HintPath>..\packages\PInvoke.Windows.Core.0.2.1\lib\portable-net40+win+wpa81+MonoAndroid10+xamarinios10+MonoTouch10\PInvoke.Windows.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Management.Automation.dll.10.0.10586.0\lib\net40\System.Management.Automation.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <ProjectReference Include="..\wtrace.cmd\wtrace.cmd.fsproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="EventHandlers\AlpcTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\IsrDpcTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\ITraceEventHandler.cs" />
-    <Compile Include="EventHandlers\NetworkTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\PowerShell\PowerShellEvents.cs" />
-    <Compile Include="EventHandlers\PowerShell\PowerShellTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\ProcessThreadsTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\RegistryTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\Rpc\RpcTraceEventHandler.cs" />
-    <Compile Include="EventHandlers\SystemConfigTraceEventHandler.cs" />
-    <Compile Include="TraceOutput.cs" />
-    <Compile Include="PowerShell\PowerShellTraceOutput.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="EventHandlers\FileIOTraceEventHandler.cs" />
-    <Compile Include="PowerShell\InvokeWtraceCommand.cs" />
-    <Compile Include="PowerShell\PowerShellModuleAssemblyInitializer.cs" />
-    <Compile Include="EventHandlers\Rpc\RPCEvents.cs" />
-    <Compile Include="Utilities\ProcessCreator.cs" />
-    <Compile Include="TraceSession.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TraceCollector.cs" />
-    <Compile Include="Utilities\DirectoryUtilities.cs" />
-    <Compile Include="Utilities\FileUtilities.cs" />
-    <Compile Include="Utilities\DriverImageUtilities.cs" />
-    <Compile Include="Utilities\ResourceUtilities.cs" />
-    <Compile Include="Utilities\StatisticsUtilities.cs" />
-    <Compile Include="Utilities\StreamUtilities.cs" />
-    <Compile Include="Utilities\SupportFiles.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="_TraceEventProgrammersGuide.docx" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="$(OutputPath)\NDesk.Options.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Ndesk.Options.dll</LogicalName>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Dia2Lib.dll">
+      <LogicalName>.\Dia2Lib.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\PInvoke.Windows.Core.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\PInvoke.Windows.Core.dll</LogicalName>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Diagnostics.FastSerialization.dll">
+      <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\PInvoke.Kernel32.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\PInvoke.Kernel32.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\amd64\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\OSExtensions.dll">
+      <LogicalName>.\OSExtensions.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Runtime.CompilerServices.Unsafe.dll">
+      <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\TraceReloggerLib.dll">
+      <LogicalName>.\TraceReloggerLib.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Core.dll">
+      <LogicalName>.\FSharp.Core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Control.Reactive.dll">
+      <LogicalName>.\FSharp.Control.Reactive.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\PInvoke.Kernel32.dll">
+      <LogicalName>.\PInvoke.Kernel32.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\PInvoke.Windows.Core.dll">
+      <LogicalName>.\PInvoke.Windows.Core.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Buffers.dll">
+      <LogicalName>.\System.Buffers.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Memory.dll">
+      <LogicalName>.\System.Memory.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Numerics.Vectors.dll">
+      <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reactive.dll">
+      <LogicalName>.\System.Reactive.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Threading.Tasks.Extensions.dll">
+      <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.cmd.dll">
+      <LogicalName>.\wtrace.cmd.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.imports.dll">
+      <LogicalName>.\wtrace.imports.dll</LogicalName>
+    </EmbeddedResource>
+    
+    
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\KernelTraceControl.dll">
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\amd64\msdia140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\msdia140.dll">
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\x86\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\msvcp140.dll">
+      <LogicalName>.\amd64\msvcp140.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\vcruntime140.dll">
+      <LogicalName>.\amd64\vcruntime140.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\amd64\vcruntime140_1.dll">
+      <LogicalName>.\amd64\vcruntime140_1.dll</LogicalName>
+    </EmbeddedResource>
+    
+    
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\KernelTraceControl.dll">
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutputPath)\x86\msdia140.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\KernelTraceControl.Win61.dll">
+      <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\msdia140.dll">
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\msvcp140.dll">
+      <LogicalName>.\x86\msvcp140.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\x86\vcruntime140.dll">
+      <LogicalName>.\x86\vcruntime140.dll</LogicalName>
+    </EmbeddedResource>
+    
+    
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="TraceEvent.ReadMe.txt" />
-    <Content Include="TraceEvent.ReleaseNotes.txt" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>powershell -Command "Copy-Item -Force $(SolutionDir)packages\NDesk.Options.*\lib\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Windows.Core.*\lib\*net*\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\PInvoke.Kernel32.*\lib\net4?\*.dll $(TargetDir);Copy-Item -Force $(SolutionDir)packages\Microsoft.Diagnostics.Tracing.TraceEvent.*\lib\net40\*.dll $(TargetDir);Copy-Item -Force -Recurse $(SolutionDir)packages\Microsoft.Diagnostics.Tracing.TraceEvent.*\lib\native\* $(TargetDir) "</PreBuildEvent>
-  </PropertyGroup>
-  <Import Project="..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.1.0.41\build\Microsoft.Diagnostics.Tracing.TraceEvent.targets'))" />
-  </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
