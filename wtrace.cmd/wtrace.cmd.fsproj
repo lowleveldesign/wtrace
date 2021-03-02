@@ -21,6 +21,7 @@
     <Compile Include="Events\IsrDpc.fs" />
     <Compile Include="Events\Rpc.fs" />
     <Compile Include="Events\TcpIp.fs" />
+    <Compile Include="Events\UdpIp.fs" />
     <Compile Include="Tracing\Commons.fs" />
     <Compile Include="Tracing\EtwTraceSession.fs" />
     <Compile Include="Tracing\EventFilter.fs" />
