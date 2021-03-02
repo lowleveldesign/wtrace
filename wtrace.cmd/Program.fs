@@ -47,6 +47,7 @@ Options:
     registry  - to receive Registry events (voluminous, disabled by default)
     rpc       - to receive RPC events
     tcp       - to receive TCP/IP events
+    udp       - to receive UDP events
 
   Example: --handlers 'tcp,file,registry'
 
@@ -79,6 +80,7 @@ let parseHandlers args =
             elif name >=< "registry" then Registry.createEtwHandler ()
             elif name >=< "rpc" then Rpc.createEtwHandler ()
             elif name >=< "tcp" then TcpIp.createEtwHandler ()
+            elif name >=< "udp" then UdpIp.createEtwHandler ()
             else failwith (sprintf "Invalid handler name: '%s'" name)
 
         try
@@ -96,7 +98,7 @@ let parseHandlers args =
         | Failure msg -> Error msg
 
     match args |> Map.tryFind "handlers" with
-    | None -> createHandlers "process,file,rpc,tcp"
+    | None -> createHandlers "process,file,rpc,tcp,udp"
     | Some [ handler ] ->
         if isSystemTrace args then
             Error ("Handlers are not allowed in the system trace.")

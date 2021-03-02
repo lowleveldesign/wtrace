@@ -140,19 +140,7 @@ module TraceStatistics =
     [<AutoOpen>]
     module private H =
 
-        type ImageInMemory = {
-            BaseAddress : uint64
-            ImageSize : int32
-            FileName : string
-        }
-
-        let fileReadBytes = Dictionary<string, uint64>()
-        let fileWrittenBytes = Dictionary<string, uint64>()
-        let networkReceivedBytes = Dictionary<string, uint64>()
-        let networkSentBytes = Dictionary<string, uint64>()
-        let rpcCalls = Dictionary<string, int32>()
-        let dpcCalls = Dictionary<uint64, int32 * float>()
-        let isrCalls = Dictionary<uint64, int32 * float>()
+        type NumericCounter = Dictionary<string, uint64>
 
         let updateCounter (counter : Dictionary<string, uint64>) key count =
             match counter.TryGetValue(key) with
@@ -178,6 +166,35 @@ module TraceStatistics =
             match counter.TryGetValue(key) with
             | (true, n) -> n
             | _ -> 0UL
+
+        let dumpNetworkStatistics title (networkReceivedBytes : NumericCounter) (networkSentBytes : NumericCounter) =
+            if networkReceivedBytes.Count > 0 || networkSentBytes.Count > 0 then
+                printTitle title
+                networkSentBytes.Keys
+                |> Seq.append networkReceivedBytes.Keys
+                |> Seq.distinct
+                |> Seq.map(fun p ->
+                               let (sent, received) = (getCounterValue networkSentBytes p, getCounterValue networkReceivedBytes p)
+                               (p, received + sent, sent, received))
+                |> Seq.sortByDescending (fun (_, total, _, _) -> total)
+                |> Seq.iter (fun (path, total, sent, received) ->
+                                printfn "%s Total: %dB, Sent: %dB, Received: %dB" path total sent received)
+
+        type ImageInMemory = {
+            BaseAddress : uint64
+            ImageSize : int32
+            FileName : string
+        }
+
+        let fileReadBytes = NumericCounter()
+        let fileWrittenBytes = NumericCounter()
+        let tcpReceivedBytes = NumericCounter()
+        let tcpSentBytes = NumericCounter()
+        let udpReceivedBytes = NumericCounter()
+        let udpSentBytes = NumericCounter()
+        let rpcCalls = NumericCounter()
+        let dpcCalls = Dictionary<uint64, int32 * float>()
+        let isrCalls = Dictionary<uint64, int32 * float>()
 
     module private SystemImages =
 
@@ -233,17 +250,25 @@ module TraceStatistics =
         elif ev.EventName === "FileIO/Write" then
             updateCounter fileWrittenBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
         elif ev.EventName === "TcpIp/Recv" then
-            updateCounter networkReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+            updateCounter tcpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/Send" then
-            updateCounter networkSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+            updateCounter tcpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/RecvIPv6" then
-            updateCounter networkReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+            updateCounter tcpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName === "TcpIp/SendIPv6" then
-            updateCounter networkSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+            updateCounter tcpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+        elif ev.EventName === "UdpIp/Recv" then
+            updateCounter udpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+        elif ev.EventName === "UdpIp/Send" then
+            updateCounter udpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+        elif ev.EventName === "UdpIp/RecvIPv6" then
+            updateCounter udpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
+        elif ev.EventName === "UdpIp/SendIPv6" then
+            updateCounter udpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName.StartsWith("RPC/", StringComparison.Ordinal) then
             match rpcCalls.TryGetValue(ev.Path) with
-            | (true, n) -> rpcCalls.[ev.Path] <- n + 1
-            | (false, _) -> rpcCalls.Add(ev.Path, 1)
+            | (true, n) -> rpcCalls.[ev.Path] <- n + 1UL
+            | (false, _) -> rpcCalls.Add(ev.Path, 1UL)
         elif ev.EventName === "SystemImage/Load" then
             let image = { BaseAddress = getUI64FieldValue fields "ImageBase"
                           ImageSize = getI32FieldValue fields "ImageSize"
@@ -279,17 +304,8 @@ module TraceStatistics =
             |> Seq.iter (fun (path, total, written, read) ->
                             printfn "'%s' Total: %dB, Writes: %dB, Reads: %dB" path total written read)
 
-        if networkReceivedBytes.Count > 0 || networkSentBytes.Count > 0 then
-            printTitle "TCP/IP"
-            networkSentBytes.Keys
-            |> Seq.append networkReceivedBytes.Keys
-            |> Seq.distinct
-            |> Seq.map(fun p ->
-                           let (sent, received) = (getCounterValue networkSentBytes p, getCounterValue networkReceivedBytes p)
-                           (p, received + sent, sent, received))
-            |> Seq.sortByDescending (fun (_, total, _, _) -> total)
-            |> Seq.iter (fun (path, total, sent, received) ->
-                            printfn "%s Total: %dB, Sent: %dB, Received: %dB" path total sent received)
+        dumpNetworkStatistics "TCP/IP" tcpReceivedBytes tcpSentBytes
+        dumpNetworkStatistics "UDP" udpReceivedBytes udpSentBytes
 
         if rpcCalls.Count > 0 then
             printTitle "RPC"
