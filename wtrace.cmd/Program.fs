@@ -75,12 +75,12 @@ let isSystemTrace args = [| "s"; "system" |] |> isFlagEnabled args
 let parseHandlers args =
     let createHandlers (handler : string) =
         let createHandler (name : string) =
-            if name >=< "process" then ProcessThread.createEtwHandler ()
-            elif name >=< "file" then FileIO.createEtwHandler ()
-            elif name >=< "registry" then Registry.createEtwHandler ()
-            elif name >=< "rpc" then Rpc.createEtwHandler ()
-            elif name >=< "tcp" then TcpIp.createEtwHandler ()
-            elif name >=< "udp" then UdpIp.createEtwHandler ()
+            if name === "process" then ProcessThread.createEtwHandler ()
+            elif name === "file" then FileIO.createEtwHandler ()
+            elif name === "registry" then Registry.createEtwHandler ()
+            elif name === "rpc" then Rpc.createEtwHandler ()
+            elif name === "tcp" then TcpIp.createEtwHandler ()
+            elif name === "udp" then UdpIp.createEtwHandler ()
             else failwith (sprintf "Invalid handler name: '%s'" name)
 
         try
@@ -106,9 +106,7 @@ let parseHandlers args =
     | _ -> Error ("Handlers can be specified only once.")
 
 let parseFilters args =
-    match args |> Map.tryFind "f" with
-    | None -> Ok (fun _ -> true)
-    | Some filters ->
+    let p filters =
         if isSystemTrace args then
             Error ("Filters are not allowed in the system trace.")
         else
@@ -122,6 +120,13 @@ let parseFilters args =
                 Ok (EventFilter.buildFilterFunction filters)
             with
             | EventFilter.ParseError msg -> Error msg
+
+    match args |> Map.tryFind "f" with
+    | None ->
+        match args |> Map.tryFind "filters" with
+        | None -> Ok (fun _ -> true)
+        | Some filters -> p filters
+    | Some filters -> p filters
 
 let checkElevated () = 
     if EtwTraceSession.isElevated () then Ok ()

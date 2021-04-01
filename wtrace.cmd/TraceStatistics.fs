@@ -83,7 +83,7 @@ module TraceStatistics =
                 UniqueProcessId = lastUniqueId
                 UniqueParentId = findProcessUniqueId parentId ev.TimeStamp
                 ProcessName = getProcessName imageFileName
-                StartTime = if ev.EventName === "Process/Start" then ev.TimeStamp else DateTime.MinValue
+                StartTime = if ev.EventName = "Process/Start" then ev.TimeStamp else DateTime.MinValue
                 CommandLine = getTextFieldValue fields "CommandLine"
                 ExitTime = DateTime.MaxValue
             }
@@ -241,48 +241,48 @@ module TraceStatistics =
 
 
     let processEvent (TraceEventWithFields (ev, fields)) =
-        if ev.EventName === "Process/Start" || ev.EventName === "Process/DCStart" then
+        if ev.EventName = "Process/Start" || ev.EventName = "Process/DCStart" then
             ProcessTree.handleProcessStart ev fields
-        elif ev.EventName === "Process/Stop" then
+        elif ev.EventName = "Process/Stop" then
             ProcessTree.handleProcessExit ev
-        elif ev.EventName === "FileIO/Read" then
+        elif ev.EventName = "FileIO/Read" then
             updateCounter fileReadBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
-        elif ev.EventName === "FileIO/Write" then
+        elif ev.EventName = "FileIO/Write" then
             updateCounter fileWrittenBytes ev.Path (getUI64FieldValue fields "ExtraInfo")
-        elif ev.EventName === "TcpIp/Recv" then
+        elif ev.EventName = "TcpIp/Recv" then
             updateCounter tcpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "TcpIp/Send" then
+        elif ev.EventName = "TcpIp/Send" then
             updateCounter tcpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "TcpIp/RecvIPv6" then
+        elif ev.EventName = "TcpIp/RecvIPv6" then
             updateCounter tcpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "TcpIp/SendIPv6" then
+        elif ev.EventName = "TcpIp/SendIPv6" then
             updateCounter tcpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "UdpIp/Recv" then
+        elif ev.EventName = "UdpIp/Recv" then
             updateCounter udpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "UdpIp/Send" then
+        elif ev.EventName = "UdpIp/Send" then
             updateCounter udpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "UdpIp/RecvIPv6" then
+        elif ev.EventName = "UdpIp/RecvIPv6" then
             updateCounter udpReceivedBytes ev.Path (uint64 (getI32FieldValue fields "size"))
-        elif ev.EventName === "UdpIp/SendIPv6" then
+        elif ev.EventName = "UdpIp/SendIPv6" then
             updateCounter udpSentBytes ev.Path (uint64 (getI32FieldValue fields "size"))
         elif ev.EventName.StartsWith("RPC/", StringComparison.Ordinal) then
             match rpcCalls.TryGetValue(ev.Path) with
             | (true, n) -> rpcCalls.[ev.Path] <- n + 1UL
             | (false, _) -> rpcCalls.Add(ev.Path, 1UL)
-        elif ev.EventName === "SystemImage/Load" then
+        elif ev.EventName = "SystemImage/Load" then
             let image = { BaseAddress = getUI64FieldValue fields "ImageBase"
                           ImageSize = getI32FieldValue fields "ImageSize"
                           FileName = ev.Path }
             SystemImages.addImage image
-        elif ev.EventName === "SystemImage/Unload" then
+        elif ev.EventName = "SystemImage/Unload" then
             let baseAddress = getUI64FieldValue fields "ImageBase"
             SystemImages.removeImage baseAddress
-        elif ev.EventName === "PerfInfo/DPC" || ev.EventName === "PerfInfo/ISR" then
+        elif ev.EventName = "PerfInfo/DPC" || ev.EventName = "PerfInfo/ISR" then
             let routine = getUI64FieldValue fields "Routine"
             match SystemImages.findImage routine with
             | ValueSome img ->
                 let elapsedTime = getF64FieldValue fields "ElapsedTimeMSec"
-                let counters = if ev.EventName === "PerfInfo/DPC" then dpcCalls else isrCalls
+                let counters = if ev.EventName = "PerfInfo/DPC" then dpcCalls else isrCalls
                 updateCounterAndElapsedTime counters img.BaseAddress 1 elapsedTime
             | ValueNone ->
                 Logger.EtwTracing.TraceWarning (sprintf "Possibly missing ImageLoad events. Address: 0x%x" routine)

@@ -68,9 +68,7 @@ let result = ResultBuilder()
 
 let (|?) lhs rhs = (if lhs = null then rhs else lhs)
 
-let (===) a b = String.Equals(a, b, StringComparison.Ordinal)
-
-let (>=<) a b = String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
+let (===) a b = String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
 
 (* Global loggers *)
 

@@ -63,11 +63,11 @@ module EventFilter =
 
         let tryParseLevel v (n : outref<int32>) =
             if Int32.TryParse(v, &n) then true
-            elif v >=< "debug" || v >=< "verbose" then n <- 5; true
-            elif v >=< "info" then n <- 4; true
-            elif v >=< "warning" then n <- 3; true
-            elif v >=< "error" then n <- 2; true
-            elif v >=< "critical" then n <- 1; true
+            elif v === "debug" || v === "verbose" then n <- 5; true
+            elif v === "info" then n <- 4; true
+            elif v === "warning" then n <- 3; true
+            elif v === "error" then n <- 2; true
+            elif v === "critical" then n <- 1; true
             else n <- 0; false
 
 
@@ -98,17 +98,17 @@ module EventFilter =
             let mutable n = 0
             let filterName = filterName.Trim()
             let filterValue = filterValue.Trim()
-            if filterName >=< "pid" && Int32.TryParse(filterValue, &n) then
+            if filterName === "pid" && Int32.TryParse(filterValue, &n) then
                 ProcessId (operator, n)
-            elif filterName >=< "level" && tryParseLevel filterValue &n then
+            elif filterName === "level" && tryParseLevel filterValue &n then
                 EventLevel (operator, n)
-            elif filterName >=< "pname" then
+            elif filterName === "pname" then
                 ProcessName (operator, filterValue)
-            elif filterName >=< "name" then
+            elif filterName === "name" then
                 EventName (operator, filterValue)
-            elif filterName >=< "path" then
+            elif filterName === "path" then
                 Path (operator, filterValue)
-            elif filterName >=< "details" then
+            elif filterName === "details" then
                 Details (operator, filterValue)
             else raise (ParseError (sprintf "Invalid filter: '%s'" filterName))
 

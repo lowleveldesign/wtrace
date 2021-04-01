@@ -23,10 +23,10 @@ module private H =
                 |] |> Array.map (toEventField id)
 
             let eventName =
-                if ev.OpcodeName === "DCStart" || ev.OpcodeName === "Load" then
+                if ev.OpcodeName = "DCStart" || ev.OpcodeName = "Load" then
                     "SystemImage/Load"
                 else
-                    Debug.Assert(ev.OpcodeName === "Unload", "Unexpected image operation")
+                    Debug.Assert(ev.OpcodeName = "Unload", "Unexpected image operation")
                     "SystemImage/Unload"
             let ev = {
                 EventId = id

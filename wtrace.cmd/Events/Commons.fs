@@ -41,7 +41,7 @@ type EtwEventHandler = {
 module FieldValues =
 
     let inline private getFieldValue fields fieldName =
-        (fields |> Array.find (fun fld -> fld.FieldName === fieldName)).FieldValue
+        (fields |> Array.find (fun fld -> fld.FieldName = fieldName)).FieldValue
 
     let getI32FieldValue flds fname =
         match (getFieldValue flds fname) with

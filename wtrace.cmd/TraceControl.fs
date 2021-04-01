@@ -53,7 +53,7 @@ module private H =
 
         Disposable.compose etwsub reg
 
-    let isRundown ev = ev.EventName === "Process/DCStart"
+    let isRundown ev = ev.EventName = "Process/DCStart"
 
     let onEvent (TraceEventWithFields (ev, _)) =
         let getPath v = if v = "" then "" else sprintf " '%s'" v
@@ -135,14 +135,14 @@ module private ProcessApi =
 
             let handleProcessStart evf =
                 let (TraceEventWithFields (ev, flds)) = evf
-                if ev.EventName === "Process/Start" then
+                if ev.EventName = "Process/Start" then
                     let parentPid = FieldValues.getI32FieldValue flds "ParentID"
                     if processIds.Contains(parentPid) then
                         processIds.Add(ev.ProcessId) |> ignore
 
             let handleProcessStop evf =
                 let (TraceEventWithFields (ev, _)) = evf
-                if ev.EventName === "Process/Stop" then
+                if ev.EventName = "Process/Stop" then
                     processIds.Remove(ev.ProcessId) |> ignore
 
             let etwObservable = createEtwObservable settings
