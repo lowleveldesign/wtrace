@@ -36,9 +36,17 @@ jobs:
     - name: Copy the binary to Chocolatey path
       run: Copy-Item bin\wtrace\net472\wtrace.exe choco\tools
 
+    - run: scripts/Print-FileHashes.ps1 -FilePath choco\tools\wtrace.exe >> choco\tools\VERIFICATION.txt
+      shell: pwsh
+
     - name: Build Chocolatey package
       run: choco pack
       working-directory: choco
+     
+    - uses: actions/upload-artifact@v2
+      with:
+        name: wtrace-pkg
+        path: choco\wtrace.*.nupkg
 
     - name: Release Chocolatey package
       run: choco push $(Resolve-Path "wtrace.*.nupkg") -s https://push.chocolatey.org/ -k "$env:CHOCO_KEY"
