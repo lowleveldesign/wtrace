@@ -45,11 +45,8 @@ module private H =
         let etwsub = etwObservable.Connect()
         let reg = ct.Register(fun () -> etwsub.Dispose())
 
-        printfn "Preparing the realtime trace session. Please wait..."
+        printfn "Starting the tracing session (might take a moment). Press Ctrl + C to exit."
         rundownWaitEvent.WaitOne() |> ignore
-
-        printfn ""
-        printfn "Tracing session started. Press Ctrl + C to stop it."
 
         Disposable.compose etwsub reg
 

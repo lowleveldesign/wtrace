@@ -72,6 +72,8 @@ module FieldValues =
 
 module internal HandlerCommons =
 
+    let noFields = Array.empty<TraceEventField>
+
     let handleEvent<'T, 'S when 'T :> EtwEvent> (idgen : IdGenerator) (state : 'S) handler (ev : 'T) : unit =
         handler (idgen()) state ev
 

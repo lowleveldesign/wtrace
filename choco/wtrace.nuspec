@@ -9,7 +9,7 @@
     <version>1.0.0.0</version>
     <!-- == SOFTWARE SPECIFIC SECTION == -->
     <!-- This section is about the software itself -->
-    <title>wtrace (Install)</title>
+    <title>wtrace</title>
     <authors>Sebastian Solnica</authors>
     <!-- projectUrl is required for the community feed -->
     <projectUrl>https://wtrace.net</projectUrl>

@@ -48,6 +48,7 @@ Options:
     rpc       - to receive RPC events
     tcp       - to receive TCP/IP events
     udp       - to receive UDP events
+    image     - to receive image events (load/unload)
 
   Example: --handlers 'tcp,file,registry'
 
@@ -81,6 +82,7 @@ let parseHandlers args =
             elif name === "rpc" then Rpc.createEtwHandler ()
             elif name === "tcp" then TcpIp.createEtwHandler ()
             elif name === "udp" then UdpIp.createEtwHandler ()
+            elif name === "image" then Image.createEtwHandler ()
             else failwith (sprintf "Invalid handler name: '%s'" name)
 
         try
@@ -149,7 +151,11 @@ let start (args : Map<string, list<string>>) = result {
 
     use cts = new CancellationTokenSource()
 
-    Console.CancelKeyPress.Add(fun ev -> ev.Cancel <- true; cts.Cancel())
+    Console.CancelKeyPress.Add(
+        fun ev ->
+            printfn "Closing the trace session. Please wait..."
+            ev.Cancel <- true
+            cts.Cancel())
 
     let showSummary = not ([| "nosummary" |] |> isFlagEnabled)
 
@@ -172,7 +178,6 @@ let start (args : Map<string, list<string>>) = result {
         | args ->
             do! TraceControl.traceNewProcess cts.Token handlers filterEvents showSummary newConsole includeChildren args
 
-    printfn "Closing the trace session. Please wait..."
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
         printfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 

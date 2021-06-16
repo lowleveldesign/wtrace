@@ -26,8 +26,6 @@ module private H =
         ("\\Registry\\Machine", "HKLM")
     |]
 
-    let noFields = Array.empty<TraceEventField>
-
     let abbreviate (keyName : string) =
         let abbr = knownRegistryNames |> Array.tryFind (fun (n, _) -> keyName.StartsWith(n, StringComparison.OrdinalIgnoreCase))
         match abbr with
