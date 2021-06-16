@@ -1,0 +1,47 @@
+name: release
+
+on: 
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup nuget
+      uses: nuget/setup-nuget@v1
+
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
+    
+    - name: Restore packages
+      run: nuget restore wtrace.sln
+    
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.2
+    
+    - name: Build Release using MSBuild
+      run: msbuild wtrace.sln -m /p:Configuration=Release
+     
+    - uses: actions/upload-artifact@v2
+      with:
+        name: wtrace
+        path: bin\wtrace\net472\wtrace.exe
+
+    - name: Copy the binary to Chocolatey path
+      run: Copy-Item bin\wtrace\net472\wtrace.exe choco\tools
+
+    - name: Build Chocolatey package
+      run: choco pack
+      working-directory: choco
+
+    - name: Release Chocolatey package
+      run: choco push $(Resolve-Path "wtrace.*.nupkg") -s https://push.chocolatey.org/ -k "$env:CHOCO_KEY"
+      env:
+        CHOCO_KEY: ${{ secrets.CHOCO_KEY }}
+      working-directory: choco

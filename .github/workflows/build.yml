@@ -1,4 +1,4 @@
-name: .NET
+name: build
 
 on:
   push:
@@ -22,10 +22,6 @@ jobs:
     
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
-      
-    - name: Prepare
-      run: scripts\Update-AssemblyInfoVersionFiles.ps1
-      shell: powershell
     
     - name: Build Release using MSBuild
       run: msbuild wtrace.sln -m /p:Configuration=Release

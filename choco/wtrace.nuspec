@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Read this before creating packages: https://chocolatey.org/docs/create-packages -->
+<!-- It is especially important to read the above link to understand additional requirements when publishing packages to the community feed aka dot org (https://chocolatey.org/packages). -->
+
+<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>wtrace</id>
+    <version>1.0.0.0</version>
+    <!-- == SOFTWARE SPECIFIC SECTION == -->
+    <!-- This section is about the software itself -->
+    <title>wtrace (Install)</title>
+    <authors>Sebastian Solnica</authors>
+    <!-- projectUrl is required for the community feed -->
+    <projectUrl>https://wtrace.net</projectUrl>
+    <iconUrl>https://wtrace.net/wp-content/uploads/2020/09/wtraced-icon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/lowleveldesign/wtrace</projectSourceUrl>
+    <docsUrl>https://wtrace.net/documentation/wtrace/</docsUrl>
+    <bugTrackerUrl>https://github.com/lowleveldesign/wtrace/issues</bugTrackerUrl>
+    <tags>wtrace windows tracing</tags>
+    <summary>Command line tracing tool for Windows, based on ETW.</summary>
+    <description>Wtrace [spelled: wɪtreɪs] is a command-line tool for recording trace events from the Operating System or a group of processes. Wtrace may collect, among others, File I/O operations, Registry operations, and TPC/IP connections. Its purpose is to give you some insights into what is happening in the system.
+
+Additionally, it has various filtering capabilities and may also dump statistics at the end of the trace session. As it's just a standard command-line tool, you may pipe its output to another tool for further processing.
+
+It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the release page.</description>
+  </metadata>
+  <files>
+    <!-- this section controls what actually gets packaged into the Chocolatey package -->
+    <file src="tools\**" target="tools" />
+    <!--Building from Linux? You may need this instead: <file src="tools/**" target="tools" />-->
+  </files>
+</package>

@@ -1,7 +1,7 @@
 
 # wtrace
 
-![.NET](https://github.com/lowleveldesign/wtrace/workflows/.NET/badge.svg)
+![.NET](https://github.com/lowleveldesign/wtrace/workflows/build/badge.svg)
 
 **The project homepage is at <https://wtrace.net>.**
 
