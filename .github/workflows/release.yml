@@ -48,8 +48,9 @@ jobs:
         name: wtrace-pkg
         path: choco\wtrace.*.nupkg
 
-    - name: Release Chocolatey package
-      run: choco push $(Resolve-Path "wtrace.*.nupkg") -s https://push.chocolatey.org/ -k "$env:CHOCO_KEY"
-      env:
-        CHOCO_KEY: ${{ secrets.CHOCO_KEY }}
-      working-directory: choco
+    # Temporarily disabling Chocolatey publish until the first package gets accepted: https://community.chocolatey.org/packages/wtrace/3.1.21167.4
+    # - name: Release Chocolatey package
+    #   run: choco push $(Resolve-Path "wtrace.*.nupkg") -s https://push.chocolatey.org/ -k "$env:CHOCO_KEY"
+    #   env:
+    #     CHOCO_KEY: ${{ secrets.CHOCO_KEY }}
+    #   working-directory: choco
