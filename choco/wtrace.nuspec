@@ -8,10 +8,8 @@
     <id>wtrace</id>
     <version>1.0.0.0</version>
     <!-- == SOFTWARE SPECIFIC SECTION == -->
-    <!-- This section is about the software itself -->
     <title>wtrace</title>
     <authors>Sebastian Solnica</authors>
-    <!-- projectUrl is required for the community feed -->
     <projectUrl>https://wtrace.net</projectUrl>
     <iconUrl>https://wtrace.net/wp-content/uploads/2020/09/wtraced-icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -27,8 +25,6 @@ Additionally, it has various filtering capabilities and may also dump statistics
 It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the release page.</description>
   </metadata>
   <files>
-    <!-- this section controls what actually gets packaged into the Chocolatey package -->
     <file src="tools\**" target="tools" />
-    <!--Building from Linux? You may need this instead: <file src="tools/**" target="tools" />-->
   </files>
 </package>

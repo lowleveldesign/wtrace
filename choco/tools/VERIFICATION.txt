@@ -1,2 +1,4 @@
 VERIFICATION
 
+The hashes below were computed for the wtrace.exe file contained in this package. You may calculate the hashes for the official release (available at https://github.com/lowleveldesign/wtrace/releases) and compare them with these values to verify the installed wtrace.exe binary.
+
