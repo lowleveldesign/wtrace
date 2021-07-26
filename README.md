@@ -9,7 +9,7 @@ Wtrace [spelled: *wɪtreɪs*] is a command-line tool for recording trace events 
 
 Additionally, it has various **filtering capabilities** and may also dump statistics at the end of the trace session. As it's just a standard command-line tool, you may pipe its output to another tool for further processing.
 
-It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the [release page](https://github.com/lowleveldesign/wtrace/releases).
+It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the [release page](https://github.com/lowleveldesign/wtrace/releases) or install it with [Chocolatey](https://chocolatey.org/): `choco install wtrace`.
 
 The available options are listed below. Please check the [wtrace documentation page](https://wtrace.net/documentation/wtrace) to learn details about them with some usage examples.
 
