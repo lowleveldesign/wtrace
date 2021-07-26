@@ -38,7 +38,9 @@ jobs:
     - name: Copy the binary to Chocolatey path
       run: Copy-Item bin\wtrace\net472\wtrace.exe choco\tools
 
-    - run: scripts/Print-FileHashes.ps1 -FilePath choco\tools\wtrace.exe >> choco\tools\VERIFICATION.txt
+    - run: |
+        Invoke-WebRequest -OutFile Print-FileHashes.ps1 https://gist.githubusercontent.com/lowleveldesign/f1afd42662ee8dabe07cf8cbfe25e6a1/raw/Print-FileHashes.ps1
+        ./Print-FileHashes.ps1 -FilePath choco\tools\wtrace.exe >> choco\tools\VERIFICATION.txt
       shell: pwsh
 
     - name: Build Chocolatey package
