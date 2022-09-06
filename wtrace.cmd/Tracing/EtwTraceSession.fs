@@ -58,7 +58,7 @@ module EtwTraceSession =
         let runRundownSession handlersWithStates ct =
 
             let sessionName = sprintf "%s_rundown" etwSessionName
-            logger.TraceInformation(sprintf "Starting rundown session %s" sessionName)
+            logger.TraceInformation(sprintf "[etw] Starting rundown session %s" sessionName)
 
             use session = new TraceEventSession(sessionName)
 
@@ -83,7 +83,7 @@ module EtwTraceSession =
             // For the rundown session, all the event Ids will be 0. We do not save them
             // anywhere (at least we should not)
             handlersWithStates
-            |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, true, (fun _ -> 0), s))
+            |> Array.iter (fun (h, s) -> h.Subscribe (TraceEventSources(eventSource), true, (fun _ -> 0), s))
 
             if session.IsActive then
                 session.Source.Process() |> ignore
@@ -127,10 +127,10 @@ module EtwTraceSession =
             // Very simple Id generator for the session. It is never accessed asynchronously so there is no
             // risk if we simply increment it
             let mutable eventId = 0
-            let idgen () = eventId <- eventId + 1; eventId
+            let idgen () = Interlocked.Increment(&eventId)
 
             // Subscribe handlers to the trace session
-            handlersWithStates |> Array.iter (fun (h, s) -> h.Subscribe (eventSource, false, idgen, s))
+            handlersWithStates |> Array.iter (fun (h, s) -> h.Subscribe (TraceEventSources(eventSource), false, idgen, s))
 
             runRundownSession handlersWithStates ct
 

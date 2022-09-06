@@ -25,7 +25,7 @@ namespace LowLevelDesign.WTrace
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         static int DoMain(string[] args)
         {
-            return Program.main(args);
+            return Program.main(SupportFiles.SupportFileDir, args);
         }
     }
 }

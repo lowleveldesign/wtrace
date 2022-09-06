@@ -3,6 +3,7 @@ module LowLevelDesign.WTrace.Program
 
 open System
 open System.Diagnostics
+open System.IO
 open System.Reflection
 open System.Threading
 open LowLevelDesign.WTrace
@@ -35,6 +36,7 @@ Options:
   --newconsole          Starts the process in a new console window.
   -s, --system          Collect only system statistics (Processes and DPC/ISR)
                         - shown in the summary.
+  --symbols=SYMPATH     Resolve stacks and RPC method names using the provided symbols path.
   --nosummary           Prints only ETW events - no summary at the end.
   -v, --verbose         Shows wtrace diagnostics logs.
   -h, --help            Shows this message and exits.
@@ -75,7 +77,7 @@ let isSystemTrace args = [| "s"; "system" |] |> isFlagEnabled args
 
 let parseHandlers args =
     let createHandlers (handler : string) =
-        let createHandler (name : string) =
+        let resolveHandler (name : string) =
             if name === "process" then ProcessThread.createEtwHandler ()
             elif name === "file" then FileIO.createEtwHandler ()
             elif name === "registry" then Registry.createEtwHandler ()
@@ -89,7 +91,7 @@ let parseHandlers args =
             let handlerNames = 
                 handler.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries)
                 |> Array.map (fun name -> name.Trim().ToLower())
-            let handlers = handlerNames |> Array.map createHandler
+            let handlers = handlerNames |> Array.map resolveHandler
 
             printfn "HANDLERS"
             printfn "  %s" (handlerNames |> String.concat ", ")
@@ -100,7 +102,7 @@ let parseHandlers args =
         | Failure msg -> Error msg
 
     match args |> Map.tryFind "handlers" with
-    | None -> createHandlers "process,file,rpc,tcp,udp"
+    | None -> createHandlers "process,image,file,rpc,tcp,udp"
     | Some [ handler ] ->
         if isSystemTrace args then
             Error ("Handlers are not allowed in the system trace.")
@@ -134,7 +136,7 @@ let checkElevated () =
     if EtwTraceSession.isElevated () then Ok ()
     else Error "Must be elevated (Admin) to run this program."
 
-let start (args : Map<string, list<string>>) = result {
+let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = result {
     let isFlagEnabled = isFlagEnabled args
     let isInteger (v : string) = 
         let r, _ = Int32.TryParse(v)
@@ -148,6 +150,29 @@ let start (args : Map<string, list<string>>) = result {
 
     let! filterEvents = parseFilters args
     let! handlers = parseHandlers args
+
+
+    let dbgHelpPath =
+        if IntPtr.Size = 4 then Path.Combine(supportFilesDirectory, "x86", "dbghelp.dll")
+        else Path.Combine(supportFilesDirectory, "amd64", "dbghelp.dll")
+    let debugSymbols =
+        match args |> Map.tryFind "symbols" with
+        | None ->
+            match Environment.GetEnvironmentVariable("_NT_SYMBOL_PATH") with
+            | v when v <> null -> 
+                printfn "Debug symbols path: %s" v
+                printfn ""
+
+                UseDbgHelp(dbgHelpPath, v)
+            | _ -> DebugSymbolSettings.Ignore
+        | Some paths ->
+            Debug.Assert(paths.Length > 0)
+            let symbolsPath = List.last paths
+
+            printfn "Debug symbols path: %s" symbolsPath
+            printfn ""
+
+            UseDbgHelp(dbgHelpPath, symbolsPath)
 
     use cts = new CancellationTokenSource()
 
@@ -166,7 +191,7 @@ let start (args : Map<string, list<string>>) = result {
         TraceControl.traceSystemOnly cts.Token
 
     | None ->
-        TraceControl.traceEverything cts.Token handlers filterEvents showSummary
+        TraceControl.traceEverything cts.Token handlers filterEvents showSummary debugSymbols
 
     | Some args ->
         let newConsole = ([| "newconsole" |] |> isFlagEnabled)
@@ -174,20 +199,18 @@ let start (args : Map<string, list<string>>) = result {
 
         match args with
         | [ pid ] when isInteger pid ->
-            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents showSummary includeChildren (Int32.Parse(pid))
+            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents showSummary debugSymbols includeChildren (Int32.Parse(pid))
         | args ->
-            do! TraceControl.traceNewProcess cts.Token handlers filterEvents showSummary newConsole includeChildren args
+            do! TraceControl.traceNewProcess cts.Token handlers filterEvents showSummary debugSymbols newConsole includeChildren args
 
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
         printfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
-
-    TraceStatistics.dumpStatistics ()
 }
 
-let main (argv : array<string>) =
+let main (supportFilesDirectory : string) (argv : array<string>) =
     let flags = [| "s"; "system"; "c"; "children"; "newconsole"; "nosummary"; "v"; "verbose"; "h"; "?"; "help" |]
     let args = argv |> CommandLine.parseArgs flags
 
@@ -197,7 +220,7 @@ let main (argv : array<string>) =
         showHelp ()
         0
     else
-        match start args with
+        match start supportFilesDirectory args with
         | Ok _ -> 0
         | Error msg -> printfn "ERROR: %s" msg; 1
 

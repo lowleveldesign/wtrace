@@ -52,7 +52,7 @@ module private H =
         let ev = toEvent ev id "" path "" ev.Status
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, noFields))
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> RegistryHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         let handle h = Action<_>(h state)
@@ -87,7 +87,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.Registry
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (broadcast) -> ({
+            fun broadcast -> ({
                 Broadcast = broadcast
                 KeyHandleToName = Dictionary<uint64, string>()
             } :> obj)

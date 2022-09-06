@@ -6,7 +6,7 @@ open LowLevelDesign.WTrace.Events
 
 type RealtimeTraceSessionSettings = {
     Handlers : array<EtwEventHandler>
-    EnableStacks: bool
+    EnableStacks : bool
 } 
 
 type RealtimeSessionStatus =

@@ -63,6 +63,9 @@
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Threading.Tasks.Extensions.dll">
       <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\NtApiDotNet.dll">
+      <LogicalName>.\NtApiDotNet.dll</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.cmd.dll">
       <LogicalName>.\wtrace.cmd.dll</LogicalName>
     </EmbeddedResource>
@@ -104,6 +107,18 @@
       <LogicalName>.\x86\vcruntime140.dll</LogicalName>
     </EmbeddedResource>
     
+    <EmbeddedResource Include="$(OutputPath)\..\..\..\ms-dbgtools\x86\dbghelp.dll">
+      <LogicalName>.\x86\dbghelp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\..\ms-dbgtools\x86\symsrv.dll">
+      <LogicalName>.\x86\symsrv.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\..\ms-dbgtools\amd64\dbghelp.dll">
+      <LogicalName>.\amd64\dbghelp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutputPath)\..\..\..\ms-dbgtools\amd64\symsrv.dll">
+      <LogicalName>.\amd64\symsrv.dll</LogicalName>
+    </EmbeddedResource>
     
   </ItemGroup>
 </Project>

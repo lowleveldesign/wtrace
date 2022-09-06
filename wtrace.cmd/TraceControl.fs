@@ -10,6 +10,7 @@ open System.Threading
 open FSharp.Control.Reactive
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Tracing
+open LowLevelDesign.WTrace.Summary
 
 let mutable lostEventsCount = 0
 let sessionWaitEvent = new ManualResetEvent(false)
@@ -71,14 +72,18 @@ let traceSystemOnly ct =
     }
     let etwObservable = createEtwObservable settings
 
+    let summary = TraceSummary.init Ignore ct
+
     etwObservable
-    |> Observable.subscribe TraceStatistics.processEvent
+    |> Observable.subscribe (TraceSummary.processEvent summary)
     |> ignore
 
     use sub = initiateEtwSession etwObservable ct
     WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
 
-let traceEverything ct handlers filter showSummary =
+    TraceSummary.dump summary
+
+let traceEverything ct handlers filter showSummary debugSymbols =
     let settings = {
         Handlers = handlers
         EnableStacks = false
@@ -94,15 +99,18 @@ let traceEverything ct handlers filter showSummary =
     |> Observable.subscribeWithCallbacks onEvent onError ignore
     |> ignore
 
+    let summary = TraceSummary.init debugSymbols ct
 
     if showSummary then
         etwObservable
         |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
-        |> Observable.subscribe TraceStatistics.processEvent
+        |> Observable.subscribe (TraceSummary.processEvent summary)
         |> ignore
 
     use sub = initiateEtwSession etwObservable ct
     WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
+
+    TraceSummary.dump summary
 
 
 module private ProcessApi =
@@ -120,7 +128,7 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
+    let traceProcess ct handlers filter showSummary debugSymbols includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
         result {
             let settings = {
                 Handlers = handlers
@@ -159,9 +167,10 @@ module private ProcessApi =
             |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
+            let summary = TraceSummary.init debugSymbols ct
             if showSummary then
                 filteredObservable
-                |> Observable.subscribe TraceStatistics.processEvent
+                |> Observable.subscribe (TraceSummary.processEvent summary)
                 |> ignore
 
             if includeChildren then
@@ -180,20 +189,23 @@ module private ProcessApi =
 
             hThread.Close()
             hProcess.Close()
+
+            TraceSummary.dump summary
         }
 
 
-let traceNewProcess ct handlers filter showSummary newConsole includeChildren (args : list<string>) =
+let traceNewProcess ct handlers filter showSummary debugSymbols newConsole includeChildren (args : list<string>) =
     result {
         Debug.Assert(args.Length > 0, "[TraceControl] invalid number of arguments")
-        let! (pid, hProcess, hThread) = WinApi.startProcessSuspended args newConsole
+        let! processIds = WinApi.startProcessSuspended args newConsole
 
-        do! ProcessApi.traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, hThread) 
+        do! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
     }
 
-let traceRunningProcess ct handlers filter showSummary includeChildren pid =
+let traceRunningProcess ct handlers filter showSummary debugSymbols includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
+        let processIds = (pid, hProcess, WinApi.SHandle.Invalid)
 
-        do! ProcessApi.traceProcess ct handlers filter showSummary includeChildren (pid, hProcess, WinApi.SHandle.Invalid)
+        do! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
     }

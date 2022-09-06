@@ -15,25 +15,24 @@ type private ImageHandlerState = {
 module private H =
 
     let handleImageLoad id state (ev : ImageLoadTraceData) =
-        let details = sprintf "base: 0x%x" ev.ImageBase
-        let path = sprintf "%s" ev.FileName
-        let ev = {
-            EventId = id
-            TimeStamp = ev.TimeStamp
-            ActivityId = ""
-            Duration = TimeSpan.Zero
-            ProcessId = ev.ProcessID
-            ProcessName = ev.ProcessName
-            ThreadId = ev.ThreadID
-            EventName = if int32 ev.Opcode = 3 (* DCStart *) then "Image/Loaded" else ev.EventName
-            EventLevel = int32 ev.Level
-            Path = path
-            Details = details
-            Result = WinApi.eventStatusUndefined
-        }
-        state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, noFields))
+        if ev.ProcessID <> 0 then // regular process
+            let ev = {
+                EventId = id
+                TimeStamp = ev.TimeStamp
+                ActivityId = ""
+                Duration = TimeSpan.Zero
+                ProcessId = ev.ProcessID
+                ProcessName = ev.ProcessName
+                ThreadId = ev.ThreadID
+                EventName = if int32 ev.Opcode = 3 (* DCStart *) then "Image/Loaded" else ev.EventName
+                EventLevel = int32 ev.Level
+                Path = ev.FileName
+                Details = sprintf "base: 0x%x" ev.ImageBase
+                Result = WinApi.eventStatusUndefined
+            }
+            state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, noFields))
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> ImageHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if isRundown then
@@ -50,7 +49,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.ImageLoad
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (broadcast) -> ({
+            fun broadcast -> ({
                 Broadcast = broadcast
             } :> obj)
         Subscribe = subscribe

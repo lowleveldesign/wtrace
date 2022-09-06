@@ -88,7 +88,7 @@ module private H =
         let ev = toEvent ev id activityId path details WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields |> Array.map (toEventField id)))
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> TcpIpHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if not isRundown then
@@ -121,7 +121,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.None
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (broadcast) -> ({
+            fun broadcast -> ({
                 Broadcast = broadcast
             } :> obj)
         Subscribe = subscribe

@@ -1,9 +1,11 @@
 ﻿namespace LowLevelDesign.WTrace.Events
 
 open System
-open Microsoft.Diagnostics.Tracing
-open LowLevelDesign.WTrace
 open System.Collections.Generic
+open System.Threading
+open Microsoft.Diagnostics.Tracing
+
+open LowLevelDesign.WTrace
 
 type EtwEvent = Microsoft.Diagnostics.Tracing.TraceEvent
 
@@ -30,9 +32,8 @@ type EtwEventHandler = {
     KernelStackFlags : NtKeywords
     Providers : array<EtwEventProvider>
 
-    // unique id of the handler in the session * observer for the handler messages
-    Initialize : EventBroadcast (* broadcast API *) -> obj (* handler state *)
-    Subscribe : TraceEventSource (* ETW trace event source *) *
+    Initialize : EventBroadcast -> obj (* handler state *)
+    Subscribe : TraceEventSources *
                 bool (* isRundown *) *
                 IdGenerator (* generates unique ids for events *) *
                 obj(* handler state *) -> unit
@@ -66,6 +67,11 @@ module FieldValues =
     let getF64FieldValue flds fname =
         match (getFieldValue flds fname) with
         | FF64 f -> f
+        | _ -> invalidArg (nameof fname) ""
+
+    let getGuidFieldValue flds fname =
+        match (getFieldValue flds fname) with
+        | FGuid f -> f
         | _ -> invalidArg (nameof fname) ""
 
 

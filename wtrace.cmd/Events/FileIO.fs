@@ -116,7 +116,7 @@ module private H =
         if opcode = 0 (* name *) || opcode = 36 (* rundown *) then
             mapFileNameToFileId state ev.FileKey ev.FileName
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> FileIoHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         let handleEventNoId h = Action<_>(handleEventNoId state h)
@@ -147,7 +147,7 @@ let createEtwHandler () =
         KernelRundownFlags = NtKeywords.DiskFileIO ||| NtKeywords.DiskIO
         Providers = Array.empty<EtwEventProvider>
         Initialize = 
-            fun (broadcast) -> ({
+            fun broadcast -> ({
                 Broadcast = broadcast
                 PendingFileIo = DataCache<uint64, TraceEvent * array<struct (string * TraceEventFieldValue)>>(256)
                 FileIdToName = Dictionary<uint64, string>()

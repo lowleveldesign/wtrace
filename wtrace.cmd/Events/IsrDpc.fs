@@ -65,7 +65,7 @@ module private H =
         let ev = toEvent ev id "" "" "" WinApi.eventStatusUndefined
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, fields))
  
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> IsrDpcHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if isRundown then
@@ -85,7 +85,7 @@ let createEtwHandler () =
         KernelStackFlags = NtKeywords.None
         KernelRundownFlags = NtKeywords.ImageLoad
         Providers = Array.empty<EtwEventProvider>
-        Initialize = fun (broadcast) -> { Broadcast = broadcast } :> obj
+        Initialize = fun broadcast -> { Broadcast = broadcast } :> obj
         Subscribe = subscribe
     }
 

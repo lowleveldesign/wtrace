@@ -43,7 +43,6 @@ type TraceSource with
     member this.TraceVerbose msg =
         this.TraceEvent(TraceEventType.Verbose, 0, msg)
 
-
 type Observable with
     /// Creates an observable sequence from the specified Subscribe method implementation.
     static member CreateEx (subscribe: IObserver<'T> -> unit -> unit) =
@@ -51,6 +50,8 @@ type Observable with
             let m = subscribe o
             Action(m)
         Observable.Create(subscribe)
+
+(* Helpers *)
 
 module ObservableEx =
 
@@ -66,8 +67,6 @@ module ObservableEx =
 
 let result = ResultBuilder()
 
-let (|?) lhs rhs = (if lhs = null then rhs else lhs)
-
 let (===) a b = String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
 
 (* Global loggers *)
@@ -75,14 +74,14 @@ let (===) a b = String.Equals(a, b, StringComparison.OrdinalIgnoreCase)
 module Logger =
 
     let Main = TraceSource("WTrace")
-    let Tracing = TraceSource("WTrace.Tracing")
+    let Processing = TraceSource("WTrace.Tracing")
     let EtwTracing = TraceSource("WTrace.ETW.Tracing")
     let EtwEvents = TraceSource("WTrace.ETW.Events")
 
 
     module private H =
 
-        let all = [| Main; Tracing; EtwTracing; EtwEvents |]
+        let all = [| Main; Processing; EtwTracing; EtwEvents |]
 
     do
         // remove the default logger - it's heavy
@@ -92,4 +91,10 @@ module Logger =
         H.all |> Seq.iter (fun s ->
                                s.Switch.Level <- level
                                listeners |> Seq.iter (s.Listeners.Add >> ignore))
+
+(* Settings *)
+
+type DebugSymbolSettings =
+| Ignore
+| UseDbgHelp of DbgHelpPath : string * SymbolPath : string
 

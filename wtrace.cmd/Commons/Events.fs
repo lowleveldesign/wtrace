@@ -1,6 +1,8 @@
 ﻿namespace LowLevelDesign.WTrace
 
 open System
+open Microsoft.Diagnostics.Tracing
+open Microsoft.Diagnostics.Tracing.Parsers
 
 (**** Classes describing trace events ****)
 
@@ -35,4 +37,12 @@ type TraceEvent = {
 }
 
 type TraceEventWithFields = TraceEventWithFields of TraceEvent * array<TraceEventField>
+
+type TraceEventSources (source : TraceEventSource) =
+
+    let rpc = MicrosoftWindowsRPCTraceEventParser(source)
+
+    member this.Kernel = source.Kernel
+
+    member this.Rpc = rpc
 

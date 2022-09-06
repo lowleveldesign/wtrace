@@ -54,7 +54,7 @@ module private H =
 
         state.Broadcast.publishTraceEvent traceEvent
  
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> ProcessThreadHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if isRundown then
@@ -72,7 +72,7 @@ let createEtwHandler () =
         KernelStackFlags = NtKeywords.Process ||| NtKeywords.Thread
         KernelRundownFlags = NtKeywords.Process
         Providers = Array.empty<EtwEventProvider>
-        Initialize = fun (broadcast) -> { Broadcast = broadcast } :> obj
+        Initialize = fun broadcast -> { Broadcast = broadcast } :> obj
         Subscribe = subscribe
     }
 

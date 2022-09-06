@@ -47,19 +47,34 @@ module private H =
             }, fields |> Array.map (toEventField id)) |> state.Broadcast.publishTraceEvent
         | false, _ -> () // this happens sporadically, but I don't think we should worry
 
+    let constructBindingString (endpointName : string) (protSeq : ProtocolSequences) (options : string) =
+        let binding =
+            match protSeq with
+            | ProtocolSequences.LRPC -> $"ncalrpc:[%s{endpointName}"
+            | ProtocolSequences.NamedPipes -> $"ncacn_np:[%s{endpointName}"
+            | ProtocolSequences.TCP -> $"ncacn_ip_tcp:[%s{endpointName}"
+            | ProtocolSequences.RPCHTTP -> $"ncacn_http:[%s{endpointName}"
+            | _ -> ""
+
+        if binding <> "" then
+            if (not (String.IsNullOrEmpty(options)) && options <> "NULL") then
+                binding + $",%s{options}]"
+            else
+                binding + "]"
+        else
+            ""
+            
+
     let handleRpcClientCallStart id state (ev : RpcClientCallStartArgs) =
+        let binding = constructBindingString ev.Endpoint ev.Protocol ev.Options
         let fields =
             [|
-                struct (nameof ev.Endpoint, FText ev.Endpoint)
-                struct (nameof ev.InterfaceUuid, FGuid ev.InterfaceUuid)
-                struct (nameof ev.ProcNum, FI32 ev.ProcNum)
-                struct (nameof ev.Options, FText ev.Options)
-                struct (nameof ev.AuthenticationLevel, FI32 ev.AuthenticationLevel)
-                struct (nameof ev.AuthenticationService, FI32 (int32 ev.AuthenticationService))
-                struct (nameof ev.ImpersonationLevel, FI32 (int32 ev.ImpersonationLevel))
+                struct ("Binding", FText binding)
+                struct ("InterfaceUuid", FGuid ev.InterfaceUuid)
+                struct ("ProcNum", FI32 ev.ProcNum)
             |]
 
-        let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
+        let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) binding ev.ProcNum
         let activityId = sprintf "RPC#%s" (ev.ActivityID.ToString())
         let rpcev = (toEvent ev id "RPC/ClientCallStart" activityId path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
@@ -76,18 +91,15 @@ module private H =
         completeRpcEvent id ev.TimeStamp state ev.ActivityID "RPC/ClientCallError" ev.Status
 
     let handleRpcServerCallStart id state (ev : RpcServerCallStartArgs) =
+        let binding = constructBindingString ev.Endpoint ev.Protocol ev.Options
         let fields =
             [|
-                struct (nameof ev.Endpoint, FText ev.Endpoint)
-                struct (nameof ev.InterfaceUuid, FGuid ev.InterfaceUuid)
-                struct (nameof ev.ProcNum, FI32 ev.ProcNum)
-                struct (nameof ev.Options, FText ev.Options)
-                struct (nameof ev.AuthenticationLevel, FI32 ev.AuthenticationLevel)
-                struct (nameof ev.AuthenticationService, FI32 (int32 ev.AuthenticationService))
-                struct (nameof ev.ImpersonationLevel, FI32 (int32 ev.ImpersonationLevel))
+                struct ("Binding", FText binding)
+                struct ("InterfaceUuid", FGuid ev.InterfaceUuid)
+                struct ("ProcNum", FI32 ev.ProcNum)
             |]
 
-        let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) ev.Endpoint ev.ProcNum
+        let path = sprintf "%s (%s) [%d]" (ev.InterfaceUuid.ToString()) binding ev.ProcNum
         let activityId = sprintf "RPC#%s" (ev.ActivityID.ToString())
         let rpcev = (toEvent ev id "RPC/ServerCallStart" activityId path "" WinApi.eventStatusUndefined)
         state.PendingRpcCalls.[ev.ActivityID] <- (rpcev, fields)
@@ -100,17 +112,15 @@ module private H =
     let handleRpcServerCallStop id state (ev : RpcCallStopArgs) =
         completeRpcEvent id ev.TimeStamp state ev.ActivityID "RPC/ServerCallEnd" ev.Status
 
-    let subscribe (source : TraceEventSource, isRundown, idgen, state : obj) =
+    let subscribe (source : TraceEventSources, isRundown, idgen, state : obj) =
         let state = state :?> RpcHandlerState
         let handleEvent h = Action<_>(handleEvent idgen state h)
         if not isRundown then
-            let parser = MicrosoftWindowsRPCTraceEventParser(source)
-
-            parser.add_RpcClientCallStart(handleEvent handleRpcClientCallStart)
-            parser.add_RpcClientCallStop(handleEvent handleRpcClientCallStop)
-            parser.add_RpcClientCallError(handleEvent handleRpcClientCallError)
-            parser.add_RpcServerCallStart(handleEvent handleRpcServerCallStart)
-            parser.add_RpcServerCallStop(handleEvent handleRpcServerCallStop)
+            source.Rpc.add_RpcClientCallStart(handleEvent handleRpcClientCallStart)
+            source.Rpc.add_RpcClientCallStop(handleEvent handleRpcClientCallStop)
+            source.Rpc.add_RpcClientCallError(handleEvent handleRpcClientCallError)
+            source.Rpc.add_RpcServerCallStart(handleEvent handleRpcServerCallStart)
+            source.Rpc.add_RpcServerCallStop(handleEvent handleRpcServerCallStop)
 
 let createEtwHandler () =
     {
@@ -126,7 +136,7 @@ let createEtwHandler () =
                                         RundownKeywords = 0UL
                                     }
         Initialize = 
-            fun (broadcast) -> ({
+            fun broadcast -> ({
                 Broadcast = broadcast
                 PendingRpcCalls = DataCache<Guid, TraceEvent * array<struct (string * TraceEventFieldValue)>>(256)
             } :> obj)
