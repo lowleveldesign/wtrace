@@ -4,8 +4,10 @@ open System
 open System.ComponentModel
 open System.Diagnostics
 open System.Threading
-open LowLevelDesign.WTrace
 open NtApiDotNet.Win32
+open PInvoke
+open LowLevelDesign.WTrace
+open System.Runtime.InteropServices
 
 [<AutoOpen>]
 module private H =
@@ -23,20 +25,49 @@ module private H =
         logger.TraceVerbose($"[rpc](%d{Thread.CurrentThread.ManagedThreadId}) resolving endpoint '%s{endpoint.Endpoint}' - %O{endpoint.InterfaceId}")
         let processInfo = endpoint.GetServerProcess()
 
+        let getModuleHandles processHandle =
+            let moduleHandles : nativeint[] = Array.zeroCreate 100
+            let mutable neededBytes = 0
+            if Psapi.EnumProcessModulesEx(processHandle, moduleHandles, moduleHandles.Length * sizeof<nativeint>, 
+                                          &neededBytes, Psapi.EnumProcessModulesFlags.LIST_MODULES_DEFAULT) then
+                
+                let neededTableLength = neededBytes / sizeof<nativeint>
+                if neededTableLength > moduleHandles.Length then
+                    let moduleHandles : nativeint[] = Array.zeroCreate neededTableLength
+                    if Psapi.EnumProcessModulesEx(processHandle, moduleHandles, moduleHandles.Length * sizeof<nativeint>, 
+                                                  &neededBytes, Psapi.EnumProcessModulesFlags.LIST_MODULES_DEFAULT) then
+                        Ok moduleHandles
+                    else Error (Marshal.GetLastWin32Error())
+                else Ok (Array.sub moduleHandles 0 neededTableLength)
+            else Error (Marshal.GetLastWin32Error())
+
+        let getModuleName processHandle moduleHandle =
+            let name : char[] = Array.zeroCreate Kernel32.MAX_PATH
+            match Psapi.GetModuleFileNameEx(processHandle, moduleHandle, name, name.Length) with
+            | 0 -> None
+            | cnt -> Some (System.String(name, 0, cnt))
+
         let modules =
             lock state (
                 fun () ->
-                    try
-                        // FIXME: not optimal - we should use data collected from ETW
-                        let modules = Process.GetProcessById(processInfo.ProcessId).Modules
-                                      |> Seq.cast<ProcessModule>
-                                      |> Seq.map (fun m -> m.FileName)
-                                      |> Seq.where (fun m -> not (state.RpcModulesParsed.Contains(m))) |> Array.ofSeq
-                        modules |> Array.iter (fun m -> state.RpcModulesParsed.Add(m) |> ignore) 
-                        modules
-                    with
-                    | :? Win32Exception as ex ->
-                        logger.TraceWarning($"[rpc] ERROR when opening process %d{processInfo.ProcessId}: 0x%x{ex.ErrorCode}")
+                    let pid = processInfo.ProcessId
+                    let accessMask = Kernel32.ACCESS_MASK(Kernel32.ProcessAccess.PROCESS_QUERY_INFORMATION ||| Kernel32.ProcessAccess.PROCESS_VM_READ)
+                    use processHandle = Kernel32.OpenProcess(accessMask, false, pid)
+
+                    if not processHandle.IsInvalid then
+                        match getModuleHandles (processHandle.DangerousGetHandle()) with
+                        | Ok moduleHandles ->
+                            let modules = moduleHandles
+                                          |> Seq.choose (getModuleName (processHandle.DangerousGetHandle()))
+                                          |> Seq.where (fun m -> not (state.RpcModulesParsed.Contains(m))) |> Array.ofSeq
+                            modules |> Array.iter (fun m -> state.RpcModulesParsed.Add(m) |> ignore) 
+                            modules
+                        | Error err -> 
+                            logger.TraceWarning($"[rpc] error when querying process %d{pid} modules: %x{err}")
+                            Array.empty
+                    else
+                        let err = Marshal.GetLastWin32Error()
+                        logger.TraceWarning($"[rpc] error when opening process %d{pid}: %x{err}")
                         Array.empty
             )
 

@@ -39,6 +39,7 @@
     <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
     <PackageReference Include="NtApiDotNet" Version="1.1.33" />
     <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
+    <PackageReference Include="PInvoke.Psapi" Version="0.7.124" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
 
