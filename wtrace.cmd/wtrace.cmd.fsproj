@@ -26,11 +26,13 @@
     <Compile Include="Tracing\Commons.fs" />
     <Compile Include="Tracing\EtwTraceSession.fs" />
     <Compile Include="Tracing\EventFilter.fs" />
-    <Compile Include="Summary\State.fs" />
-    <Compile Include="Summary\RpcResolver.fs" />
-    <Compile Include="Summary\SystemImages.fs" />
-    <Compile Include="Summary\ProcessTree.fs" />
-    <Compile Include="Summary\TraceSummary.fs" />
+    <Compile Include="Processing\State.fs" />
+    <Compile Include="Processing\RpcResolver.fs" />
+    <Compile Include="Processing\SystemImages.fs" />
+    <Compile Include="Processing\ProcessTree.fs" />
+    <Compile Include="Processing\TraceEventPostprocessing.fs" />
+    <Compile Include="TraceCounters.fs" />
+    <Compile Include="TraceSummary.fs" />
     <Compile Include="TraceControl.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

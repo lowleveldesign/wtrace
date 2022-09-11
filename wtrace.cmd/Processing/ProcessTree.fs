@@ -1,4 +1,4 @@
-﻿module LowLevelDesign.WTrace.Summary.ProcessTree
+﻿module LowLevelDesign.WTrace.Processing.ProcessTree
 
 open System
 open System.Collections.Generic

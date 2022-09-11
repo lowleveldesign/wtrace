@@ -1,4 +1,4 @@
-﻿module LowLevelDesign.WTrace.Summary.SystemImages
+﻿module LowLevelDesign.WTrace.Processing.SystemImages
 
 open LowLevelDesign.WTrace
 

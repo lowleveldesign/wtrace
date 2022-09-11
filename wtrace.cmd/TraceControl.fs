@@ -10,7 +10,7 @@ open System.Threading
 open FSharp.Control.Reactive
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Tracing
-open LowLevelDesign.WTrace.Summary
+open LowLevelDesign.WTrace.Processing
 
 let mutable lostEventsCount = 0
 let sessionWaitEvent = new ManualResetEvent(false)
@@ -72,16 +72,17 @@ let traceSystemOnly ct =
     }
     let etwObservable = createEtwObservable settings
 
-    let summary = TraceSummary.init Ignore ct
+    let tstate = TraceEventPostprocessing.init Ignore ct
+    let counters = TraceCounters.init ()
 
     etwObservable
-    |> Observable.subscribe (TraceSummary.processEvent summary)
+    |> Observable.subscribe (TraceCounters.update tstate counters)
     |> ignore
 
     use sub = initiateEtwSession etwObservable ct
     WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
 
-    TraceSummary.dump summary
+    TraceSummary.dump tstate counters
 
 let traceEverything ct handlers filter showSummary debugSymbols =
     let settings = {
@@ -93,24 +94,29 @@ let traceEverything ct handlers filter showSummary debugSymbols =
 
     let etwObservable = createEtwObservable settings
 
+    let tstate = TraceEventPostprocessing.init debugSymbols ct
+    let counters = TraceCounters.init ()
+
+    etwObservable
+    |> Observable.subscribe (TraceEventPostprocessing.processUnfilteredEvent tstate)
+    |> ignore
+
     etwObservable
     |> Observable.filter (fun (TraceEventWithFields (ev, _)) ->
                               (not (isRundown ev)) && ev.ProcessId <> currentProcessPid && filter ev)
     |> Observable.subscribeWithCallbacks onEvent onError ignore
     |> ignore
 
-    let summary = TraceSummary.init debugSymbols ct
-
     if showSummary then
         etwObservable
         |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
-        |> Observable.subscribe (TraceSummary.processEvent summary)
+        |> Observable.subscribe (TraceCounters.update tstate counters)
         |> ignore
 
     use sub = initiateEtwSession etwObservable ct
     WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
 
-    TraceSummary.dump summary
+    TraceSummary.dump tstate counters
 
 
 module private ProcessApi =
@@ -151,6 +157,13 @@ module private ProcessApi =
                     processIds.Remove(ev.ProcessId) |> ignore
 
             let etwObservable = createEtwObservable settings
+    
+            let tstate = TraceEventPostprocessing.init debugSymbols ct
+            let counters = TraceCounters.init ()
+    
+            etwObservable
+            |> Observable.subscribe (TraceEventPostprocessing.processUnfilteredEvent tstate)
+            |> ignore
 
             if includeChildren then
                 etwObservable
@@ -167,10 +180,9 @@ module private ProcessApi =
             |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
-            let summary = TraceSummary.init debugSymbols ct
             if showSummary then
                 filteredObservable
-                |> Observable.subscribe (TraceSummary.processEvent summary)
+                |> Observable.subscribe (TraceCounters.update tstate counters)
                 |> ignore
 
             if includeChildren then
@@ -190,7 +202,7 @@ module private ProcessApi =
             hThread.Close()
             hProcess.Close()
 
-            TraceSummary.dump summary
+            TraceSummary.dump tstate counters
         }
 
 

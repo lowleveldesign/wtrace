@@ -6,8 +6,8 @@
     <RootNamespace>LowLevelDesign.WTrace</RootNamespace>
     <Authors>Sebastian Solnica</Authors>
     <Company>Sebastian Solnica (lowleveldesign.org)</Company>
-    <AssemblyVersion>3.1.0.0</AssemblyVersion>
-    <FileVersion>3.1.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <OutputPath>..\bin\wtrace</OutputPath>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

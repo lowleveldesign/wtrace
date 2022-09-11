@@ -20,7 +20,7 @@ let showCopyright () =
     printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
     let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);  
     assert (customAttrs.Length > 0)
-    printfn "Copyright (C) %d %s" 2021 (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
+    printfn "Copyright (C) %d %s" 2022 (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
     printfn "Visit https://wtrace.net to learn more"
     printfn ""
 
@@ -47,7 +47,7 @@ Options:
     process   - to receive Process/Thread events
     file      - to receive File I/O events
     registry  - to receive Registry events (voluminous, disabled by default)
-    rpc       - to receive RPC events
+    rpc       - to receive RPC events (enable image eventsif you want RPC endpoint resolution)
     tcp       - to receive TCP/IP events
     udp       - to receive UDP events
     image     - to receive image events (load/unload)

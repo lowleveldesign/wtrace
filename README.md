@@ -28,6 +28,35 @@ Options:
   --nosummary           Prints only ETW events - no summary at the end.
   -v, --verbose         Shows wtrace diagnostics logs.
   -h, --help            Shows this message and exits.
+
+  The HANDLERS parameter is a list of handler names, separated with a comma.
+
+  Accepted handlers include:
+    process   - to receive Process/Thread events
+    file      - to receive File I/O events
+    registry  - to receive Registry events (voluminous, disabled by default)
+    rpc       - to receive RPC events
+    tcp       - to receive TCP/IP events
+    udp       - to receive UDP events
+    image     - to receive image events (load/unload)
+
+  Example: --handlers 'tcp,file,registry'
+
+  Each FILTER is built from a keyword, an operator, and a value. You may
+  define multiple events (filters with the same keywords are OR-ed).
+
+  Keywords include:
+    pid     - filtering on the proces ID
+    pname   - filtering on on the process name
+    name    - filtering on the event name
+    level   - filtering on the event level (1 [critical] - 5 [debug])
+    path    - filtering on the event path
+    details - filtering on the event details
+
+  Operators include:
+    =, <> (does not equal), <= (ends with), >= (starts with), ~ (contains)
+
+  Example: -f 'pid = 1234', -f 'name ~ FileIO', -f 'level <= 4'
 ```
 
 A sample trace session might look as follows:
@@ -96,3 +125,5 @@ e60c73e6-88f9-11cf-9af1-0020af6e72f4 (epmapper) [0] calls: 2
 fb8a0729-2d04-4658-be93-27b4ad553fac (lsapolicylookup) [2] calls: 2
 e60c73e6-88f9-11cf-9af1-0020af6e72f4 (epmapper) [6] calls: 2
 ```
+
+I would like to thank the authors of the [TraceEvent](https://github.com/Microsoft/perfview) and [NtApiDotNet](https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools) libraries. Wtrace would not exist without them.

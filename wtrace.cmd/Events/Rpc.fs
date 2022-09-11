@@ -48,21 +48,21 @@ module private H =
         | false, _ -> () // this happens sporadically, but I don't think we should worry
 
     let constructBindingString (endpointName : string) (protSeq : ProtocolSequences) (options : string) =
-        let binding =
-            match protSeq with
-            | ProtocolSequences.LRPC -> $"ncalrpc:[%s{endpointName}"
-            | ProtocolSequences.NamedPipes -> $"ncacn_np:[%s{endpointName}"
-            | ProtocolSequences.TCP -> $"ncacn_ip_tcp:[%s{endpointName}"
-            | ProtocolSequences.RPCHTTP -> $"ncacn_http:[%s{endpointName}"
-            | _ -> ""
+        if endpointName <> "" then
+            let binding =
+                match protSeq with
+                | ProtocolSequences.LRPC -> $"ncalrpc:[%s{endpointName}"
+                | ProtocolSequences.NamedPipes -> $"ncacn_np:[%s{endpointName}"
+                | ProtocolSequences.TCP -> $"ncacn_ip_tcp:[%s{endpointName}"
+                | ProtocolSequences.RPCHTTP -> $"ncacn_http:[%s{endpointName}"
+                | _ -> ""
 
-        if binding <> "" then
-            if (not (String.IsNullOrEmpty(options)) && options <> "NULL") then
-                binding + $",%s{options}]"
-            else
-                binding + "]"
-        else
-            ""
+            if binding <> "" then
+                if (not (String.IsNullOrEmpty(options)) && options <> "NULL") then
+                    binding + $",%s{options}]"
+                else binding + "]"
+            else ""
+        else ""
             
 
     let handleRpcClientCallStart id state (ev : RpcClientCallStartArgs) =
