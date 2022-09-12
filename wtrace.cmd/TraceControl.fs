@@ -51,8 +51,6 @@ module private H =
 
         Disposable.compose etwsub reg
 
-    let isRundown ev = ev.EventName = "Process/DCStart"
-
     let onEvent (TraceEventWithFields (ev, _)) =
         let getPath v = if v = "" then "" else sprintf " '%s'" v
         let getDesc v = if v = "" then "" else sprintf " %s" v
@@ -72,7 +70,7 @@ let traceSystemOnly ct =
     }
     let etwObservable = createEtwObservable settings
 
-    let tstate = TraceEventPostprocessing.init Ignore ct
+    let tstate = TraceEventProcessor.init ProcessFilter.Everything Ignore ct
     let counters = TraceCounters.init ()
 
     etwObservable
@@ -90,26 +88,23 @@ let traceEverything ct handlers filter showSummary debugSymbols =
         EnableStacks = false
     }
 
-    let currentProcessPid = Process.GetCurrentProcess().Id
-
     let etwObservable = createEtwObservable settings
 
-    let tstate = TraceEventPostprocessing.init debugSymbols ct
-    let counters = TraceCounters.init ()
+    let tstate = TraceEventProcessor.init ProcessFilter.Everything debugSymbols ct
 
-    etwObservable
-    |> Observable.subscribe (TraceEventPostprocessing.processUnfilteredEvent tstate)
-    |> ignore
+    let eventObservable =
+        etwObservable
+        |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
 
-    etwObservable
-    |> Observable.filter (fun (TraceEventWithFields (ev, _)) ->
-                              (not (isRundown ev)) && ev.ProcessId <> currentProcessPid && filter ev)
+    eventObservable
+    |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
     |> Observable.subscribeWithCallbacks onEvent onError ignore
     |> ignore
 
+    let counters = TraceCounters.init ()
+
     if showSummary then
-        etwObservable
-        |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> ev.ProcessId <> currentProcessPid)
+        eventObservable
         |> Observable.subscribe (TraceCounters.update tstate counters)
         |> ignore
 
@@ -141,53 +136,23 @@ module private ProcessApi =
                 EnableStacks = false
             }
 
-            let processIds = HashSet<int32>()
-            processIds.Add(pid) |> ignore
-
-            let handleProcessStart evf =
-                let (TraceEventWithFields (ev, flds)) = evf
-                if ev.EventName = "Process/Start" then
-                    let parentPid = FieldValues.getI32FieldValue flds "ParentID"
-                    if processIds.Contains(parentPid) then
-                        processIds.Add(ev.ProcessId) |> ignore
-
-            let handleProcessStop evf =
-                let (TraceEventWithFields (ev, _)) = evf
-                if ev.EventName = "Process/Stop" then
-                    processIds.Remove(ev.ProcessId) |> ignore
-
             let etwObservable = createEtwObservable settings
     
-            let tstate = TraceEventPostprocessing.init debugSymbols ct
+            let tstate = TraceEventProcessor.init (ProcessFilter.Process (pid, includeChildren)) debugSymbols ct
             let counters = TraceCounters.init ()
-    
-            etwObservable
-            |> Observable.subscribe (TraceEventPostprocessing.processUnfilteredEvent tstate)
-            |> ignore
 
-            if includeChildren then
+            let eventObservable =
                 etwObservable
-                |> Observable.subscribe handleProcessStart
-                |> ignore
+                |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
 
-            let filteredObservable =
-                etwObservable
-                |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> processIds.Contains(ev.ProcessId))
-
-            filteredObservable
-            |> Observable.filter (fun (TraceEventWithFields (ev, _)) ->
-                                      (not (isRundown ev)) && filter ev)
+            eventObservable
+            |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
             |> Observable.subscribeWithCallbacks onEvent onError ignore
             |> ignore
 
             if showSummary then
-                filteredObservable
+                eventObservable
                 |> Observable.subscribe (TraceCounters.update tstate counters)
-                |> ignore
-
-            if includeChildren then
-                etwObservable
-                |> Observable.subscribe handleProcessStop
                 |> ignore
 
             use sub = initiateEtwSession etwObservable ct

@@ -23,28 +23,6 @@ module private H =
         logger.TraceVerbose($"[rpc](%d{Thread.CurrentThread.ManagedThreadId}) resolving endpoint '%s{endpoint.Endpoint}' - %O{endpoint.InterfaceId}")
         let processInfo = endpoint.GetServerProcess()
 
-        let getModuleHandles processHandle =
-            let moduleHandles : nativeint[] = Array.zeroCreate 100
-            let mutable neededBytes = 0
-            if Psapi.EnumProcessModulesEx(processHandle, moduleHandles, moduleHandles.Length * sizeof<nativeint>, 
-                                          &neededBytes, Psapi.EnumProcessModulesFlags.LIST_MODULES_DEFAULT) then
-                
-                let neededTableLength = neededBytes / sizeof<nativeint>
-                if neededTableLength > moduleHandles.Length then
-                    let moduleHandles : nativeint[] = Array.zeroCreate neededTableLength
-                    if Psapi.EnumProcessModulesEx(processHandle, moduleHandles, moduleHandles.Length * sizeof<nativeint>, 
-                                                  &neededBytes, Psapi.EnumProcessModulesFlags.LIST_MODULES_DEFAULT) then
-                        Ok moduleHandles
-                    else Error (Marshal.GetLastWin32Error())
-                else Ok (Array.sub moduleHandles 0 neededTableLength)
-            else Error (Marshal.GetLastWin32Error())
-
-        let getModuleName processHandle moduleHandle =
-            let name : char[] = Array.zeroCreate Kernel32.MAX_PATH
-            match Psapi.GetModuleFileNameEx(processHandle, moduleHandle, name, name.Length) with
-            | 0 -> None
-            | cnt -> Some (System.String(name, 0, cnt))
-
         let modules =
             lock state (
                 fun () ->
@@ -54,7 +32,7 @@ module private H =
                             modules |> Array.iter (fun m -> state.RpcModulesParsed.Add(m) |> ignore) 
                             modules
                     | (false, _) ->
-                        logger.TraceWarning($"[rpc] modules not found for a process %d{processInfo.ProcessId}")
+                        logger.TraceWarning($"[rpc] modules not found for a process %d{processInfo.ProcessId} (did you enable the image handler?)")
                         Array.empty
             )
 
@@ -66,7 +44,7 @@ module private H =
         modules
         |> Seq.collect (
                 fun m ->
-                    logger.TraceVerbose($"[rcp] parsing module '%s{m}'")
+                    logger.TraceVerbose($"[rpc] parsing module '%s{m}'")
                     RpcServer.ParsePeFile(m, dbgHelpPath, symbolsPath, parserFlags))
         |> Seq.iter (resolveRpcServer state)
 
@@ -84,7 +62,7 @@ module private H =
                 Interlocked.Decrement(taskCount) |> ignore
         }
 
-let resolveRpcBindingsAsync debugSymbols (ct : CancellationToken) state =
+let resolveRpcBindingsAsync debugSymbols state =
     let tryDequeueBinding () =
         lock state (fun () ->
             if state.RpcBindingToResolveQueue.Count > 0 then
@@ -95,9 +73,11 @@ let resolveRpcBindingsAsync debugSymbols (ct : CancellationToken) state =
     async {
         let taskCount = ref 0
 
+        let! ct = Async.CancellationToken
         while not ct.IsCancellationRequested do
             match tryDequeueBinding () with
-            | Some binding when !taskCount < 4 ->
+            | Some binding when taskCount.Value < 4 ->
+                Debug.Assert(binding <> "")
                 Interlocked.Increment(taskCount) |> ignore
 
                 Async.Start (resolveBindingAsync debugSymbols state binding taskCount, ct)

@@ -25,16 +25,20 @@ type ProcessNode = {
     Children : Dictionary<int32, ProcessNode>
 }
 
-type LiveTraceState = {
+type ProcessFilter =
+| Everything
+| Process of int32 (* pid *) * bool (* include children *)
+
+type TraceState = {
+    ProcessFilter : ProcessFilter
 
     // system images
     LoadedSystemImages : Dictionary<uint64, ImageInMemory>
     SystemImageBaseAddresses : List<uint64>
 
-    // process tree
+    // process tree (also used for filtering)
     Processes : Dictionary<int32, array<ProcessRecord>>
     LoadedProcessModules : Dictionary<int32, HashSet<string>>
-    mutable LastUniqueProcessId : int32
 
     // rpc
     RpcInterfaceProcedureNames : Dictionary<Guid, array<string>>

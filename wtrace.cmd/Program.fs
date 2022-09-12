@@ -30,7 +30,7 @@ let showHelp () =
 Options:
   -f, --filter=FILTER   Displays only events which satisfy a given FILTER.
                         (Does not impact the summary)
-  --handlers=HANDLERS   Displays only events coming from the specified HANDLERS.
+  --handlers=HANDLERS   Enable only specific event handlers
   -c, --children        Collects traces from the selected process and all its
                         children.
   --newconsole          Starts the process in a new console window.
@@ -44,13 +44,13 @@ Options:
   The HANDLERS parameter is a list of handler names, separated with a comma.
 
   Accepted handlers include:
-    process   - to receive Process/Thread events
-    file      - to receive File I/O events
-    registry  - to receive Registry events (voluminous, disabled by default)
-    rpc       - to receive RPC events (enable image eventsif you want RPC endpoint resolution)
-    tcp       - to receive TCP/IP events
-    udp       - to receive UDP events
-    image     - to receive image events (load/unload)
+    process   - only Process/Thread events (this handler is always enabled)
+    file      - File I/O events
+    registry  - Registry events (voluminous, disabled by default)
+    rpc       - RPC events (enable image handler to allow RPC method name resolution)
+    tcp       - TCP/IP events
+    udp       - UDP events
+    image     - image (module) events (load/unload)
 
   Example: --handlers 'tcp,file,registry'
 
@@ -91,7 +91,9 @@ let parseHandlers args =
             let handlerNames = 
                 handler.Split([| ',' |], StringSplitOptions.RemoveEmptyEntries)
                 |> Array.map (fun name -> name.Trim().ToLower())
-            let handlers = handlerNames |> Array.map resolveHandler
+                |> Set.ofArray
+                |> Set.add "process" // process handler is always on
+            let handlers = handlerNames |> Set.toArray |> Array.map resolveHandler
 
             printfn "HANDLERS"
             printfn "  %s" (handlerNames |> String.concat ", ")

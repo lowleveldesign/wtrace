@@ -24,7 +24,7 @@ module private H =
                 ProcessId = ev.ProcessID
                 ProcessName = ev.ProcessName
                 ThreadId = ev.ThreadID
-                EventName = if int32 ev.Opcode = 3 (* DCStart *) then "Image/Loaded" else ev.EventName
+                EventName = ev.EventName
                 EventLevel = int32 ev.Level
                 Path = ev.FileName
                 Details = sprintf "base: 0x%x" ev.ImageBase

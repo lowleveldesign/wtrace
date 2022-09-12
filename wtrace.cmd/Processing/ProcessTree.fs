@@ -8,6 +8,8 @@ open LowLevelDesign.WTrace.Events.FieldValues
 [<AutoOpen>]
 module private H =
 
+    let mutable lastUniqueProcessId = 0
+
     let findProcessUniqueId (processes : Dictionary<int32, array<ProcessRecord>>) pid timeStamp =
         let mutable procs = null
         if processes.TryGetValue(pid, &procs) then
@@ -55,11 +57,11 @@ module private H =
 let handleProcessStart state ev fields =
     let imageFileName = getTextFieldValue fields "ImageFileName"
     let parentId = getI32FieldValue fields "ParentID"
-    state.LastUniqueProcessId <- state.LastUniqueProcessId + 1
+    lastUniqueProcessId <- lastUniqueProcessId + 1
     let proc = {
         SystemProcessId = ev.ProcessId
         SystemParentId = parentId
-        UniqueProcessId = state.LastUniqueProcessId
+        UniqueProcessId = lastUniqueProcessId
         UniqueParentId = findProcessUniqueId state.Processes parentId ev.TimeStamp
         ProcessName = getProcessName imageFileName
         StartTime = if ev.EventName = "Process/Start" then ev.TimeStamp else DateTime.MinValue
@@ -83,7 +85,7 @@ let handleProcessExit state ev =
         match procs with
         | [| |] -> Debug.Assert(false, "[SystemEvents] there should be always at least one process in the list")
         | arr -> arr.[0] <- { arr.[0] with ExitTime = ev.TimeStamp } // the first one is always the running one
-    | (false, _) -> Logger.Processing.TraceWarning(sprintf "Trying to record exit of a non-existing process: %d" ev.ProcessId)
+    | (false, _) -> ()
 
 let isEmpty state = state.Processes.Count = 0
 
