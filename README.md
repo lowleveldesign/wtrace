@@ -32,13 +32,13 @@ Options:
   The HANDLERS parameter is a list of handler names, separated with a comma.
 
   Accepted handlers include:
-    process   - to receive Process/Thread events
-    file      - to receive File I/O events
-    registry  - to receive Registry events (voluminous, disabled by default)
-    rpc       - to receive RPC events
-    tcp       - to receive TCP/IP events
-    udp       - to receive UDP events
-    image     - to receive image events (load/unload)
+    process   - only Process/Thread events (this handler is always enabled)
+    file      - File I/O events
+    registry  - Registry events (voluminous, disabled by default)
+    rpc       - RPC events (enable image handler to allow RPC method name resolution)
+    tcp       - TCP/IP events
+    udp       - UDP events
+    image     - image (module) events (load/unload)
 
   Example: --handlers 'tcp,file,registry'
 

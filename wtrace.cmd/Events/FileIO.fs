@@ -5,7 +5,6 @@ open System
 open System.Collections.Generic
 open System.IO
 open Microsoft.Diagnostics.Tracing.Parsers.Kernel
-open Microsoft.Diagnostics.Tracing
 open LowLevelDesign.WTrace
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Events.HandlerCommons

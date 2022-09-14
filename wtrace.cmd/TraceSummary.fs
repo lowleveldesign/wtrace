@@ -70,11 +70,11 @@ let dump traceState (counters : TraceCounters.Counters) =
                 )
 
         if counters.RpcClientCalls.Count > 0 then
-            printTitle "RPC (clients)"
+            printTitle "RPC (client calls)"
             printRpcCalls counters.RpcClientCalls
         
         if counters.RpcServerCalls.Count > 0 then
-            printTitle "RPC (servers)"
+            printTitle "RPC (server calls)"
             printRpcCalls counters.RpcServerCalls
 
         if counters.DpcCalls.Count > 0 then

@@ -2,6 +2,7 @@
 
 open System
 open System.Collections.Generic
+open LowLevelDesign.WTrace
 
 type ImageInMemory = {
     BaseAddress : uint64
@@ -30,6 +31,7 @@ type ProcessFilter =
 | Process of int32 (* pid *) * bool (* include children *)
 
 type TraceState = {
+    DebugSymbols : DebugSymbolSettings
     ProcessFilter : ProcessFilter
 
     // system images
@@ -42,6 +44,4 @@ type TraceState = {
 
     // rpc
     RpcInterfaceProcedureNames : Dictionary<Guid, array<string>>
-    RpcBindingToResolveQueue : Queue<string (* binding *)>
-    RpcModulesParsed : HashSet<string (* path *)>
 }
