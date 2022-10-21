@@ -11,7 +11,7 @@
     <title>wtrace</title>
     <authors>Sebastian Solnica</authors>
     <projectUrl>https://wtrace.net</projectUrl>
-    <iconUrl>https://wtrace.net/wp-content/uploads/2020/09/wtraced-icon.png</iconUrl>
+    <iconUrl>https://wtrace.net/wtrace-icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/lowleveldesign/wtrace</projectSourceUrl>
     <docsUrl>https://wtrace.net/documentation/wtrace/</docsUrl>

@@ -9,6 +9,7 @@ open System.Threading
 open LowLevelDesign.WTrace
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Tracing
+open LowLevelDesign.WTrace.Processing
 
 let className = "[main]"
 
@@ -20,7 +21,7 @@ let showCopyright () =
     printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
     let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);  
     assert (customAttrs.Length > 0)
-    printfn "Copyright (C) %d %s" 2022 (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
+    printfn "Copyright (C) 2022 %s" (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
     printfn "Visit https://wtrace.net to learn more"
     printfn ""
 
@@ -138,6 +139,17 @@ let checkElevated () =
     if EtwTraceSession.isElevated () then Ok ()
     else Error "Must be elevated (Admin) to run this program."
 
+let finishProcessingAndShowSummary tstate counters (ct : CancellationToken) =
+
+    if RpcResolver.isRunning () then
+        printf "\rResolving RPC endpoints (press Ctrl + C to stop) "
+        while not ct.IsCancellationRequested && RpcResolver.isRunning () do
+            printf "."
+            Async.Sleep(500) |> Async.RunSynchronously 
+        printfn ""
+
+    TraceSummary.dump tstate counters
+
 let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = result {
     let isFlagEnabled = isFlagEnabled args
     let isInteger (v : string) = 
@@ -176,40 +188,54 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
 
             UseDbgHelp(dbgHelpPath, symbolsPath)
 
-    use cts = new CancellationTokenSource()
+    use tracingCts = new CancellationTokenSource()
+    use processingCts = new CancellationTokenSource()
+
+    let cancellationTokens : TraceControl.WorkCancellation = {
+        TracingCancellationToken = tracingCts.Token
+        ProcessingCancellationToken = processingCts.Token
+    }
 
     Console.CancelKeyPress.Add(
         fun ev ->
-            printfn "Closing the trace session. Please wait..."
-            ev.Cancel <- true
-            cts.Cancel())
+            if not tracingCts.IsCancellationRequested then
+                printfn "Closing the trace session. Please wait..."
+                ev.Cancel <- true
+                tracingCts.Cancel()
+            elif not processingCts.IsCancellationRequested then
+                ev.Cancel <- true
+                processingCts.Cancel()
+    )
 
     let showSummary = not ([| "nosummary" |] |> isFlagEnabled)
 
-    match args |> Map.tryFind "" with 
-    | None when isSystemTrace args ->
-        if not showSummary then
-            printfn "WARNING: --nosummary does not take any effect in the system-only trace."
-        TraceControl.traceSystemOnly cts.Token
+    let! traceState, counters =
+        match args |> Map.tryFind "" with 
+        | None when isSystemTrace args ->
+            if not showSummary then
+                printfn "WARNING: --nosummary does not take any effect in the system-only trace."
+            TraceControl.traceSystemOnly cancellationTokens
 
-    | None ->
-        TraceControl.traceEverything cts.Token handlers filterEvents showSummary debugSymbols
+        | None ->
+            TraceControl.traceEverything cancellationTokens handlers filterEvents showSummary debugSymbols
 
-    | Some args ->
-        let newConsole = ([| "newconsole" |] |> isFlagEnabled)
-        let includeChildren = [| "c"; "children" |] |> isFlagEnabled
+        | Some args ->
+            let newConsole = ([| "newconsole" |] |> isFlagEnabled)
+            let includeChildren = [| "c"; "children" |] |> isFlagEnabled
 
-        match args with
-        | [ pid ] when isInteger pid ->
-            do! TraceControl.traceRunningProcess cts.Token handlers filterEvents showSummary debugSymbols includeChildren (Int32.Parse(pid))
-        | args ->
-            do! TraceControl.traceNewProcess cts.Token handlers filterEvents showSummary debugSymbols newConsole includeChildren args
+            match args with
+            | [ pid ] when isInteger pid ->
+                TraceControl.traceRunningProcess cancellationTokens handlers filterEvents showSummary debugSymbols includeChildren (Int32.Parse(pid))
+            | args ->
+                TraceControl.traceNewProcess cancellationTokens handlers filterEvents showSummary debugSymbols newConsole includeChildren args
 
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
         printfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
         printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
+
+    finishProcessingAndShowSummary traceState counters cancellationTokens.ProcessingCancellationToken
 }
 
 let main (supportFilesDirectory : string) (argv : array<string>) =

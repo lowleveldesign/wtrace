@@ -5,7 +5,13 @@
 
 **The project homepage is at <https://wtrace.net>.**
 
-:warning: Please be warned that some antivirus vendors mark wtrace as malware/trojan. Those are **false-positives**. As you know, the wtrace source code is open, and all the officially released binaries are built using GitHub Actions (you may check the workflow in the <.github/workflows/release.yml> file). If your antivirus thinks that wtrace is malware, check the binary checksum, and if it matches the one on the release page, please report it as false-positive. Thank you!
+------------------------
+
+**:warning: Some antivirus vendors mark wtrace as malware :warning:**
+
+Those are **false-positives**. As you know, wtrace source code is open, and all the officially released binaries are built using GitHub Actions (you may check the workflow in the [release.yml](.github/workflows/release.yml) file). If your antivirus thinks that wtrace is malware, calculate the binary checksum, and if it matches the one on the release page, please report it as false-positive. Thank you!
+
+------------------------
 
 Wtrace [spelled: *wɪtreɪs*] is a command-line tool for recording trace events from the Operating System or a group of processes. Wtrace may collect, among others, **File I/O** and **Registry** operations, **TPC/IP** connections, and **RPC** calls. Its purpose is to give you some insights into what is happening in the system.
 
@@ -34,13 +40,13 @@ Options:
   The HANDLERS parameter is a list of handler names, separated with a comma.
 
   Accepted handlers include:
-    process   - to receive Process/Thread events
-    file      - to receive File I/O events
-    registry  - to receive Registry events (voluminous, disabled by default)
-    rpc       - to receive RPC events
-    tcp       - to receive TCP/IP events
-    udp       - to receive UDP events
-    image     - to receive image events (load/unload)
+    process   - only Process/Thread events (this handler is always enabled)
+    file      - File I/O events
+    registry  - Registry events (voluminous, disabled by default)
+    rpc       - RPC events (enable image handler to allow RPC method name resolution)
+    tcp       - TCP/IP events
+    udp       - UDP events
+    image     - image (module) events (load/unload)
 
   Example: --handlers 'tcp,file,registry'
 

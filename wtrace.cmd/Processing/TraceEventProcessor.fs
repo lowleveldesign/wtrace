@@ -19,6 +19,7 @@ module private H =
 let init processFilter debugSymbols ct =
     let state = {
         ProcessFilter = processFilter
+        DebugSymbols = debugSymbols
 
         SystemImageBaseAddresses = List<uint64>(200)
         LoadedSystemImages = Dictionary<uint64, ImageInMemory>(200)
@@ -27,11 +28,9 @@ let init processFilter debugSymbols ct =
         LoadedProcessModules = Dictionary<int32, HashSet<string>>()
 
         RpcInterfaceProcedureNames = Dictionary<Guid, array<string>>()
-        RpcBindingToResolveQueue = Queue<string>()
-        RpcModulesParsed = HashSet<string>()
     }
 
-    Async.Start (RpcResolver.resolveRpcBindingsAsync debugSymbols state, ct)
+    Async.Start (RpcResolver.resolveRpcBindingsAsync state, ct)
 
     state
 
@@ -86,7 +85,7 @@ let processAndFilterEvent state (TraceEventWithFields (ev, fields)) =
 
             if binding <> "" && not (state.RpcInterfaceProcedureNames.ContainsKey(interfaceUuid)) then
                 state.RpcInterfaceProcedureNames.Add(interfaceUuid, Array.empty)
-                state.RpcBindingToResolveQueue.Enqueue(binding)
+                RpcResolver.enqueueBindingToResolve binding
 
         processFilterResult
     )

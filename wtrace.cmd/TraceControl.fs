@@ -2,7 +2,6 @@
 module LowLevelDesign.WTrace.TraceControl
 
 open System
-open System.Collections.Generic
 open System.Diagnostics
 open System.Reactive.Linq
 open System.Reactive.Subjects
@@ -14,6 +13,11 @@ open LowLevelDesign.WTrace.Processing
 
 let mutable lostEventsCount = 0
 let sessionWaitEvent = new ManualResetEvent(false)
+
+type WorkCancellation = {
+    TracingCancellationToken : CancellationToken
+    ProcessingCancellationToken : CancellationToken
+}
 
 [<AutoOpen>]
 module private H =
@@ -62,57 +66,59 @@ module private H =
     let onError (ex : Exception) =
         printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
 
+let traceSystemOnly ct = 
+    result {
+        let settings = {
+            Handlers = [| ProcessThread.createEtwHandler(); IsrDpc.createEtwHandler() |]
+            EnableStacks = false
+        }
+        let etwObservable = createEtwObservable settings
 
-let traceSystemOnly ct =
-    let settings = {
-        Handlers = [| ProcessThread.createEtwHandler(); IsrDpc.createEtwHandler() |]
-        EnableStacks = false
-    }
-    let etwObservable = createEtwObservable settings
+        let tstate = TraceEventProcessor.init ProcessFilter.Everything Ignore ct.ProcessingCancellationToken
+        let counters = TraceCounters.init ()
 
-    let tstate = TraceEventProcessor.init ProcessFilter.Everything Ignore ct
-    let counters = TraceCounters.init ()
-
-    etwObservable
-    |> Observable.subscribe (TraceCounters.update tstate counters)
-    |> ignore
-
-    use sub = initiateEtwSession etwObservable ct
-    WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
-
-    TraceSummary.dump tstate counters
-
-let traceEverything ct handlers filter showSummary debugSymbols =
-    let settings = {
-        Handlers = handlers
-        EnableStacks = false
-    }
-
-    let etwObservable = createEtwObservable settings
-
-    let tstate = TraceEventProcessor.init ProcessFilter.Everything debugSymbols ct
-
-    let eventObservable =
         etwObservable
-        |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
-
-    eventObservable
-    |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
-    |> Observable.subscribeWithCallbacks onEvent onError ignore
-    |> ignore
-
-    let counters = TraceCounters.init ()
-
-    if showSummary then
-        eventObservable
         |> Observable.subscribe (TraceCounters.update tstate counters)
         |> ignore
 
-    use sub = initiateEtwSession etwObservable ct
-    WaitHandle.WaitAny([| ct.WaitHandle; sessionWaitEvent |]) |> ignore
+        use sub = initiateEtwSession etwObservable ct.TracingCancellationToken
+        WaitHandle.WaitAny([| ct.TracingCancellationToken.WaitHandle; sessionWaitEvent |]) |> ignore
 
-    TraceSummary.dump tstate counters
+        return (tstate, counters)
+    }
 
+let traceEverything ct handlers filter showSummary debugSymbols =
+    result {
+        let settings = {
+            Handlers = handlers
+            EnableStacks = false
+        }
+
+        let etwObservable = createEtwObservable settings
+
+        let tstate = TraceEventProcessor.init ProcessFilter.Everything debugSymbols ct.ProcessingCancellationToken
+
+        let eventObservable =
+            etwObservable
+            |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
+
+        eventObservable
+        |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
+        |> Observable.subscribeWithCallbacks onEvent onError ignore
+        |> ignore
+
+        let counters = TraceCounters.init ()
+
+        if showSummary then
+            eventObservable
+            |> Observable.subscribe (TraceCounters.update tstate counters)
+            |> ignore
+
+        use sub = initiateEtwSession etwObservable ct.TracingCancellationToken
+        WaitHandle.WaitAny([| ct.TracingCancellationToken.WaitHandle; sessionWaitEvent |]) |> ignore
+        
+        return (tstate, counters)
+    }
 
 module private ProcessApi =
     // returns true if the process stopped by itself, false if the ct got cancelled
@@ -137,8 +143,9 @@ module private ProcessApi =
             }
 
             let etwObservable = createEtwObservable settings
-    
-            let tstate = TraceEventProcessor.init (ProcessFilter.Process (pid, includeChildren)) debugSymbols ct
+   
+            let processFilter = ProcessFilter.Process (pid, includeChildren)
+            let tstate = TraceEventProcessor.init processFilter debugSymbols ct.ProcessingCancellationToken
             let counters = TraceCounters.init ()
 
             let eventObservable =
@@ -155,19 +162,19 @@ module private ProcessApi =
                 |> Observable.subscribe (TraceCounters.update tstate counters)
                 |> ignore
 
-            use sub = initiateEtwSession etwObservable ct
+            use sub = initiateEtwSession etwObservable ct.TracingCancellationToken
 
             if not hThread.IsInvalid then
                 do! WinApi.resumeThread hThread
 
-            let! processFinished = waitForProcessExit ct hProcess
+            let! processFinished = waitForProcessExit ct.TracingCancellationToken hProcess
             if processFinished then
                 printfn "Process (%d) exited." pid
 
             hThread.Close()
             hProcess.Close()
 
-            TraceSummary.dump tstate counters
+            return (tstate, counters)
         }
 
 
@@ -176,7 +183,7 @@ let traceNewProcess ct handlers filter showSummary debugSymbols newConsole inclu
         Debug.Assert(args.Length > 0, "[TraceControl] invalid number of arguments")
         let! processIds = WinApi.startProcessSuspended args newConsole
 
-        do! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
+        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
     }
 
 let traceRunningProcess ct handlers filter showSummary debugSymbols includeChildren pid =
@@ -184,5 +191,6 @@ let traceRunningProcess ct handlers filter showSummary debugSymbols includeChild
         let! hProcess = WinApi.openRunningProcess pid
         let processIds = (pid, hProcess, WinApi.SHandle.Invalid)
 
-        do! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
+        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
     }
+
