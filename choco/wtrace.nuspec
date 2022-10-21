@@ -22,7 +22,10 @@
 
 Additionally, it has various filtering capabilities and may also dump statistics at the end of the trace session. As it's just a standard command-line tool, you may pipe its output to another tool for further processing.
 
-It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the release page.</description>
+It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the release page.
+
+Some antivirus report wtrace as malware. If the binary checksum matches the one in the choco package, it is a false-positive. You may find more information in the repository README file or the documentation.
+</description>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />

@@ -7,7 +7,7 @@
 
 ------------------------
 
-**:warning: Some antivirus vendors mark wtrace as malware :warning:**
+**:warning: Some antivirus engines mark wtrace as malware/virus :warning:**
 
 Those are **false-positives**. As you know, wtrace source code is open, and all the officially released binaries are built using GitHub Actions (you may check the workflow in the [release.yml](.github/workflows/release.yml) file). If your antivirus thinks that wtrace is malware, calculate the binary checksum, and if it matches the one on the release page, please report it as false-positive. Thank you!
 
