@@ -5,6 +5,8 @@
 
 **The project homepage is at <https://wtrace.net>.**
 
+:warning: Please be warned that some antivirus vendors mark wtrace as malware/trojan. Those are **false-positives**. As you know, the wtrace source code is open, and all the officially released binaries are built using GitHub Actions (you may check the workflow in the <.github/workflows/release.yml> file). If your antivirus thinks that wtrace is malware, check the binary checksum, and if it matches the one on the release page, please report it as false-positive. Thank you!
+
 Wtrace [spelled: *wɪtreɪs*] is a command-line tool for recording trace events from the Operating System or a group of processes. Wtrace may collect, among others, **File I/O** and **Registry** operations, **TPC/IP** connections, and **RPC** calls. Its purpose is to give you some insights into what is happening in the system.
 
 Additionally, it has various **filtering capabilities** and may also dump statistics at the end of the trace session. As it's just a standard command-line tool, you may pipe its output to another tool for further processing.
