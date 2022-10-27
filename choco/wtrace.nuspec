@@ -24,7 +24,7 @@ Additionally, it has various filtering capabilities and may also dump statistics
 
 It works on Windows 8.1+ and requires .NET 4.7.2+. Wtrace is just one executable, wtrace.exe, and you may download it from the release page.
 
-Some antivirus report wtrace as malware. If the binary checksum matches the one in the choco package, it is a false-positive. You may find more information in the repository README file or the documentation.
+Some antivirus report wtrace as malware. If the binary checksum matches the one in the choco package, it is a false-positive. You may find more information in the repository README (https://github.com/lowleveldesign/wtrace#readme) or the documentation.
 </description>
   </metadata>
   <files>
