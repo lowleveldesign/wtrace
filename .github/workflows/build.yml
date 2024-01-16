@@ -26,7 +26,7 @@ jobs:
     - name: Build Release using MSBuild
       run: msbuild wtrace.sln -m /p:Configuration=Release
      
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: wtrace
-        path: bin\wtrace\net472\wtrace.exe
+        path: bin\wtrace\net48\wtrace.exe

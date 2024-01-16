@@ -30,13 +30,13 @@ jobs:
     - name: Build Release using MSBuild
       run: msbuild wtrace.sln -m /p:Configuration=Release
      
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: wtrace
-        path: bin\wtrace\net472\wtrace.exe
+        path: bin\wtrace\net48\wtrace.exe
 
     - name: Copy the binary to Chocolatey path
-      run: Copy-Item bin\wtrace\net472\wtrace.exe choco\tools
+      run: Copy-Item bin\wtrace\net48\wtrace.exe choco\tools
 
     - run: |
         Invoke-WebRequest -OutFile Print-FileHashes.ps1 https://gist.githubusercontent.com/lowleveldesign/f1afd42662ee8dabe07cf8cbfe25e6a1/raw/Print-FileHashes.ps1
@@ -47,7 +47,7 @@ jobs:
       run: choco pack
       working-directory: choco
      
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: wtrace-pkg
         path: choco\wtrace.*.nupkg
