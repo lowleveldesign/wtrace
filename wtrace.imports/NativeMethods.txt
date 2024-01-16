@@ -1,0 +1,15 @@
+﻿// methods
+CreateProcess
+OpenProcess
+ResumeThread
+WaitForSingleObject
+DebugActiveProcessStop
+
+// structures
+
+// consts
+STATUS_WAIT_1
+WAIT_EVENT
+
+INVALID_HANDLE_VALUE
+

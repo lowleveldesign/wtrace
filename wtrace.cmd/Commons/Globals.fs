@@ -10,10 +10,6 @@ open System.Runtime.CompilerServices
 
 (* Constants *)
 
-// The timeout for buffered observable - maximum amount of time that
-// the buffered observable will wait for events
-let eventBufferedObservableTimeout = TimeSpan.FromSeconds(0.5)
-
 [<Literal>]
 let invalidEventId = Int32.MinValue
 

@@ -1,56 +1,57 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net472</TargetFrameworks>
-    <Authors>Sebastian Solnica</Authors>
-    <Company>Sebastian Solnica (lowleveldesign.org)</Company>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>net48</TargetFrameworks>
+        <Authors>Sebastian Solnica</Authors>
+        <Company>Sebastian Solnica (wtrace.net)</Company>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+        <NoWarn>9,3391</NoWarn> <!-- 9: unsafe code, 3391: implicit convertions in lets -->
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="Commons\CommandLine.fs" />
-    <Compile Include="Commons\ResultBuilder.fs" />
-    <Compile Include="Commons\Globals.fs" />
-    <Compile Include="Commons\WinApi.fs" />
-    <Compile Include="Commons\Events.fs" />
-    <Compile Include="Events\Commons.fs" />
-    <Compile Include="Events\Image.fs" />
-    <Compile Include="Events\ProcessThread.fs" />
-    <Compile Include="Events\FileIO.fs" />
-    <Compile Include="Events\Registry.fs" />
-    <Compile Include="Events\IsrDpc.fs" />
-    <Compile Include="Events\Rpc.fs" />
-    <Compile Include="Events\TcpIp.fs" />
-    <Compile Include="Events\UdpIp.fs" />
-    <Compile Include="Tracing\Commons.fs" />
-    <Compile Include="Tracing\EtwTraceSession.fs" />
-    <Compile Include="Tracing\EventFilter.fs" />
-    <Compile Include="Processing\TraceState.fs" />
-    <Compile Include="Processing\RpcResolver.fs" />
-    <Compile Include="Processing\SystemImages.fs" />
-    <Compile Include="Processing\ProcessTree.fs" />
-    <Compile Include="Processing\TraceEventProcessor.fs" />
-    <Compile Include="TraceCounters.fs" />
-    <Compile Include="TraceSummary.fs" />
-    <Compile Include="TraceControl.fs" />
-    <Compile Include="Program.fs" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Commons\CommandLine.fs" />
+        <Compile Include="Commons\ResultBuilder.fs" />
+        <Compile Include="Commons\Globals.fs" />
+        <Compile Include="Commons\WinApi.fs" />
+        <Compile Include="Commons\Events.fs" />
+        <Compile Include="Events\Commons.fs" />
+        <Compile Include="Events\Image.fs" />
+        <Compile Include="Events\ProcessThread.fs" />
+        <Compile Include="Events\FileIO.fs" />
+        <Compile Include="Events\Registry.fs" />
+        <Compile Include="Events\IsrDpc.fs" />
+        <Compile Include="Events\Rpc.fs" />
+        <Compile Include="Events\TcpIp.fs" />
+        <Compile Include="Events\UdpIp.fs" />
+        <Compile Include="Tracing\Commons.fs" />
+        <Compile Include="Tracing\EtwTraceSession.fs" />
+        <Compile Include="Tracing\EventFilter.fs" />
+        <Compile Include="Processing\TraceState.fs" />
+        <Compile Include="Processing\RpcResolver.fs" />
+        <Compile Include="Processing\SystemImages.fs" />
+        <Compile Include="Processing\ProcessTree.fs" />
+        <Compile Include="Processing\TraceEventProcessor.fs" />
+        <Compile Include="TraceCounters.fs" />
+        <Compile Include="TraceSummary.fs" />
+        <Compile Include="TraceControl.fs" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
-    <PackageReference Include="NtApiDotNet" Version="1.1.33" />
-    <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
-    <PackageReference Include="System.Reactive" Version="5.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FSharp.Control.Reactive" Version="5.0.5" />
+        <PackageReference Include="NtApiDotNet" Version="1.1.33" />
+        <PackageReference Include="System.Memory" Version="4.5.5" />
+        <PackageReference Include="System.Reactive" Version="5.0.0" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\wtrace.imports\wtrace.imports.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\wtrace.imports\wtrace.imports.csproj" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="6.0.5" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Update="FSharp.Core" Version="8.0.101" />
+    </ItemGroup>
 
 </Project>
 

@@ -47,7 +47,7 @@ module private H =
                     match state.KeyHandleToName.TryGetValue(ev.KeyHandle) with
                     | (true, name) -> name
                     | (false, _) -> sprintf "<0x%X>" ev.KeyHandle
-                Path.Combine(baseKeyName, ev.KeyName)
+                $"{baseKeyName}\\{ev.KeyName}"
 
         let ev = toEvent ev id "" path "" ev.Status
         state.Broadcast.publishTraceEvent (TraceEventWithFields (ev, noFields))

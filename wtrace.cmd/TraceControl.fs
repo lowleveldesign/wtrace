@@ -10,8 +10,11 @@ open FSharp.Control.Reactive
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Tracing
 open LowLevelDesign.WTrace.Processing
+open Windows.Win32
+open Windows.Win32.Foundation
 
 let mutable lostEventsCount = 0
+let mutable lastEventTime = DateTime.MinValue.Ticks
 let sessionWaitEvent = new ManualResetEvent(false)
 
 type WorkCancellation = {
@@ -62,6 +65,7 @@ module private H =
                      else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
         printfn "%s %s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessName ev.ProcessId
             ev.ThreadId ev.EventName (getPath ev.Path) (getDesc ev.Details) result
+        Interlocked.Exchange(&lastEventTime, DateTime.Now.Ticks) |> ignore
 
     let onError (ex : Exception) =
         printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
@@ -123,7 +127,7 @@ let traceEverything ct handlers filter showSummary debugSymbols =
 module private ProcessApi =
     // returns true if the process stopped by itself, false if the ct got cancelled
     let rec waitForProcessExit (ct : CancellationToken) hProcess =
-        match WinApi.waitForProcessExit hProcess 500 with
+        match WinApi.waitForProcessExit hProcess 500u with
         | Error err -> Error err
         | Ok processFinished ->
             if processFinished then
@@ -135,7 +139,7 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct handlers filter showSummary debugSymbols includeChildren (pid, hProcess, hThread : WinApi.SHandle) =
+    let traceProcess ct handlers filter showSummary debugSymbols includeChildren (pid, hProcess, hThread) =
         result {
             let settings = {
                 Handlers = handlers
@@ -164,15 +168,28 @@ module private ProcessApi =
 
             use sub = initiateEtwSession etwObservable ct.TracingCancellationToken
 
-            if not hThread.IsInvalid then
-                do! WinApi.resumeThread hThread
+            if hThread <> HANDLE.INVALID_HANDLE_VALUE then
+                do! WinApi.resumeProcess hThread
 
             let! processFinished = waitForProcessExit ct.TracingCancellationToken hProcess
             if processFinished then
                 printfn "Process (%d) exited." pid
 
-            hThread.Close()
-            hProcess.Close()
+            let mutable savedLastEventTime = Interlocked.Read(&lastEventTime)
+            let rec waitForMoreEvents () =
+                let t = Interlocked.Read(&lastEventTime)
+                if t <> savedLastEventTime && (not ct.TracingCancellationToken.IsCancellationRequested) then
+                    savedLastEventTime <- t
+                    Thread.Sleep(1000)
+                    waitForMoreEvents ()
+
+            // when process exists too fast, we might miss some events
+            // so we wait for a few seconds to prevent that
+            Thread.Sleep(3000)
+            waitForMoreEvents ()
+
+            PInvoke.CloseHandle(hThread) |> ignore
+            PInvoke.CloseHandle(hProcess) |> ignore
 
             return (tstate, counters)
         }
@@ -189,7 +206,7 @@ let traceNewProcess ct handlers filter showSummary debugSymbols newConsole inclu
 let traceRunningProcess ct handlers filter showSummary debugSymbols includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
-        let processIds = (pid, hProcess, WinApi.SHandle.Invalid)
+        let processIds = (pid, hProcess, HANDLE.INVALID_HANDLE_VALUE)
 
         return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
     }
