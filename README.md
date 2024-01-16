@@ -88,7 +88,7 @@ Options:
 
 ## Installation
 
-Wtrace works on Windows 8.1+ and requires .NET 4.7.2+. It is a **single file** application, and you may download the latest version from the [release page](https://github.com/lowleveldesign/wtrace/releases).
+Wtrace works on Windows 8.1+ and requires .NET 4.8.x. It is a **single file** application, and you may download the latest version from the [release page](https://github.com/lowleveldesign/wtrace/releases).
 
 Alternatively, you may install wtrace using [Chocolatey](https://chocolatey.org/):
 
