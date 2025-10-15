@@ -171,7 +171,7 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
             { Format = TraceControl.OutputFormat.Json; OutStream = Console.Out }
         | (Some ["json"], Some [path]) ->
             { Format = TraceControl.OutputFormat.Json; OutStream = File.CreateText(path) }
-        | (None, Some [path]) when Path.GetExtension(path).Equals("json", StringComparison.OrdinalIgnoreCase) -> 
+        | (None, Some [path]) when Path.GetExtension(path).Equals(".json", StringComparison.OrdinalIgnoreCase) -> 
             { Format = TraceControl.OutputFormat.Json; OutStream = File.CreateText(path) }
         | (_, Some [path]) ->
             { Format = TraceControl.OutputFormat.FreeText; OutStream = File.CreateText(path) }
