@@ -49,7 +49,13 @@ module private H =
         |> Seq.collect (
                 fun m ->
                     logger.TraceVerbose($"[rpc] parsing module '%s{m}'")
-                    RpcServer.ParsePeFile(m, dbgHelpPath, symbolsPath, parserFlags))
+                    try
+                        RpcServer.ParsePeFile(m, dbgHelpPath, symbolsPath, parserFlags)
+                    with
+                    | ex ->
+                        logger.TraceErrorWithMessage($"[rpc] failed parsing module '%s{m}'", ex)
+                        []
+        )
         |> Seq.iter (resolveRpcServer state)
 
     let resolveBindingAsync state binding (taskCount : int32 ref) =

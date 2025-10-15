@@ -2,7 +2,6 @@
 module LowLevelDesign.WTrace.Tests.Commons
 
 open NUnit.Framework
-open FsUnit
 open LowLevelDesign.WTrace.Events
 
 [<Test>]
@@ -17,19 +16,19 @@ let TestRollingCache () =
     |> Seq.iter cache.Add
 
     keyValues
-    |> Seq.iter (fun (k, v) -> cache.[k] = v |> should be True)
+    |> Seq.iter (fun (k, v) -> Assert.That(cache.[k], Is.EqualTo(v)))
 
     // adding for the second time should not change anything
     keyValues
     |> Seq.iter cache.Add
 
     keyValues
-    |> Seq.iter (fun (k, v) -> cache.[k] = v |> should be True)
+    |> Seq.iter (fun (k, v) -> Assert.That(cache.[k], Is.EqualTo(v)))
 
     // adding one new element should replace the oldest one
     cache.Add("k5", "v5")
-    cache.ContainsKey("k1") |> should be False
+    Assert.That(cache.ContainsKey("k1"), Is.False)
 
     cache.Remove("k5") |> ignore
-    cache.ContainsKey("k5") |> should be False
+    Assert.That(cache.ContainsKey("k5"), Is.False)
 

@@ -126,8 +126,8 @@ module EventFilter =
             | Details (op, s) -> ("Details", sprintf "%s '%s'" op s)
 
         let printFiltersGroup name defs =
-            printfn "  %s" name
-            printfn "    %s" (defs |> String.concat " OR ")
+            eprintfn "  %s" name
+            eprintfn "    %s" (defs |> String.concat " OR ")
 
         filters
         |> Seq.map buildFilterDescription

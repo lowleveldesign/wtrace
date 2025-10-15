@@ -10,10 +10,10 @@ module private H =
     let printTitle (title : string) =
         let separator = "--------------------------------"
         let space = Math.Max(0, (separator.Length - title.Length) / 2)
-        printfn ""
-        printfn "%s" separator
-        printfn "%s%s" (" " |> String.replicate space) title
-        printfn "%s" separator
+        eprintfn ""
+        eprintfn "%s" separator
+        eprintfn "%s%s" (" " |> String.replicate space) title
+        eprintfn "%s" separator
 
     let getCounterValue (counter : TraceCounters.NumericCounter) key =
         match counter.TryGetValue(key) with
@@ -31,7 +31,7 @@ module private H =
                            (p, received + sent, sent, received))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
             |> Seq.iter (fun (path, total, sent, received) ->
-                            printfn "%s Total: %dB, Sent: %dB, Received: %dB" path total sent received)
+                            eprintfn "%s Total: %dB, Sent: %dB, Received: %dB" path total sent received)
 
 
 let dump traceState (counters : TraceCounters.Counters) =
@@ -50,7 +50,7 @@ let dump traceState (counters : TraceCounters.Counters) =
                            (p, read + written, written, read))
             |> Seq.sortByDescending (fun (_, total, _, _) -> total)
             |> Seq.iter (fun (path, total, written, read) ->
-                            printfn "'%s' Total: %dB, Writes: %dB, Reads: %dB" path total written read)
+                            eprintfn "'%s' Total: %dB, Writes: %dB, Reads: %dB" path total written read)
 
         dumpNetworkStatistics "TCP/IP" counters.TcpReceivedBytes counters.TcpSentBytes
         dumpNetworkStatistics "UDP" counters.UdpReceivedBytes counters.UdpSentBytes
@@ -66,7 +66,7 @@ let dump traceState (counters : TraceCounters.Counters) =
                                | (true, procedures) when procedures.Length > procNum ->
                                    sprintf "%O (%s) [%d]{%s}" interfaceUuid binding procNum procedures[procNum]
                                | _ -> sprintf "%O (%s) [%d]" interfaceUuid binding procNum
-                    printfn "%s calls: %d" path total
+                    eprintfn "%s calls: %d" path total
                 )
 
         if counters.RpcClientCalls.Count > 0 then
@@ -85,7 +85,7 @@ let dump traceState (counters : TraceCounters.Counters) =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = traceState.LoadedSystemImages[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
+                            eprintfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
 
         if counters.IsrCalls.Count > 0 then
             printTitle "ISR"
@@ -95,5 +95,5 @@ let dump traceState (counters : TraceCounters.Counters) =
             |> Seq.iter (fun (baseAddr, (count, time)) ->
                             let img = traceState.LoadedSystemImages[baseAddr]
                             let time = time.ToString("#,0.000")
-                            printfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
+                            eprintfn "'%s', Total: %s ms (%d event(s))" img.FileName time count)
     )

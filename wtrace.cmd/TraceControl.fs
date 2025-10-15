@@ -6,6 +6,7 @@ open System.Diagnostics
 open System.Reactive.Linq
 open System.Reactive.Subjects
 open System.Threading
+open System.Text.Json
 open FSharp.Control.Reactive
 open LowLevelDesign.WTrace.Events
 open LowLevelDesign.WTrace.Tracing
@@ -22,6 +23,10 @@ type WorkCancellation = {
     ProcessingCancellationToken : CancellationToken
 }
 
+type OutputFormat =
+| FreeText = 0
+| Json = 1
+
 [<AutoOpen>]
 module private H =
     let rundownWaitEvent = new ManualResetEvent(false)
@@ -30,7 +35,7 @@ module private H =
         match s with
         | SessionRunning -> rundownWaitEvent.Set() |> ignore
         | SessionError msg ->
-            printfn "ERROR: Error when starting the trace session\n%s" msg
+            eprintfn "ERROR: Error when starting the trace session\n%s" msg
             rundownWaitEvent.Set() |> ignore
             sessionWaitEvent.Set() |> ignore
         | SessionStopped n ->
@@ -53,10 +58,14 @@ module private H =
         let etwsub = etwObservable.Connect()
         let reg = ct.Register(fun () -> etwsub.Dispose())
 
-        printfn "Starting the tracing session (might take a moment). Press Ctrl + C to exit."
+        eprintfn "Starting the tracing session (might take a moment). Press Ctrl + C to exit."
         rundownWaitEvent.WaitOne() |> ignore
 
         Disposable.compose etwsub reg
+
+    let onEventJson (TraceEventWithFields (ev, _)) =
+        printfn "%s" (JsonSerializer.Serialize(ev))
+        Interlocked.Exchange(&lastEventTime, DateTime.Now.Ticks) |> ignore
 
     let onEvent (TraceEventWithFields (ev, _)) =
         let getPath v = if v = "" then "" else sprintf " '%s'" v
@@ -68,7 +77,7 @@ module private H =
         Interlocked.Exchange(&lastEventTime, DateTime.Now.Ticks) |> ignore
 
     let onError (ex : Exception) =
-        printfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
+        eprintfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
 
 let traceSystemOnly ct = 
     result {
@@ -91,7 +100,7 @@ let traceSystemOnly ct =
         return (tstate, counters)
     }
 
-let traceEverything ct handlers filter showSummary debugSymbols =
+let traceEverything ct handlers filter showSummary debugSymbols outputFormat =
     result {
         let settings = {
             Handlers = handlers
@@ -105,6 +114,8 @@ let traceEverything ct handlers filter showSummary debugSymbols =
         let eventObservable =
             etwObservable
             |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
+
+        let onEvent = if outputFormat = OutputFormat.Json then onEventJson else onEvent
 
         eventObservable
         |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
@@ -139,12 +150,14 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct handlers filter showSummary debugSymbols includeChildren (pid, hProcess, hThread) =
+    let traceProcess ct handlers filter showSummary debugSymbols outputFormat includeChildren (pid, hProcess, hThread) =
         result {
             let settings = {
                 Handlers = handlers
                 EnableStacks = false
             }
+
+            let onEvent = if outputFormat = OutputFormat.Json then onEventJson else onEvent
 
             let etwObservable = createEtwObservable settings
    
@@ -173,7 +186,7 @@ module private ProcessApi =
 
             let! processFinished = waitForProcessExit ct.TracingCancellationToken hProcess
             if processFinished then
-                printfn "Process (%d) exited." pid
+                eprintfn "Process (%d) exited." pid
 
             let mutable savedLastEventTime = Interlocked.Read(&lastEventTime)
             let rec waitForMoreEvents () =
@@ -195,19 +208,19 @@ module private ProcessApi =
         }
 
 
-let traceNewProcess ct handlers filter showSummary debugSymbols newConsole includeChildren (args : list<string>) =
+let traceNewProcess ct handlers filter showSummary debugSymbols outputFormat newConsole includeChildren (args : list<string>) =
     result {
         Debug.Assert(args.Length > 0, "[TraceControl] invalid number of arguments")
         let! processIds = WinApi.startProcessSuspended args newConsole
 
-        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
+        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols outputFormat includeChildren processIds
     }
 
-let traceRunningProcess ct handlers filter showSummary debugSymbols includeChildren pid =
+let traceRunningProcess ct handlers filter showSummary debugSymbols outputFormat includeChildren pid =
     result {
         let! hProcess = WinApi.openRunningProcess pid
         let processIds = (pid, hProcess, HANDLE.INVALID_HANDLE_VALUE)
 
-        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols includeChildren processIds
+        return! ProcessApi.traceProcess ct handlers filter showSummary debugSymbols outputFormat includeChildren processIds
     }
 

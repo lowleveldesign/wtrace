@@ -111,7 +111,7 @@ let printProcessTree state =
         let exitTime =
             if proc.ExitTime <> DateTime.MaxValue then sprintf "finished at %s" (proc.ExitTime.ToString("HH:mm:ss.ffff"))
             else ""
-        printfn "%s├─ %s [%d] %s  %s" ("│ " |> String.replicate depth) proc.ProcessName proc.SystemProcessId startTime exitTime
+        eprintfn "%s├─ %s [%d] %s  %s" ("│ " |> String.replicate depth) proc.ProcessName proc.SystemProcessId startTime exitTime
         node.Children.Values |> Seq.iter (printChildren (depth + 1))
 
     for n in tree.Values do

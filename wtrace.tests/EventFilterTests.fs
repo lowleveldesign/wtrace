@@ -2,7 +2,6 @@
 
 open System
 open NUnit.Framework
-open FsUnit
 open LowLevelDesign.WTrace
 open LowLevelDesign.WTrace.Tracing
 
@@ -33,70 +32,70 @@ let TestRealtimeFilters () =
         |] |> EventFilter.buildFilterFunction
 
     let sw = System.Diagnostics.Stopwatch.StartNew()
-    ev |> filterFunction |> should be False
+    Assert.That(ev |> filterFunction, Is.False)
 
-    { ev with ProcessId = 1230 } |> filterFunction |> should be False
+    Assert.That({ ev with ProcessId = 1230 } |> filterFunction, Is.False)
 
-    { ev with ProcessId = 1231 } |> filterFunction |> should be False
+    Assert.That({ ev with ProcessId = 1231 } |> filterFunction, Is.False)
 
-    { ev with ProcessId = 1235 } |> filterFunction |> should be True
+    Assert.That({ ev with ProcessId = 1235 } |> filterFunction, Is.True)
     
     printfn "Elapsed time: %dms" sw.ElapsedMilliseconds
 
     let filterFunction =
         [| EventName ("~", "TestOpcode") |]
         |> EventFilter.buildFilterFunction
-    ev |> filterFunction |> should be True
+    Assert.That(ev |> filterFunction, Is.True)
 
     let filterFunction =
         [| EventName ("=", "TestTask/TestOpcode") |]
         |> EventFilter.buildFilterFunction
-    ev |> filterFunction |> should be True
+    Assert.That(ev |> filterFunction, Is.True)
 
     let filterFunction =
         [| EventName ("=", "TestTask") |]
         |> EventFilter.buildFilterFunction
-    ev |> filterFunction |> should be False
+    Assert.That(ev |> filterFunction, Is.False)
 
     let filterFunction = [| |] |> EventFilter.buildFilterFunction
-    ev |> filterFunction |> should be True
+    Assert.That(ev |> filterFunction, Is.True)
 
 [<Test>]
 let TestFilterParsing () =
     match EventFilter.parseFilter "name= Test" with
     | EventName (op, v) ->
-        op |> should equal "="
-        v |> should equal "Test"
+        Assert.That(op, Is.EqualTo("="))
+        Assert.That(v, Is.EqualTo("Test"))
     | _ -> Assert.Fail()
 
-    (fun () -> EventFilter.parseFilter "pid >= str" |> ignore) |> should throw typeof<EventFilter.ParseError>
+    Assert.That((fun () -> EventFilter.parseFilter "pid >= str" |> ignore), Throws.InstanceOf<EventFilter.ParseError>())
 
     match EventFilter.parseFilter "pid >= 10" with
     | ProcessId (op, v) ->
-        op |> should equal ">="
-        v |> should equal 10
+        Assert.That(op, Is.EqualTo(">="))
+        Assert.That(v, Is.EqualTo(10))
     | _ -> Assert.Fail()
 
     match EventFilter.parseFilter "DETAILs    ~  test message   " with
     | Details (op, v) ->
-        op |> should equal "~"
-        v |> should equal "test message"
+        Assert.That(op, Is.EqualTo("~"))
+        Assert.That(v, Is.EqualTo("test message"))
     | _ -> Assert.Fail()
 
     match EventFilter.parseFilter "  test event   " with
     | EventName (op, v) ->
-        op |> should equal "~"
-        v |> should equal "test event"
+        Assert.That(op, Is.EqualTo("~"))
+        Assert.That(v, Is.EqualTo("test event"))
     | _ -> Assert.Fail()
 
     match EventFilter.parseFilter "level=debug" with
     | EventLevel (op, v) ->
-        op |> should equal "="
-        v |> should equal 5
+        Assert.That(op, Is.EqualTo("="))
+        Assert.That(v, Is.EqualTo(5))
     | _ -> Assert.Fail()
 
     match EventFilter.parseFilter "level ~ 1" with
     | EventLevel (op, v) ->
-        op |> should equal "~"
-        v |> should equal 1
+        Assert.That(op, Is.EqualTo("~"))
+        Assert.That(v, Is.EqualTo(1))
     | _ -> Assert.Fail()

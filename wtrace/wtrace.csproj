@@ -22,14 +22,50 @@
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Dia2Lib.dll">
             <LogicalName>.\Dia2Lib.dll</LogicalName>
         </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Control.Reactive.dll">
+            <LogicalName>.\FSharp.Control.Reactive.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Core.dll">
+            <LogicalName>.\FSharp.Core.dll</LogicalName>
+        </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Diagnostics.FastSerialization.dll">
             <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
         </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
             <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
         </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Bcl.AsyncInterfaces.dll">
+            <LogicalName>.\Microsoft.Bcl.AsyncInterfaces.dll</LogicalName>
+        </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\Microsoft.Win32.Registry.dll">
             <LogicalName>.\Microsoft.Win32.Registry.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\NtApiDotNet.dll">
+            <LogicalName>.\NtApiDotNet.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Buffers.dll">
+            <LogicalName>.\System.Buffers.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Collections.Immutable.dll">
+            <LogicalName>.\System.Collections.Immutable.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.IO.Pipelines.dll">
+            <LogicalName>.\System.IO.Pipelines.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Memory.dll">
+            <LogicalName>.\System.Memory.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reactive.dll">
+            <LogicalName>.\System.Reactive.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reflection.Metadata.dll">
+            <LogicalName>.\System.Reflection.Metadata.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reflection.TypeExtensions.dll">
+            <LogicalName>.\System.Reflection.TypeExtensions.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Runtime.CompilerServices.Unsafe.dll">
+            <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
         </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Security.AccessControl.dll">
             <LogicalName>.\System.Security.AccessControl.dll</LogicalName>
@@ -37,35 +73,20 @@
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Security.Principal.Windows.dll">
             <LogicalName>.\System.Security.Principal.Windows.dll</LogicalName>
         </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Runtime.CompilerServices.Unsafe.dll">
-            <LogicalName>.\System.Runtime.CompilerServices.Unsafe.dll</LogicalName>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Text.Encodings.Web.dll">
+            <LogicalName>.\System.Text.Encodings.Web.dll</LogicalName>
         </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\TraceReloggerLib.dll">
-            <LogicalName>.\TraceReloggerLib.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Core.dll">
-            <LogicalName>.\FSharp.Core.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\FSharp.Control.Reactive.dll">
-            <LogicalName>.\FSharp.Control.Reactive.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Buffers.dll">
-            <LogicalName>.\System.Buffers.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Memory.dll">
-            <LogicalName>.\System.Memory.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Numerics.Vectors.dll">
-            <LogicalName>.\System.Numerics.Vectors.dll</LogicalName>
-        </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Reactive.dll">
-            <LogicalName>.\System.Reactive.dll</LogicalName>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Text.Json.dll">
+            <LogicalName>.\System.Text.Json.dll</LogicalName>
         </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.Threading.Tasks.Extensions.dll">
             <LogicalName>.\System.Threading.Tasks.Extensions.dll</LogicalName>
         </EmbeddedResource>
-        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\NtApiDotNet.dll">
-            <LogicalName>.\NtApiDotNet.dll</LogicalName>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\System.ValueTuple.dll">
+            <LogicalName>.\System.ValueTuple.dll</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\TraceReloggerLib.dll">
+            <LogicalName>.\TraceReloggerLib.dll</LogicalName>
         </EmbeddedResource>
         <EmbeddedResource Include="$(OutputPath)\..\..\deps\$(TargetFramework)\wtrace.cmd.dll">
             <LogicalName>.\wtrace.cmd.dll</LogicalName>

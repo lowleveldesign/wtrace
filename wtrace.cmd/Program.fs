@@ -17,17 +17,17 @@ let appAssembly = Assembly.GetEntryAssembly()
 let appName = appAssembly.GetName()
 
 let showCopyright () =
-    printfn ""
-    printfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
+    eprintfn ""
+    eprintfn "%s v%s - collects process or system traces" appName.Name (appName.Version.ToString())
     let customAttrs = appAssembly.GetCustomAttributes(typeof<AssemblyCompanyAttribute>, true);  
     assert (customAttrs.Length > 0)
-    printfn "Copyright (C) 2022 %s" (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
-    printfn "Visit https://wtrace.net to learn more"
-    printfn ""
+    eprintfn "Copyright (C) 2022 %s" (customAttrs.[0] :?> AssemblyCompanyAttribute).Company
+    eprintfn "Visit https://wtrace.net to learn more"
+    eprintfn ""
 
 let showHelp () =
-    printfn "Usage: %s [OPTIONS] [pid|imagename args]" appName.Name
-    printfn @"
+    eprintfn "Usage: %s [OPTIONS] [pid|imagename args]" appName.Name
+    eprintfn @"
 Options:
   -f, --filter=FILTER   Displays only events which satisfy a given FILTER.
                         (Does not impact the summary)
@@ -39,6 +39,8 @@ Options:
                         - shown in the summary.
   --symbols=SYMPATH     Resolve stacks and RPC method names using the provided symbols path.
   --nosummary           Prints only ETW events - no summary at the end.
+  --output              Format of the events in the output. 
+                        Available options: 'freetext' (default) or 'json'
   -v, --verbose         Shows wtrace diagnostics logs.
   -h, --help            Shows this message and exits.
 
@@ -96,9 +98,9 @@ let parseHandlers args =
                 |> Set.add "process" // process handler is always on
             let handlers = handlerNames |> Set.toArray |> Array.map resolveHandler
 
-            printfn "HANDLERS"
-            printfn "  %s" (handlerNames |> String.concat ", ")
-            printfn ""
+            eprintfn "HANDLERS"
+            eprintfn "  %s" (handlerNames |> String.concat ", ")
+            eprintfn ""
 
             Ok handlers
         with
@@ -120,10 +122,10 @@ let parseFilters args =
             try
                 let filters =
                     filters |> List.map EventFilter.parseFilter
-                printfn "FILTERS"
-                if filters |> List.isEmpty then printfn "  [none]"
+                eprintfn "FILTERS"
+                if filters |> List.isEmpty then eprintfn "  [none]"
                 else EventFilter.printFilters filters
-                printfn ""
+                eprintfn ""
                 Ok (EventFilter.buildFilterFunction filters)
             with
             | EventFilter.ParseError msg -> Error msg
@@ -142,11 +144,11 @@ let checkElevated () =
 let finishProcessingAndShowSummary tstate counters (ct : CancellationToken) =
 
     if RpcResolver.isRunning () then
-        printf "\rResolving RPC endpoints (press Ctrl + C to stop) "
+        eprintf "\rResolving RPC endpoints (press Ctrl + C to stop) "
         while not ct.IsCancellationRequested && RpcResolver.isRunning () do
-            printf "."
+            eprintf "."
             Async.Sleep(500) |> Async.RunSynchronously 
-        printfn ""
+        eprintfn ""
 
     TraceSummary.dump tstate counters
 
@@ -160,7 +162,12 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
 
     if [| "v"; "verbose" |] |> isFlagEnabled then
         Trace.AutoFlush <- true
-        Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Out) ])
+        Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Error) ])
+
+    let outputFormat =
+        match args |> Map.tryFind "output" with
+        | Some ["json"] -> TraceControl.OutputFormat.Json
+        | _ -> TraceControl.OutputFormat.FreeText
 
     let! filterEvents = parseFilters args
     let! handlers = parseHandlers args
@@ -174,8 +181,8 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
         | None ->
             match Environment.GetEnvironmentVariable("_NT_SYMBOL_PATH") with
             | v when v <> null -> 
-                printfn "Debug symbols path: %s" v
-                printfn ""
+                eprintfn "Debug symbols path: %s" v
+                eprintfn ""
 
                 UseDbgHelp(dbgHelpPath, v)
             | _ -> DebugSymbolSettings.Ignore
@@ -183,8 +190,8 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
             Debug.Assert(paths.Length > 0)
             let symbolsPath = List.last paths
 
-            printfn "Debug symbols path: %s" symbolsPath
-            printfn ""
+            eprintfn "Debug symbols path: %s" symbolsPath
+            eprintfn ""
 
             UseDbgHelp(dbgHelpPath, symbolsPath)
 
@@ -199,7 +206,7 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
     Console.CancelKeyPress.Add(
         fun ev ->
             if not tracingCts.IsCancellationRequested then
-                printfn "Closing the trace session. Please wait..."
+                eprintfn "Closing the trace session. Please wait..."
                 ev.Cancel <- true
                 tracingCts.Cancel()
             elif not processingCts.IsCancellationRequested then
@@ -213,11 +220,11 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
         match args |> Map.tryFind "" with 
         | None when isSystemTrace args ->
             if not showSummary then
-                printfn "WARNING: --nosummary does not take any effect in the system-only trace."
+                eprintfn "WARNING: --nosummary does not take any effect in the system-only trace."
             TraceControl.traceSystemOnly cancellationTokens
 
         | None ->
-            TraceControl.traceEverything cancellationTokens handlers filterEvents showSummary debugSymbols
+            TraceControl.traceEverything cancellationTokens handlers filterEvents showSummary debugSymbols outputFormat
 
         | Some args ->
             let newConsole = ([| "newconsole" |] |> isFlagEnabled)
@@ -225,15 +232,17 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
 
             match args with
             | [ pid ] when isInteger pid ->
-                TraceControl.traceRunningProcess cancellationTokens handlers filterEvents showSummary debugSymbols includeChildren (Int32.Parse(pid))
+                TraceControl.traceRunningProcess cancellationTokens handlers filterEvents showSummary 
+                    debugSymbols outputFormat includeChildren (Int32.Parse(pid))
             | args ->
-                TraceControl.traceNewProcess cancellationTokens handlers filterEvents showSummary debugSymbols newConsole includeChildren args
+                TraceControl.traceNewProcess cancellationTokens handlers filterEvents showSummary
+                    debugSymbols outputFormat newConsole includeChildren args
 
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
-        printfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
+        eprintfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
-        printfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
+        eprintfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
 
     finishProcessingAndShowSummary traceState counters cancellationTokens.ProcessingCancellationToken
 }
@@ -250,5 +259,5 @@ let main (supportFilesDirectory : string) (argv : array<string>) =
     else
         match start supportFilesDirectory args with
         | Ok _ -> 0
-        | Error msg -> printfn "ERROR: %s" msg; 1
+        | Error msg -> eprintfn "ERROR: %s" msg; 1
 
