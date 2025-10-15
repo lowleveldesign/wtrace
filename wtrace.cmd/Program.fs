@@ -41,6 +41,7 @@ Options:
   --nosummary           Prints only ETW events - no summary at the end.
   --output              Format of the events in the output. 
                         Available options: 'freetext' (default) or 'json'
+  --save=PATH           Save collected events to a provided PATH
   -v, --verbose         Shows wtrace diagnostics logs.
   -h, --help            Shows this message and exits.
 
@@ -164,10 +165,17 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
         Trace.AutoFlush <- true
         Logger.initialize(SourceLevels.Verbose, [ new TextWriterTraceListener(Console.Error) ])
 
-    let outputFormat =
-        match args |> Map.tryFind "output" with
-        | Some ["json"] -> TraceControl.OutputFormat.Json
-        | _ -> TraceControl.OutputFormat.FreeText
+    let output : TraceControl.EventsOutput =
+        match (args |> Map.tryFind "output", args |> Map.tryFind "save") with
+        | (Some ["json"], None) -> 
+            { Format = TraceControl.OutputFormat.Json; OutStream = Console.Out }
+        | (Some ["json"], Some [path]) ->
+            { Format = TraceControl.OutputFormat.Json; OutStream = File.CreateText(path) }
+        | (None, Some [path]) when Path.GetExtension(path).Equals("json", StringComparison.OrdinalIgnoreCase) -> 
+            { Format = TraceControl.OutputFormat.Json; OutStream = File.CreateText(path) }
+        | (_, Some [path]) ->
+            { Format = TraceControl.OutputFormat.FreeText; OutStream = File.CreateText(path) }
+        | _ -> { Format = TraceControl.OutputFormat.FreeText; OutStream = Console.Out }
 
     let! filterEvents = parseFilters args
     let! handlers = parseHandlers args
@@ -206,7 +214,7 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
     Console.CancelKeyPress.Add(
         fun ev ->
             if not tracingCts.IsCancellationRequested then
-                eprintfn "Closing the trace session. Please wait..."
+                eprintfn "Stopping the trace session. Please wait..."
                 ev.Cancel <- true
                 tracingCts.Cancel()
             elif not processingCts.IsCancellationRequested then
@@ -224,7 +232,7 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
             TraceControl.traceSystemOnly cancellationTokens
 
         | None ->
-            TraceControl.traceEverything cancellationTokens handlers filterEvents showSummary debugSymbols outputFormat
+            TraceControl.traceEverything cancellationTokens handlers filterEvents showSummary debugSymbols output
 
         | Some args ->
             let newConsole = ([| "newconsole" |] |> isFlagEnabled)
@@ -233,16 +241,18 @@ let start (supportFilesDirectory : string) (args : Map<string, list<string>>) = 
             match args with
             | [ pid ] when isInteger pid ->
                 TraceControl.traceRunningProcess cancellationTokens handlers filterEvents showSummary 
-                    debugSymbols outputFormat includeChildren (Int32.Parse(pid))
+                    debugSymbols output includeChildren (Int32.Parse(pid))
             | args ->
                 TraceControl.traceNewProcess cancellationTokens handlers filterEvents showSummary
-                    debugSymbols outputFormat newConsole includeChildren args
+                    debugSymbols output newConsole includeChildren args
 
     if not (TraceControl.sessionWaitEvent.WaitOne(TimeSpan.FromSeconds(3.0))) then
         eprintfn "WARNING: the session did not finish in the allotted time. Stop it manually: logman stop wtrace-rt -ets"
 
     if TraceControl.lostEventsCount > 0 then
         eprintfn "WARNING: %d events were lost in the session. Check wtrace help at https://wtrace.net to learn more." TraceControl.lostEventsCount
+
+    output.OutStream.Close()
 
     finishProcessingAndShowSummary traceState counters cancellationTokens.ProcessingCancellationToken
 }

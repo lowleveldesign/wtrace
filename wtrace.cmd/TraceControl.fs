@@ -3,6 +3,7 @@ module LowLevelDesign.WTrace.TraceControl
 
 open System
 open System.Diagnostics
+open System.IO
 open System.Reactive.Linq
 open System.Reactive.Subjects
 open System.Threading
@@ -26,6 +27,11 @@ type WorkCancellation = {
 type OutputFormat =
 | FreeText = 0
 | Json = 1
+
+type EventsOutput = {
+    Format : OutputFormat
+    OutStream : TextWriter
+}
 
 [<AutoOpen>]
 module private H =
@@ -60,21 +66,24 @@ module private H =
 
         eprintfn "Starting the tracing session (might take a moment). Press Ctrl + C to exit."
         rundownWaitEvent.WaitOne() |> ignore
+        eprintfn "The tracing session is running. Press Ctrl + C to stop."
 
         Disposable.compose etwsub reg
 
-    let onEventJson (TraceEventWithFields (ev, _)) =
-        printfn "%s" (JsonSerializer.Serialize(ev))
+    let onEvent (output : EventsOutput) (TraceEventWithFields (ev, _)) =
+        let eventText =
+            match output.Format with
+            | OutputFormat.Json -> JsonSerializer.Serialize(ev)
+            | _ ->
+                let getPath v = if v = "" then "" else sprintf " '%s'" v
+                let getDesc v = if v = "" then "" else sprintf " %s" v
+                let result = if ev.Result = WinApi.eventStatusUndefined then ""
+                             else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
+                sprintf "%s %s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessName ev.ProcessId
+                    ev.ThreadId ev.EventName (getPath ev.Path) (getDesc ev.Details) result
         Interlocked.Exchange(&lastEventTime, DateTime.Now.Ticks) |> ignore
 
-    let onEvent (TraceEventWithFields (ev, _)) =
-        let getPath v = if v = "" then "" else sprintf " '%s'" v
-        let getDesc v = if v = "" then "" else sprintf " %s" v
-        let result = if ev.Result = WinApi.eventStatusUndefined then ""
-                     else sprintf " -> %s" (WinApi.getNtStatusDesc ev.Result)
-        printfn "%s %s (%d.%d) %s%s%s%s" (ev.TimeStamp.ToString("HH:mm:ss.ffff")) ev.ProcessName ev.ProcessId
-            ev.ThreadId ev.EventName (getPath ev.Path) (getDesc ev.Details) result
-        Interlocked.Exchange(&lastEventTime, DateTime.Now.Ticks) |> ignore
+        output.OutStream.WriteLine(eventText)
 
     let onError (ex : Exception) =
         eprintfn "ERROR: an error occured while collecting the trace - %s" (ex.ToString())
@@ -100,7 +109,7 @@ let traceSystemOnly ct =
         return (tstate, counters)
     }
 
-let traceEverything ct handlers filter showSummary debugSymbols outputFormat =
+let traceEverything ct handlers filter showSummary debugSymbols output =
     result {
         let settings = {
             Handlers = handlers
@@ -115,11 +124,9 @@ let traceEverything ct handlers filter showSummary debugSymbols outputFormat =
             etwObservable
             |> Observable.filter (TraceEventProcessor.processAndFilterEvent tstate)
 
-        let onEvent = if outputFormat = OutputFormat.Json then onEventJson else onEvent
-
         eventObservable
         |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
-        |> Observable.subscribeWithCallbacks onEvent onError ignore
+        |> Observable.subscribeWithCallbacks (onEvent output) onError ignore
         |> ignore
 
         let counters = TraceCounters.init ()
@@ -150,14 +157,12 @@ module private ProcessApi =
             else
                 waitForProcessExit ct hProcess
 
-    let traceProcess ct handlers filter showSummary debugSymbols outputFormat includeChildren (pid, hProcess, hThread) =
+    let traceProcess ct handlers filter showSummary debugSymbols output includeChildren (pid, hProcess, hThread) =
         result {
             let settings = {
                 Handlers = handlers
                 EnableStacks = false
             }
-
-            let onEvent = if outputFormat = OutputFormat.Json then onEventJson else onEvent
 
             let etwObservable = createEtwObservable settings
    
@@ -171,7 +176,7 @@ module private ProcessApi =
 
             eventObservable
             |> Observable.filter (fun (TraceEventWithFields (ev, _)) -> filter ev)
-            |> Observable.subscribeWithCallbacks onEvent onError ignore
+            |> Observable.subscribeWithCallbacks (onEvent output) onError ignore
             |> ignore
 
             if showSummary then
